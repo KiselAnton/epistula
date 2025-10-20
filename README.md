@@ -71,242 +71,185 @@ epistula/
    npm install
    ```
 
-5. **Configure Environment Variables**
-   
-   Create `.env` files in both backend and frontend directories based on the provided `.env.example` files.
-
-6. **Run the Application**
-   
+5. **Start Development Services**
    ```bash
-   # Start backend
-   cd backend
-   uvicorn main:app --reload
+   # Run all services with docker-compose
+   docker-compose up -d
    
-   # Start frontend (in a new terminal)
-   cd frontend
-   npm run dev
+   # Or run individual services
+   # Backend
+   cd backend && uvicorn main:app --reload
+   
+   # Frontend
+   cd frontend && npm run dev
    ```
 
-### Using Docker (Recommended)
+## ISO Creation (For Deployment)
 
-The easiest way to get Epistula running is with Docker Compose:
+> **Note**: As of October 2024, the ISO builder has been updated to use **Ubuntu 24.04 LTS** (Noble Numbat) instead of Ubuntu 22.04. All references and scripts have been updated accordingly.
+
+Epistula includes a script to build a custom Ubuntu ISO with all dependencies pre-installed.
+
+### Quick Start
+
+The simplest way to build the ISO:
 
 ```bash
-docker compose up -d
+sudo ./setup_epistula_iso.sh
 ```
 
-This will start all services (backend, frontend, database, Ollama, Keycloak) in containers.
+This will:
+1. Check/install dependencies
+2. Download Ubuntu 24.04 LTS ISO (if not already present)
+3. Customize the ISO with Docker and Epistula
+4. Create `epistula-ubuntu.iso`
 
-## Building Custom Ubuntu ISO with Epistula
+### Optimizing ISO Builds
 
-### Overview
+The script supports caching ISOs to speed up repeated builds:
 
-Epistula includes a script (`setup_epistula_iso.sh`) that creates a custom Ubuntu ISO with Docker, Docker Compose, and Epistula pre-installed. This is useful for distributing Epistula as a ready-to-use system.
+**Option 1: Download to `isos/` folder**
+```bash
+mkdir -p isos
+wget https://releases.ubuntu.com/24.04/ubuntu-24.04-live-server-amd64.iso -P isos/
+```
 
-### ISO Building Workflow
+**Option 2: Copy existing ISO**
+```bash
+mkdir -p isos
+cp /path/to/ubuntu-24.04-live-server-amd64.iso isos/
+```
 
-#### Prerequisites for ISO Building
+After this, the script will use the cached ISO instead of downloading it.
 
-- Linux system (Ubuntu/Debian recommended)
-- Root/sudo access
-- At least 10GB free disk space
-- Dependencies (automatically installed by script):
-  - wget
-  - xorriso
-  - squashfs-tools
-  - git
+### What the ISO Contains
 
-#### Using the isos Folder (Recommended)
+The custom ISO includes:
 
-**To save bandwidth and time**, you can place Ubuntu ISOs in the `isos/` folder before running the build script. The script will automatically detect and use existing ISOs instead of downloading them.
+- Ubuntu 24.04 LTS base system
+- Docker Engine & Docker Compose
+- Epistula repository cloned to `/opt/epistula`
+- Systemd service for auto-starting Epistula
+- All necessary dependencies
 
-**Workflow:**
+### Using the Custom ISO
 
-1. **Create the isos directory** (if it doesn't exist):
-   ```bash
-   mkdir -p isos
-   ```
+1. Boot from the ISO (USB/VM/Physical)
+2. Complete Ubuntu installation
+3. Epistula will automatically:
+   - Start on system boot
+   - Be accessible at `http://localhost:8000`
+   - Have all services pre-configured
 
-2. **Download Ubuntu ISO manually** (optional but recommended):
-   ```bash
-   cd isos
-   wget https://releases.ubuntu.com/22.04/ubuntu-22.04.3-live-server-amd64.iso
-   cd ..
-   ```
-   
-   Or copy an existing ISO:
-   ```bash
-   cp /path/to/ubuntu-22.04.3-live-server-amd64.iso isos/
-   ```
+### Build Process Details
 
-3. **Run the ISO build script**:
-   ```bash
-   sudo ./setup_epistula_iso.sh
-   ```
+The script performs the following steps:
 
-#### How the ISO Check Works
+1. **Dependency Check**: Installs `wget`, `xorriso`, `squashfs-tools`, `git`
+2. **ISO Download**: Gets Ubuntu 24.04 LTS (if not cached)
+3. **ISO Extraction**: Mounts and extracts base ISO
+4. **Customization**: 
+   - Installs Docker & Docker Compose
+   - Clones Epistula repo
+   - Creates systemd service
+5. **ISO Rebuild**: Repackages as new bootable ISO
 
-The build script follows this priority order:
+### Quick Build Workflow
 
-1. **Check `isos/` folder** - If ISO exists here, copy it to work directory
-2. **Check work directory** - If ISO already exists in `./iso_work/`, skip download
-3. **Download** - If ISO not found in either location, download from Ubuntu servers
-
-This approach:
-- ✅ Saves bandwidth on repeated builds
-- ✅ Speeds up the build process
-- ✅ Allows offline ISO building
-- ✅ Supports custom Ubuntu versions
-
-#### Build Output
-
-After successful completion, you'll find:
-
-- **Custom ISO**: `./iso_work/epistula-ubuntu.iso`
-- This ISO can be used to install Ubuntu with Epistula pre-configured
-- The ISO includes:
-  - Docker and Docker Compose
-  - Epistula source code in `/opt/epistula`
-  - Automatic Epistula service startup
-  - User guide at `/opt/epistula/USER_GUIDE.md`
-
-#### Developer Tips
-
-- **Keep ISOs between builds**: Place ISOs in `isos/` folder and add `isos/*.iso` to `.gitignore` (already done)
-- **Test different Ubuntu versions**: Download different ISOs to `isos/` and modify the script's `UBUNTU_VERSION` variable
-- **Clean builds**: Remove `./iso_work/` directory to start fresh (but keep `isos/` intact)
-- **Share ISOs with team**: Keep a shared `isos/` directory to avoid multiple downloads
-
-#### Example: Quick Build Workflow
+For contributors doing frequent builds:
 
 ```bash
 # First time setup
 mkdir -p isos
-wget -P isos https://releases.ubuntu.com/22.04/ubuntu-22.04.3-live-server-amd64.iso
+wget -P isos https://releases.ubuntu.com/24.04/ubuntu-24.04-live-server-amd64.iso
 
-# Build ISO (will use local ISO from isos/)
+# Build ISO (uses cached ISO)
 sudo ./setup_epistula_iso.sh
 
-# The ISO is ready at: ./iso_work/epistula-ubuntu.iso
-
-# For subsequent builds, just run:
-sudo ./setup_epistula_iso.sh  # No download needed!
+# Test in VM
+qemu-system-x86_64 -cdrom epistula-ubuntu.iso -m 4G -enable-kvm
 ```
 
 ## Contributing
 
 We welcome contributions! Here's how to get started:
 
-### Code Contribution Guidelines
+1. **Fork the Repository**
+2. **Create a Feature Branch**: `git checkout -b feature/amazing-feature`
+3. **Make Your Changes**
+4. **Run Tests**: Ensure all tests pass
+5. **Commit**: `git commit -m 'Add amazing feature'`
+6. **Push**: `git push origin feature/amazing-feature`
+7. **Open a Pull Request**
 
-1. **Fork the repository** and create a feature branch
-2. **Write clean, documented code**
-3. **Follow existing code style** (PEP 8 for Python, ESLint for JavaScript)
-4. **Add tests** for new features
-5. **Update documentation** as needed
-6. **Submit a pull request** with a clear description
+### Code Style
 
-### Pull Request Process
-
-1. Update the README.md with details of changes if needed
-2. Ensure all tests pass
-3. Get approval from at least one maintainer
-4. Squash commits before merging if requested
-
-### Code Style Guidelines
-
-- **Python**: Follow PEP 8, use type hints
-- **JavaScript/TypeScript**: Follow Airbnb style guide
+- **Python**: Follow PEP 8
+- **JavaScript/React**: Follow ESLint configuration
 - **Commits**: Use conventional commits format
-- **Testing**: Write unit tests for new features
 
-### Areas Where We Need Help
-
-- Frontend UI/UX improvements
-- Backend API optimization
-- AI prompt engineering
-- Documentation and tutorials
-- Testing and bug fixes
-- Accessibility improvements
-
-## API Documentation
-
-Once the backend is running, API documentation is available at:
-
-- Swagger UI: `http://localhost:8000/docs`
-- ReDoc: `http://localhost:8000/redoc`
-
-## Testing
-
-### Backend Tests
+### Testing
 
 ```bash
+# Backend tests
 cd backend
 pytest
-```
 
-### Frontend Tests
-
-```bash
+# Frontend tests
 cd frontend
 npm test
 ```
 
 ## Architecture Overview
 
-### Backend Architecture
+### Backend (FastAPI)
 
-- FastAPI handles HTTP requests and responses
-- SQLAlchemy ORM manages database interactions
-- Keycloak provides OAuth2/OIDC authentication
-- Ollama integration for AI-powered letter generation
+- RESTful API design
+- JWT-based authentication via Keycloak
+- PostgreSQL for data persistence
+- Ollama integration for AI features
 
-### Frontend Architecture
+### Frontend (Next.js/React)
 
-- Next.js for server-side rendering and routing
-- React for component-based UI
-- State management with React Context/Redux
-- API calls through axios/fetch
+- Server-side rendering
+- Modern React with hooks
+- Tailwind CSS for styling
+- Real-time updates
 
-### Database Schema
+### AI Integration
 
-- Users: Authentication and profile information
-- Letters: Letter content, metadata, and threading
-- Conversations: Groups letters into threads
-- AI_Contexts: Maintains context for AI conversations
+- Ollama for local LLM inference
+- Supports multiple models
+- Privacy-focused (all processing local)
 
-## Troubleshooting
+## Deployment
 
-### Common Issues
+### Docker Deployment (Recommended)
 
-**Database connection errors**
-- Ensure PostgreSQL is running
-- Check database credentials in `.env`
+```bash
+# Production deployment
+docker-compose -f docker-compose.prod.yml up -d
+```
 
-**Ollama not responding**
-- Verify Ollama service is running: `ollama serve`
-- Check if models are downloaded: `ollama list`
+### Manual Deployment
 
-**Frontend not connecting to backend**
-- Verify backend is running on correct port
-- Check CORS configuration in backend
-
-**ISO build fails**
-- Ensure you have root/sudo access
-- Check available disk space (need ~10GB)
-- Verify all dependencies are installed
-- Try placing ISO manually in `isos/` folder
+See individual service READMEs:
+- [Backend Deployment](backend/README.md)
+- [Frontend Deployment](frontend/README.md)
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License - see the LICENSE file for details.
 
-## Questions or Need Help?
+## Support
 
-Feel free to:
+For questions and support:
+- Open an issue on GitHub
+- Check the [User Guide](USER_GUIDE.md)
+- Review existing documentation in `/docs`
 
-- Open an issue for bugs or feature requests
-- Start a discussion for general questions
-- Contact the maintainers directly
+## Acknowledgments
 
-Thank you for contributing to Epistula! 🎉
+- FastAPI team for the excellent web framework
+- Ollama team for making local LLMs accessible
+- All contributors who have helped improve Epistula
