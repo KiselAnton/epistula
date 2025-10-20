@@ -1,4 +1,13 @@
-MN#!/usr/bin/env bash
+#!/usr/bin/env bash
+
+# Strict interpreter validation: This script requires Bash
+if [ -z "$BASH_VERSION" ]; then
+  echo "ERROR: This script must be run with Bash, not sh or other shells." >&2
+  echo "Please run with: bash $0" >&2
+  exit 1
+fi
+
+# Bash-only strict mode options
 set -euo pipefail
 
 REPO_URL="https://github.com/KiselAnton/epistula.git"
@@ -140,13 +149,17 @@ log "Installing epistula in chroot..."
 cat << 'CHROOT_SCRIPT' > "$CUSTOM_SQUASHFS/tmp/install_epistula.sh"
 #!/bin/bash
 set -euo pipefail
+
 apt-get update
 apt-get install -y git
+
 if [ -d "/opt/epistula" ]; then
   rm -rf /opt/epistula
 fi
+
 git clone https://github.com/KiselAnton/epistula.git /opt/epistula
 cd /opt/epistula
+
 if [ -f "setup.sh" ]; then
   bash setup.sh
 else
