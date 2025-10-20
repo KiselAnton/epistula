@@ -1,5 +1,4 @@
 #!/bin/bash
-
 # Epistula Ubuntu ISO Setup Script
 # This script creates a custom Ubuntu ISO with Docker, Docker Compose, and Epistula pre-installed
 
@@ -14,6 +13,7 @@ WORK_DIR="./iso_work"
 MOUNT_DIR="${WORK_DIR}/mnt"
 EXTRACT_DIR="${WORK_DIR}/extract"
 EPISTULA_REPO="https://github.com/KiselAnton/epistula.git"
+ISOS_DIR="./isos"  # New: Directory to check for existing ISOs
 
 echo "=== Epistula Ubuntu ISO Builder ==="
 echo "This script will create a custom Ubuntu ISO with Epistula pre-installed"
@@ -41,11 +41,16 @@ echo "[2/7] Creating working directories..."
 mkdir -p "${WORK_DIR}" "${MOUNT_DIR}" "${EXTRACT_DIR}"
 
 # Download Ubuntu ISO
-if [ ! -f "${WORK_DIR}/${ISO_NAME}" ]; then
-  echo "[3/7] Downloading Ubuntu ${UBUNTU_VERSION} LTS ISO..."
-  wget -P "${WORK_DIR}" "${ISO_URL}"
+# First check if ISO exists in isos folder, then in work_dir, then download
+if [ -f "${ISOS_DIR}/${ISO_NAME}" ]; then
+  echo "[3/7] Found Ubuntu ISO in isos folder, copying..."
+  cp "${ISOS_DIR}/${ISO_NAME}" "${WORK_DIR}/${ISO_NAME}"
+elif [ -f "${WORK_DIR}/${ISO_NAME}" ]; then
+  echo "[3/7] Ubuntu ISO already in work directory, skipping..."
 else
-  echo "[3/7] Ubuntu ISO already downloaded, skipping..."
+  echo "[3/7] Downloading Ubuntu ${UBUNTU_VERSION} LTS ISO..."
+  echo "Tip: Place ISOs in the '${ISOS_DIR}' folder to skip downloading."
+  wget -P "${WORK_DIR}" "${ISO_URL}"
 fi
 
 # Mount ISO
@@ -73,37 +78,32 @@ mount --bind /dev "${FILESYSTEM_DIR}/dev"
 mount --bind /proc "${FILESYSTEM_DIR}/proc"
 mount --bind /sys "${FILESYSTEM_DIR}/sys"
 
-# Install Docker and Docker Compose in chroot
-cat << 'EOF' > "${FILESYSTEM_DIR}/tmp/install_epistula.sh"
+# Create installation script
+cat > "${FILESYSTEM_DIR}/tmp/install_epistula.sh" << 'EOF'
 #!/bin/bash
 set -e
 
-# Update package list
+echo "Installing Docker..."
 apt-get update
-
-# Install dependencies
-apt-get install -y ca-certificates curl gnupg git
-
-# Add Docker's official GPG key
+apt-get install -y ca-certificates curl gnupg
 install -m 0755 -d /etc/apt/keyrings
 curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg
 chmod a+r /etc/apt/keyrings/docker.gpg
 
-# Set up Docker repository
 echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null
 
-# Install Docker Engine and Docker Compose
 apt-get update
 apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
 
-# Clone Epistula repository
+echo "Cloning Epistula..."
 cd /opt
 git clone https://github.com/KiselAnton/epistula.git
+cd epistula
 
-# Create systemd service for Epistula
-cat << 'SERVICEEOF' > /etc/systemd/system/epistula.service
+echo "Setting up Epistula service..."
+cat > /etc/systemd/system/epistula.service << SERVICEEOF
 [Unit]
-Description=Epistula Email Service
+Description=Epistula Email Server
 Requires=docker.service
 After=docker.service
 
@@ -118,15 +118,13 @@ ExecStop=/usr/bin/docker compose down
 WantedBy=multi-user.target
 SERVICEEOF
 
-# Enable Docker and Epistula services
-systemctl enable docker
-systemctl enable epistula
+systemctl enable epistula.service
 
-# Create README for users
-cat << 'READMEEOF' > /root/EPISTULA_README.txt
-=== Epistula Ubuntu ISO ===
+echo "Creating README for users..."
+cat > /opt/epistula/USER_GUIDE.md << READMEEOF
+# Epistula - Pre-installed Email Server
 
-This is a custom Ubuntu installation with Epistula pre-installed.
+This Ubuntu installation comes with Epistula pre-configured.
 
 Epistula is located at: /opt/epistula
 
@@ -143,7 +141,6 @@ The Epistula service is configured to start automatically on boot.
 For more information, see:
   - /opt/epistula/README.md
   - /opt/epistula/USER_GUIDE.md
-
 READMEEOF
 
 echo "Epistula installation complete!"
@@ -195,5 +192,4 @@ echo "You can now use this ISO to install Ubuntu with Epistula pre-configured."
 echo ""
 echo "Cleaning up temporary files..."
 rm -rf "${MOUNT_DIR}" "${EXTRACT_DIR}" "${FILESYSTEM_DIR}"
-
 echo "Done!"
