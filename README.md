@@ -26,6 +26,7 @@ epistula/
 ├── frontend/         # Next.js/React frontend
 ├── database/         # Database schemas and migrations
 ├── docker/           # Docker configuration files
+├── isos/             # Place Ubuntu ISOs here to skip downloads
 └── docs/             # Additional documentation
 ```
 
@@ -59,6 +60,7 @@ epistula/
    ```bash
    # Create PostgreSQL database
    createdb epistula
+   
    # Run migrations
    alembic upgrade head
    ```
@@ -70,102 +72,152 @@ epistula/
    ```
 
 5. **Configure Environment Variables**
-   - Copy `.env.example` to `.env` in both backend and frontend directories
-   - Update with your local configuration
+   
+   Create `.env` files in both backend and frontend directories based on the provided `.env.example` files.
 
-6. **Start Development Servers**
+6. **Run the Application**
+   
    ```bash
-   # Terminal 1 - Backend
+   # Start backend
    cd backend
    uvicorn main:app --reload
    
-   # Terminal 2 - Frontend
+   # Start frontend (in a new terminal)
    cd frontend
    npm run dev
    ```
 
 ### Using Docker (Recommended)
 
+The easiest way to get Epistula running is with Docker Compose:
+
 ```bash
-docker-compose up -d
+docker compose up -d
 ```
 
-This will start all services (backend, frontend, database, Keycloak, Ollama) with proper networking.
+This will start all services (backend, frontend, database, Ollama, Keycloak) in containers.
 
-## Development Roadmap
+## Building Custom Ubuntu ISO with Epistula
 
-### Phase 1: Foundation
-- [ ] Set up development environment
-- [ ] Initialize FastAPI backend structure
-- [ ] Configure PostgreSQL database with initial schema
-- [ ] Set up basic authentication with Keycloak
-- [ ] Create Next.js frontend scaffold
-- [ ] Establish API contracts between frontend and backend
+### Overview
 
-### Phase 2: Core Features
-- [ ] Implement user registration and login flows
-- [ ] Build letter composition interface
-- [ ] Create letter storage and retrieval system
-- [ ] Implement peer-to-peer letter exchange
-- [ ] Design and implement letter threading/conversation view
-- [ ] Add basic notification system
+Epistula includes a script (`setup_epistula_iso.sh`) that creates a custom Ubuntu ISO with Docker, Docker Compose, and Epistula pre-installed. This is useful for distributing Epistula as a ready-to-use system.
 
-### Phase 3: AI Integration
-- [ ] Integrate Ollama for AI letter generation
-- [ ] Create AI conversation interface
-- [ ] Implement context management for AI exchanges
-- [ ] Add AI writing assistance features
-- [ ] Build AI response customization options
+### ISO Building Workflow
 
-### Phase 4: Enhancement
-- [ ] Add rich text formatting support
-- [ ] Implement attachment handling
-- [ ] Create user profiles and settings
-- [ ] Add search and filtering capabilities
-- [ ] Implement letter archiving system
-- [ ] Add export functionality
+#### Prerequisites for ISO Building
 
-### Phase 5: Polish
-- [ ] Comprehensive testing suite
-- [ ] Performance optimization
-- [ ] Security audit and hardening
-- [ ] Documentation (user guide, API docs)
-- [ ] Deployment pipeline setup
-- [ ] Monitoring and logging infrastructure
+- Linux system (Ubuntu/Debian recommended)
+- Root/sudo access
+- At least 10GB free disk space
+- Dependencies (automatically installed by script):
+  - wget
+  - xorriso
+  - squashfs-tools
+  - git
+
+#### Using the isos Folder (Recommended)
+
+**To save bandwidth and time**, you can place Ubuntu ISOs in the `isos/` folder before running the build script. The script will automatically detect and use existing ISOs instead of downloading them.
+
+**Workflow:**
+
+1. **Create the isos directory** (if it doesn't exist):
+   ```bash
+   mkdir -p isos
+   ```
+
+2. **Download Ubuntu ISO manually** (optional but recommended):
+   ```bash
+   cd isos
+   wget https://releases.ubuntu.com/22.04/ubuntu-22.04.3-live-server-amd64.iso
+   cd ..
+   ```
+   
+   Or copy an existing ISO:
+   ```bash
+   cp /path/to/ubuntu-22.04.3-live-server-amd64.iso isos/
+   ```
+
+3. **Run the ISO build script**:
+   ```bash
+   sudo ./setup_epistula_iso.sh
+   ```
+
+#### How the ISO Check Works
+
+The build script follows this priority order:
+
+1. **Check `isos/` folder** - If ISO exists here, copy it to work directory
+2. **Check work directory** - If ISO already exists in `./iso_work/`, skip download
+3. **Download** - If ISO not found in either location, download from Ubuntu servers
+
+This approach:
+- ✅ Saves bandwidth on repeated builds
+- ✅ Speeds up the build process
+- ✅ Allows offline ISO building
+- ✅ Supports custom Ubuntu versions
+
+#### Build Output
+
+After successful completion, you'll find:
+
+- **Custom ISO**: `./iso_work/epistula-ubuntu.iso`
+- This ISO can be used to install Ubuntu with Epistula pre-configured
+- The ISO includes:
+  - Docker and Docker Compose
+  - Epistula source code in `/opt/epistula`
+  - Automatic Epistula service startup
+  - User guide at `/opt/epistula/USER_GUIDE.md`
+
+#### Developer Tips
+
+- **Keep ISOs between builds**: Place ISOs in `isos/` folder and add `isos/*.iso` to `.gitignore` (already done)
+- **Test different Ubuntu versions**: Download different ISOs to `isos/` and modify the script's `UBUNTU_VERSION` variable
+- **Clean builds**: Remove `./iso_work/` directory to start fresh (but keep `isos/` intact)
+- **Share ISOs with team**: Keep a shared `isos/` directory to avoid multiple downloads
+
+#### Example: Quick Build Workflow
+
+```bash
+# First time setup
+mkdir -p isos
+wget -P isos https://releases.ubuntu.com/22.04/ubuntu-22.04.3-live-server-amd64.iso
+
+# Build ISO (will use local ISO from isos/)
+sudo ./setup_epistula_iso.sh
+
+# The ISO is ready at: ./iso_work/epistula-ubuntu.iso
+
+# For subsequent builds, just run:
+sudo ./setup_epistula_iso.sh  # No download needed!
+```
 
 ## Contributing
 
-We welcome contributions! Here's how you can help:
+We welcome contributions! Here's how to get started:
 
-### How to Contribute
+### Code Contribution Guidelines
 
-1. **Fork the repository**
-2. **Create a feature branch**
-   ```bash
-   git checkout -b feature/your-feature-name
-   ```
-3. **Make your changes**
-   - Write clean, documented code
-   - Follow existing code style and conventions
-   - Add tests for new features
-4. **Commit your changes**
-   ```bash
-   git commit -m "Add: brief description of changes"
-   ```
-5. **Push to your fork**
-   ```bash
-   git push origin feature/your-feature-name
-   ```
-6. **Open a Pull Request**
-   - Provide a clear description of the changes
-   - Reference any related issues
-   - Ensure all tests pass
+1. **Fork the repository** and create a feature branch
+2. **Write clean, documented code**
+3. **Follow existing code style** (PEP 8 for Python, ESLint for JavaScript)
+4. **Add tests** for new features
+5. **Update documentation** as needed
+6. **Submit a pull request** with a clear description
+
+### Pull Request Process
+
+1. Update the README.md with details of changes if needed
+2. Ensure all tests pass
+3. Get approval from at least one maintainer
+4. Squash commits before merging if requested
 
 ### Code Style Guidelines
 
 - **Python**: Follow PEP 8, use type hints
 - **JavaScript/TypeScript**: Follow Airbnb style guide
-- **Commits**: Use conventional commit messages (feat:, fix:, docs:, etc.)
+- **Commits**: Use conventional commits format
 - **Testing**: Write unit tests for new features
 
 ### Areas Where We Need Help
@@ -180,18 +232,21 @@ We welcome contributions! Here's how you can help:
 ## API Documentation
 
 Once the backend is running, API documentation is available at:
+
 - Swagger UI: `http://localhost:8000/docs`
 - ReDoc: `http://localhost:8000/redoc`
 
 ## Testing
 
 ### Backend Tests
+
 ```bash
 cd backend
 pytest
 ```
 
 ### Frontend Tests
+
 ```bash
 cd frontend
 npm test
@@ -200,18 +255,21 @@ npm test
 ## Architecture Overview
 
 ### Backend Architecture
+
 - FastAPI handles HTTP requests and responses
 - SQLAlchemy ORM manages database interactions
 - Keycloak provides OAuth2/OIDC authentication
 - Ollama integration for AI-powered letter generation
 
 ### Frontend Architecture
+
 - Next.js for server-side rendering and routing
 - React for component-based UI
 - State management with React Context/Redux
 - API calls through axios/fetch
 
 ### Database Schema
+
 - Users: Authentication and profile information
 - Letters: Letter content, metadata, and threading
 - Conversations: Groups letters into threads
@@ -233,6 +291,12 @@ npm test
 - Verify backend is running on correct port
 - Check CORS configuration in backend
 
+**ISO build fails**
+- Ensure you have root/sudo access
+- Check available disk space (need ~10GB)
+- Verify all dependencies are installed
+- Try placing ISO manually in `isos/` folder
+
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
@@ -240,6 +304,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## Questions or Need Help?
 
 Feel free to:
+
 - Open an issue for bugs or feature requests
 - Start a discussion for general questions
 - Contact the maintainers directly
