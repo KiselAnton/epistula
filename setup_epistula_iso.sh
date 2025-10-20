@@ -163,21 +163,25 @@ mount --bind /dev "$CUSTOM_SQUASHFS/dev"
 mount --bind /proc "$CUSTOM_SQUASHFS/proc"
 mount --bind /sys "$CUSTOM_SQUASHFS/sys"
 
+log 'Ensuring $CUSTOM_SQUASHFS/tmp exists for chroot installation script...'
+mkdir -p "$CUSTOM_SQUASHFS/tmp" || error_exit "Failed to create chroot tmp directory"
+
+log "Verifying chroot tmp directory exists..."
+if [ ! -d "$CUSTOM_SQUASHFS/tmp" ]; then
+    error_exit "Failed to create chroot tmp directory: $CUSTOM_SQUASHFS/tmp"
+fi
+
 log "Installing epistula in chroot..."
 cat << 'CHROOT_SCRIPT' > "$CUSTOM_SQUASHFS/tmp/install_epistula.sh"
 #!/bin/bash
 set -euo pipefail
-
 apt-get update
 apt-get install -y git
-
 if [ -d "/opt/epistula" ]; then
   rm -rf /opt/epistula
 fi
-
 git clone https://github.com/KiselAnton/epistula.git /opt/epistula
 cd /opt/epistula
-
 if [ -f "setup.sh" ]; then
   bash setup.sh
 else
@@ -191,7 +195,6 @@ chroot "$CUSTOM_SQUASHFS" /tmp/install_epistula.sh || error_exit "Failed to inst
 log "Cleaning up chroot..."
 rm -f "$CUSTOM_SQUASHFS/tmp/install_epistula.sh"
 rm -f "$CUSTOM_SQUASHFS/etc/resolv.conf"
-
 umount "$CUSTOM_SQUASHFS/dev" || true
 umount "$CUSTOM_SQUASHFS/proc" || true
 umount "$CUSTOM_SQUASHFS/sys" || true
