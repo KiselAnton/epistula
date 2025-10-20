@@ -1,8 +1,6 @@
 #!/usr/bin/env bash
-
 # ISO Customization Script for Epistula
 # This script modifies an Ubuntu ISO to include Epistula software
-
 set -euo pipefail
 
 # Color codes for output
@@ -53,8 +51,8 @@ check_dependencies() {
 }
 
 usage() {
-    echo "Usage: $0 <input_iso> [output_iso]"
-    echo "  input_iso:  Path to the original Ubuntu ISO file"
+    echo "Usage: $0 [input_iso] [output_iso]"
+    echo "  input_iso:  Path to the original Ubuntu ISO file (optional, auto-detects from ./isos)"
     echo "  output_iso: Path for the modified ISO (optional, defaults to epistula_ubuntu.iso)"
     exit 1
 }
@@ -65,12 +63,31 @@ if [ "$EUID" -ne 0 ]; then
 fi
 
 # Parse command line arguments
-if [ $# -lt 1 ] || [ $# -gt 2 ]; then
+if [ $# -gt 2 ]; then
     usage
 fi
 
-ORIGINAL_ISO="$1"
-NEW_ISO="${2:-epistula_ubuntu.iso}"
+if [ $# -eq 0 ]; then
+    # Auto-detect most recent ISO in ./isos
+    if [ ! -d "./isos" ]; then
+        error_exit "./isos directory not found and no ISO specified"
+    fi
+    
+    ORIGINAL_ISO=$(ls -t ./isos/*.iso 2>/dev/null | head -n 1)
+    
+    if [ -z "$ORIGINAL_ISO" ]; then
+        error_exit "No ISO files found in ./isos directory"
+    fi
+    
+    log "${YELLOW}WARNING: No ISO specified, auto-detected: $ORIGINAL_ISO${NC}"
+    NEW_ISO="epistula_ubuntu.iso"
+elif [ $# -eq 1 ]; then
+    ORIGINAL_ISO="$1"
+    NEW_ISO="epistula_ubuntu.iso"
+else
+    ORIGINAL_ISO="$1"
+    NEW_ISO="$2"
+fi
 
 # Validate input ISO
 if [ ! -f "$ORIGINAL_ISO" ]; then
@@ -120,6 +137,7 @@ umount "$MOUNT_DIR" || error_exit "Failed to unmount ISO"
 
 log "Detecting squashfs file..."
 SQUASHFS_FILE=$(detect_squashfs "$EXTRACT_DIR/casper")
+
 log "Extracting squashfs: $SQUASHFS_FILE"
 unsquashfs -d "$CUSTOM_SQUASHFS" "$SQUASHFS_FILE" || error_exit "Failed to extract squashfs"
 
@@ -135,13 +153,18 @@ log "Installing epistula in chroot..."
 cat << 'CHROOT_SCRIPT' > "$CUSTOM_SQUASHFS/tmp/install_epistula.sh"
 #!/bin/bash
 set -euo pipefail
+
 apt-get update
 apt-get install -y git
+
 if [ -d "/opt/epistula" ]; then
   rm -rf /opt/epistula
 fi
+
 git clone https://github.com/KiselAnton/epistula.git /opt/epistula
+
 cd /opt/epistula
+
 if [ -f "setup.sh" ]; then
   bash setup.sh
 else
