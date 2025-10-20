@@ -144,7 +144,21 @@ unsquashfs -d "$CUSTOM_SQUASHFS" "$SQUASHFS_FILE" || error_exit "Failed to extra
 log "Preparing chroot environment..."
 cp /etc/resolv.conf "$CUSTOM_SQUASHFS/etc/resolv.conf" || error_exit "Failed to copy resolv.conf"
 
-log "Cloning epistula repository..."
+log "Creating chroot mount point directories..."
+mkdir -p "$CUSTOM_SQUASHFS/dev" "$CUSTOM_SQUASHFS/proc" "$CUSTOM_SQUASHFS/sys"
+
+log "Verifying chroot mount point directories exist..."
+if [ ! -d "$CUSTOM_SQUASHFS/dev" ]; then
+    error_exit "Failed to create chroot mount point directory: $CUSTOM_SQUASHFS/dev"
+fi
+if [ ! -d "$CUSTOM_SQUASHFS/proc" ]; then
+    error_exit "Failed to create chroot mount point directory: $CUSTOM_SQUASHFS/proc"
+fi
+if [ ! -d "$CUSTOM_SQUASHFS/sys" ]; then
+    error_exit "Failed to create chroot mount point directory: $CUSTOM_SQUASHFS/sys"
+fi
+
+log "Mounting chroot filesystems..."
 mount --bind /dev "$CUSTOM_SQUASHFS/dev"
 mount --bind /proc "$CUSTOM_SQUASHFS/proc"
 mount --bind /sys "$CUSTOM_SQUASHFS/sys"
@@ -162,7 +176,6 @@ if [ -d "/opt/epistula" ]; then
 fi
 
 git clone https://github.com/KiselAnton/epistula.git /opt/epistula
-
 cd /opt/epistula
 
 if [ -f "setup.sh" ]; then
@@ -178,6 +191,7 @@ chroot "$CUSTOM_SQUASHFS" /tmp/install_epistula.sh || error_exit "Failed to inst
 log "Cleaning up chroot..."
 rm -f "$CUSTOM_SQUASHFS/tmp/install_epistula.sh"
 rm -f "$CUSTOM_SQUASHFS/etc/resolv.conf"
+
 umount "$CUSTOM_SQUASHFS/dev" || true
 umount "$CUSTOM_SQUASHFS/proc" || true
 umount "$CUSTOM_SQUASHFS/sys" || true
