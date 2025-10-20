@@ -1,7 +1,125 @@
 #!/usr/bin/env bash
-log "Detecting squashfs file..."
-SQUASHFS_FILE=$(detect_squashfs "$MOUNT_DIR/casper")
 
+# ISO Customization Script for Epistula
+# This script modifies an Ubuntu ISO to include Epistula software
+
+set -euo pipefail
+
+# Color codes for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m' # No Color
+
+# Essential function definitions
+log() {
+    echo -e "${BLUE}[$(date +'%Y-%m-%d %H:%M:%S')]${NC} $1"
+}
+
+error_exit() {
+    echo -e "${RED}[ERROR]${NC} $1" >&2
+    exit 1
+}
+
+detect_squashfs() {
+    local casper_dir="$1"
+    
+    # Look for filesystem.squashfs first (standard Ubuntu)
+    if [ -f "$casper_dir/filesystem.squashfs" ]; then
+        echo "$casper_dir/filesystem.squashfs"
+        return 0
+    fi
+    
+    # Look for other common squashfs files
+    for squash_file in "$casper_dir"/*.squashfs; do
+        if [ -f "$squash_file" ]; then
+            echo "$squash_file"
+            return 0
+        fi
+    done
+    
+    error_exit "No squashfs file found in $casper_dir"
+}
+
+check_dependencies() {
+    local deps=("unsquashfs" "mksquashfs" "xorriso" "mount" "umount")
+    
+    for dep in "${deps[@]}"; do
+        if ! command -v "$dep" &> /dev/null; then
+            error_exit "Required dependency '$dep' not found. Please install squashfs-tools and xorriso."
+        fi
+    done
+}
+
+usage() {
+    echo "Usage: $0 <input_iso> [output_iso]"
+    echo "  input_iso:  Path to the original Ubuntu ISO file"
+    echo "  output_iso: Path for the modified ISO (optional, defaults to epistula_ubuntu.iso)"
+    exit 1
+}
+
+# Check if running as root
+if [ "$EUID" -ne 0 ]; then
+    error_exit "This script must be run as root (use sudo)"
+fi
+
+# Parse command line arguments
+if [ $# -lt 1 ] || [ $# -gt 2 ]; then
+    usage
+fi
+
+ORIGINAL_ISO="$1"
+NEW_ISO="${2:-epistula_ubuntu.iso}"
+
+# Validate input ISO
+if [ ! -f "$ORIGINAL_ISO" ]; then
+    error_exit "Input ISO file '$ORIGINAL_ISO' does not exist"
+fi
+
+# Check dependencies
+check_dependencies
+
+# Setup working directories
+WORK_DIR="/tmp/epistula_iso_work_$$"
+MOUNT_DIR="$WORK_DIR/mount"
+EXTRACT_DIR="$WORK_DIR/extract"
+CUSTOM_SQUASHFS="$WORK_DIR/custom_squashfs"
+
+# Create working directories
+mkdir -p "$MOUNT_DIR" "$EXTRACT_DIR" "$CUSTOM_SQUASHFS"
+
+# Cleanup function
+cleanup() {
+    log "Performing cleanup..."
+    umount "$MOUNT_DIR" 2>/dev/null || true
+    umount "$CUSTOM_SQUASHFS/dev" 2>/dev/null || true
+    umount "$CUSTOM_SQUASHFS/proc" 2>/dev/null || true
+    umount "$CUSTOM_SQUASHFS/sys" 2>/dev/null || true
+    rm -rf "$WORK_DIR" 2>/dev/null || true
+}
+
+# Set trap for cleanup on exit
+trap cleanup EXIT INT TERM
+
+log "Starting ISO customization process..."
+log "Input ISO: $ORIGINAL_ISO"
+log "Output ISO: $NEW_ISO"
+
+# Mount the original ISO
+log "Mounting original ISO..."
+mount -o loop "$ORIGINAL_ISO" "$MOUNT_DIR" || error_exit "Failed to mount ISO"
+
+# Extract ISO contents
+log "Extracting ISO contents..."
+cp -a "$MOUNT_DIR/." "$EXTRACT_DIR/" || error_exit "Failed to extract ISO contents"
+
+# Unmount the original ISO
+log "Unmounting original ISO..."
+umount "$MOUNT_DIR" || error_exit "Failed to unmount ISO"
+
+log "Detecting squashfs file..."
+SQUASHFS_FILE=$(detect_squashfs "$EXTRACT_DIR/casper")
 log "Extracting squashfs: $SQUASHFS_FILE"
 unsquashfs -d "$CUSTOM_SQUASHFS" "$SQUASHFS_FILE" || error_exit "Failed to extract squashfs"
 
