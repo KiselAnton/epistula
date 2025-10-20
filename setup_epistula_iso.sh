@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-
 set -euo pipefail
 
 REPO_URL="https://github.com/KiselAnton/epistula.git"
@@ -23,44 +22,49 @@ check_root() {
 }
 
 detect_squashfs() {
-  local casper_dir="$1"
+  local casper_dir="${1:-}"
   local squashfs_file=""
-
+  
   log "Detecting squashfs file in ${casper_dir}..."
-
+  
   # Priority 1: minimal.enhanced-secureboot.en.squashfs (desktop ISO with secure boot)
   if [ -f "${casper_dir}/minimal.enhanced-secureboot.en.squashfs" ]; then
     squashfs_file="${casper_dir}/minimal.enhanced-secureboot.en.squashfs"
     log "Found: minimal.enhanced-secureboot.en.squashfs (desktop ISO with secure boot)"
-
   # Priority 2: minimal.en.squashfs (standard desktop ISO)
   elif [ -f "${casper_dir}/minimal.en.squashfs" ]; then
     squashfs_file="${casper_dir}/minimal.en.squashfs"
     log "Found: minimal.en.squashfs (standard desktop ISO)"
-
   # Priority 3: any minimal.*.squashfs (other desktop ISO variants)
-  elif compgen -G "${casper_dir}/minimal.*.squashfs" > /dev/null; then
-    squashfs_file="$(ls -1 ${casper_dir}/minimal.*.squashfs | head -n1)"
-    log "Found: $(basename "$squashfs_file") (desktop ISO variant)"
-
+  else
+    for f in "${casper_dir}"/minimal.*.squashfs; do
+      [ -e "$f" ] || continue
+      squashfs_file="$f"
+      log "Found: $(basename "$squashfs_file") (desktop ISO variant)"
+      break
+    done
+  fi
+  
   # Priority 4: filesystem.squashfs (fallback for server ISO)
-  elif [ -f "${casper_dir}/filesystem.squashfs" ]; then
+  if [ -z "${squashfs_file}" ] && [ -f "${casper_dir}/filesystem.squashfs" ]; then
     squashfs_file="${casper_dir}/filesystem.squashfs"
     log "Found: filesystem.squashfs (server ISO)"
-
-  else
+  fi
+  
+  # Check if we found anything
+  if [ -z "${squashfs_file}" ]; then
     error_exit "No suitable squashfs file found in ${casper_dir}"
   fi
-
+  
   # Verify file is readable and non-empty
   if [ ! -r "$squashfs_file" ]; then
     error_exit "Squashfs file not readable: $squashfs_file"
   fi
-
+  
   if [ ! -s "$squashfs_file" ]; then
     error_exit "Squashfs file is empty: $squashfs_file"
   fi
-
+  
   log "Selected squashfs file: $squashfs_file"
   echo "$squashfs_file"
 }
@@ -69,7 +73,7 @@ check_root
 
 ISO_PATH="$1"
 if [ -z "${ISO_PATH:-}" ]; then
-  error_exit "Usage: $0 <path_to_ubuntu_iso>"
+  error_exit "Usage: $0 <path-to-ubuntu-iso>"
 fi
 
 if [ ! -f "$ISO_PATH" ]; then
@@ -77,99 +81,109 @@ if [ ! -f "$ISO_PATH" ]; then
 fi
 
 MOUNT_DIR="/mnt/ubuntu_iso"
-FILESYSTEM_DIR="/tmp/ubuntu_filesystem"
+EXTRACT_DIR="/tmp/ubuntu_extract"
+SQUASHFS_MOUNT="/mnt/squashfs"
+CUSTOM_SQUASHFS="/tmp/custom_squashfs"
+NEW_ISO="/tmp/epistula_ubuntu.iso"
 
-log "Mounting ISO: $ISO_PATH"
-mkdir -p "$MOUNT_DIR"
+log "Cleaning up any previous mounts and directories..."
+umount "$MOUNT_DIR" 2>/dev/null || true
+umount "$SQUASHFS_MOUNT" 2>/dev/null || true
+rm -rf "$MOUNT_DIR" "$EXTRACT_DIR" "$SQUASHFS_MOUNT" "$CUSTOM_SQUASHFS" "$NEW_ISO"
+
+log "Creating mount points and extraction directories..."
+mkdir -p "$MOUNT_DIR" "$EXTRACT_DIR" "$SQUASHFS_MOUNT" "$CUSTOM_SQUASHFS"
+
+log "Mounting ISO..."
 mount -o loop "$ISO_PATH" "$MOUNT_DIR" || error_exit "Failed to mount ISO"
 
-trap 'umount "$MOUNT_DIR" 2>/dev/null || true; rmdir "$MOUNT_DIR" 2>/dev/null || true' EXIT
+log "Copying ISO contents to extraction directory..."
+rsync -a --exclude=casper/filesystem.squashfs --exclude=casper/minimal.*.squashfs "$MOUNT_DIR/" "$EXTRACT_DIR/" || error_exit "Failed to copy ISO contents"
 
-log "Detecting and extracting squashfs filesystem..."
-mkdir -p "$FILESYSTEM_DIR"
+log "Detecting squashfs file..."
+SQUASHFS_FILE=$(detect_squashfs "$MOUNT_DIR/casper")
 
-# Detect the appropriate squashfs file
-SQUASHFS_FILE="$(detect_squashfs "${MOUNT_DIR}/casper")"
+log "Mounting squashfs: $SQUASHFS_FILE"
+mount -o loop "$SQUASHFS_FILE" "$SQUASHFS_MOUNT" || error_exit "Failed to mount squashfs"
 
-# Extract the detected squashfs file
-unsquashfs -f -d "${FILESYSTEM_DIR}" "${SQUASHFS_FILE}" || error_exit "Failed to extract squashfs"
+log "Copying squashfs contents..."
+rsync -a "$SQUASHFS_MOUNT/" "$CUSTOM_SQUASHFS/" || error_exit "Failed to copy squashfs contents"
 
-umount "$MOUNT_DIR"
-rmdir "$MOUNT_DIR"
-
-trap '' EXIT
+log "Unmounting squashfs..."
+umount "$SQUASHFS_MOUNT" || error_exit "Failed to unmount squashfs"
 
 log "Preparing chroot environment..."
-mount --bind /dev "${FILESYSTEM_DIR}/dev"
-mount --bind /proc "${FILESYSTEM_DIR}/proc"
-mount --bind /sys "${FILESYSTEM_DIR}/sys"
+cp /etc/resolv.conf "$CUSTOM_SQUASHFS/etc/resolv.conf" || error_exit "Failed to copy resolv.conf"
 
-trap 'umount "${FILESYSTEM_DIR}/dev" 2>/dev/null || true; umount "${FILESYSTEM_DIR}/proc" 2>/dev/null || true; umount "${FILESYSTEM_DIR}/sys" 2>/dev/null || true; rm -rf "$FILESYSTEM_DIR" 2>/dev/null || true' EXIT
+log "Cloning epistula repository..."
+mount --bind /dev "$CUSTOM_SQUASHFS/dev"
+mount --bind /proc "$CUSTOM_SQUASHFS/proc"
+mount --bind /sys "$CUSTOM_SQUASHFS/sys"
 
-log "Cloning Epistula repository..."
-rm -rf "$CLONE_DIR"
-mkdir -p "$CLONE_DIR"
-git clone --branch "$BRANCH" "$REPO_URL" "$CLONE_DIR" || error_exit "Failed to clone repository"
-
-log "Copying repository into chroot..."
-mkdir -p "${FILESYSTEM_DIR}${REPO_DIR}"
-cp -r "${CLONE_DIR}"/* "${FILESYSTEM_DIR}${REPO_DIR}/"
-rm -rf "$CLONE_DIR"
-
-log "Installing Epistula in chroot..."
-cat > "${FILESYSTEM_DIR}/tmp/install_epistula.sh" << 'EOFINSTALL'
-#!/usr/bin/env bash
+log "Installing epistula in chroot..."
+cat << 'CHROOT_SCRIPT' > "$CUSTOM_SQUASHFS/tmp/install_epistula.sh"
+#!/bin/bash
 set -euo pipefail
 
-export DEBIAN_FRONTEND=noninteractive
 apt-get update
-apt-get install -y python3 python3-pip docker.io docker-compose
+apt-get install -y git
 
-systemctl enable docker
+if [ -d "/opt/epistula" ]; then
+  rm -rf /opt/epistula
+fi
 
-cd /opt/epistula/epistula
-docker-compose build
+git clone https://github.com/KiselAnton/epistula.git /opt/epistula
+cd /opt/epistula
 
-cat > /etc/systemd/system/epistula.service << 'EOFSERVICE'
-[Unit]
-Description=Epistula Email Service
-Requires=docker.service
-After=docker.service
+if [ -f "setup.sh" ]; then
+  bash setup.sh
+else
+  echo "WARNING: setup.sh not found, skipping setup"
+fi
 
-[Service]
-Type=oneshot
-RemainAfterExit=yes
-WorkingDirectory=/opt/epistula/epistula
-ExecStart=/usr/bin/docker-compose up -d
-ExecStop=/usr/bin/docker-compose down
+CHROOT_SCRIPT
 
-[Install]
-WantedBy=multi-user.target
-EOFSERVICE
+chmod +x "$CUSTOM_SQUASHFS/tmp/install_epistula.sh"
+chroot "$CUSTOM_SQUASHFS" /tmp/install_epistula.sh || error_exit "Failed to install epistula in chroot"
 
-systemctl enable epistula.service
+log "Cleaning up chroot..."
+rm -f "$CUSTOM_SQUASHFS/tmp/install_epistula.sh"
+rm -f "$CUSTOM_SQUASHFS/etc/resolv.conf"
 
-echo "Epistula installation complete"
-EOFINSTALL
-
-chmod +x "${FILESYSTEM_DIR}/tmp/install_epistula.sh"
-chroot "$FILESYSTEM_DIR" /tmp/install_epistula.sh || error_exit "Failed to install Epistula"
-
-log "Cleaning up..."
-rm "${FILESYSTEM_DIR}/tmp/install_epistula.sh"
-
-umount "${FILESYSTEM_DIR}/dev"
-umount "${FILESYSTEM_DIR}/proc"
-umount "${FILESYSTEM_DIR}/sys"
-
-trap '' EXIT
+umount "$CUSTOM_SQUASHFS/dev" || true
+umount "$CUSTOM_SQUASHFS/proc" || true
+umount "$CUSTOM_SQUASHFS/sys" || true
 
 log "Creating new squashfs..."
-NEW_SQUASHFS="/tmp/new_filesystem.squashfs"
-mksquashfs "$FILESYSTEM_DIR" "$NEW_SQUASHFS" -noappend -comp xz || error_exit "Failed to create new squashfs"
+NEW_SQUASHFS="$EXTRACT_DIR/casper/$(basename "$SQUASHFS_FILE")"
+mksquashfs "$CUSTOM_SQUASHFS" "$NEW_SQUASHFS" -comp xz -b 1M || error_exit "Failed to create new squashfs"
 
-log "Cleaning up filesystem directory..."
-rm -rf "$FILESYSTEM_DIR"
+log "Updating manifest and size files..."
+chroot "$CUSTOM_SQUASHFS" dpkg-query -W --showformat='${Package} ${Version}\n' > "$EXTRACT_DIR/casper/filesystem.manifest" 2>/dev/null || true
+printf $(du -sx --block-size=1 "$CUSTOM_SQUASHFS" | cut -f1) > "$EXTRACT_DIR/casper/filesystem.size"
 
-log "Setup complete. New squashfs: $NEW_SQUASHFS"
-log "You can now replace the original squashfs in your ISO with this file."
+log "Calculating MD5 checksums..."
+cd "$EXTRACT_DIR"
+find . -type f -print0 | xargs -0 md5sum | grep -v "./md5sum.txt" > md5sum.txt
+
+log "Creating new ISO..."
+xorriso -as mkisofs \
+  -r -V "Epistula Ubuntu" \
+  -o "$NEW_ISO" \
+  -J -l -b isolinux/isolinux.bin \
+  -c isolinux/boot.cat \
+  -no-emul-boot \
+  -boot-load-size 4 \
+  -boot-info-table \
+  -eltorito-alt-boot \
+  -e boot/grub/efi.img \
+  -no-emul-boot \
+  -isohybrid-gpt-basdat \
+  "$EXTRACT_DIR" || error_exit "Failed to create ISO"
+
+log "Cleaning up..."
+umount "$MOUNT_DIR" || true
+rm -rf "$MOUNT_DIR" "$EXTRACT_DIR" "$SQUASHFS_MOUNT" "$CUSTOM_SQUASHFS"
+
+log "SUCCESS: New ISO created at $NEW_ISO"
+log "You can now burn this ISO to a USB drive or CD"
