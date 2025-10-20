@@ -1,3 +1,12 @@
+/**
+ * Login page component for Epistula ISO.
+ *
+ * Provides user authentication interface with username/password login.
+ * Handles API authentication, token storage, and redirects on success.
+ *
+ * @returns {JSX.Element} The login page.
+ */
+
 import { useState, FormEvent } from 'react';
 import Head from 'next/head';
 import styles from '../styles/Login.module.css';
@@ -8,6 +17,14 @@ export default function Login() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
+  /**
+   * Handle login form submission.
+   *
+   * Sends credentials to backend API, stores auth token on success,
+   * and redirects to dashboard.
+   *
+   * @param {FormEvent} e - The form submission event.
+   */
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError('');
@@ -49,12 +66,10 @@ export default function Login() {
         <title>Epistula - Login</title>
         <meta name="description" content="Epistula Login Page" />
       </Head>
-
       <div className={styles.container}>
         <div className={styles.loginBox}>
           <h1 className={styles.title}>Epistula</h1>
           <p className={styles.subtitle}>Welcome back</p>
-
           <form onSubmit={handleSubmit} className={styles.form}>
             <div className={styles.formGroup}>
               <label htmlFor="username" className={styles.label}>
@@ -70,7 +85,6 @@ export default function Login() {
                 autoFocus
               />
             </div>
-
             <div className={styles.formGroup}>
               <label htmlFor="password" className={styles.label}>
                 Password
@@ -84,13 +98,11 @@ export default function Login() {
                 required
               />
             </div>
-
             {error && (
               <div className={styles.error}>
                 {error}
               </div>
             )}
-
             <button
               type="submit"
               className={styles.button}
@@ -99,9 +111,8 @@ export default function Login() {
               {loading ? 'Logging in...' : 'Login'}
             </button>
           </form>
-
           <p className={styles.info}>
-            First login? Use username: <strong>Administrator</strong> with your server password.
+            First login? Use username: Administrator with your server password.
           </p>
         </div>
       </div>
