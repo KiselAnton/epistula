@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+MN#!/usr/bin/env bash
 set -euo pipefail
 
 REPO_URL="https://github.com/KiselAnton/epistula.git"
@@ -71,9 +71,25 @@ detect_squashfs() {
 
 check_root
 
-ISO_PATH="$1"
-if [ -z "${ISO_PATH:-}" ]; then
-  error_exit "Usage: $0 <path-to-ubuntu-iso>"
+# Auto-detect ISO if no argument provided
+if [ $# -eq 0 ]; then
+  log "No ISO path provided, attempting to auto-detect from ./isos/"
+  
+  # Check if ./isos/ directory exists
+  if [ ! -d "./isos" ]; then
+    error_exit "No ISO path provided and ./isos/ directory does not exist"
+  fi
+  
+  # Find most recent .iso file
+  ISO_PATH=$(find ./isos -maxdepth 1 -type f -name '*.iso' -printf '%T@ %p\n' 2>/dev/null | sort -rn | head -1 | cut -d' ' -f2-)
+  
+  if [ -z "${ISO_PATH}" ]; then
+    error_exit "No ISO files found in ./isos/ directory"
+  fi
+  
+  log "WARNING: Auto-detected ISO: $ISO_PATH"
+else
+  ISO_PATH="$1"
 fi
 
 if [ ! -f "$ISO_PATH" ]; then
@@ -124,23 +140,18 @@ log "Installing epistula in chroot..."
 cat << 'CHROOT_SCRIPT' > "$CUSTOM_SQUASHFS/tmp/install_epistula.sh"
 #!/bin/bash
 set -euo pipefail
-
 apt-get update
 apt-get install -y git
-
 if [ -d "/opt/epistula" ]; then
   rm -rf /opt/epistula
 fi
-
 git clone https://github.com/KiselAnton/epistula.git /opt/epistula
 cd /opt/epistula
-
 if [ -f "setup.sh" ]; then
   bash setup.sh
 else
   echo "WARNING: setup.sh not found, skipping setup"
 fi
-
 CHROOT_SCRIPT
 
 chmod +x "$CUSTOM_SQUASHFS/tmp/install_epistula.sh"
@@ -149,7 +160,6 @@ chroot "$CUSTOM_SQUASHFS" /tmp/install_epistula.sh || error_exit "Failed to inst
 log "Cleaning up chroot..."
 rm -f "$CUSTOM_SQUASHFS/tmp/install_epistula.sh"
 rm -f "$CUSTOM_SQUASHFS/etc/resolv.conf"
-
 umount "$CUSTOM_SQUASHFS/dev" || true
 umount "$CUSTOM_SQUASHFS/proc" || true
 umount "$CUSTOM_SQUASHFS/sys" || true
