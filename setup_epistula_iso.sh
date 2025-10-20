@@ -137,6 +137,21 @@ log "Mounting chroot filesystems..."
 mount --bind /dev "$CUSTOM_SQUASHFS/dev"
 mount --bind /proc "$CUSTOM_SQUASHFS/proc"
 mount --bind /sys "$CUSTOM_SQUASHFS/sys"
+
+log "Checking if bash exists in chroot environment..."
+if [ ! -f "$CUSTOM_SQUASHFS/bin/bash" ] && [ ! -f "$CUSTOM_SQUASHFS/usr/bin/bash" ]; then
+    log "${YELLOW}WARNING: bash not found in chroot, copying from host system...${NC}"
+    if [ -f "/bin/bash" ]; then
+        log "Copying /bin/bash to chroot..."
+        cp -v /bin/bash "$CUSTOM_SQUASHFS/bin/bash" || error_exit "Failed to copy bash to chroot"
+        log "${GREEN}Successfully copied bash to chroot environment${NC}"
+    else
+        error_exit "bash not found in host system at /bin/bash"
+    fi
+else
+    log "${GREEN}bash interpreter found in chroot environment${NC}"
+fi
+
 log 'Ensuring $CUSTOM_SQUASHFS/tmp exists for chroot installation script...'
 mkdir -p "$CUSTOM_SQUASHFS/tmp" || error_exit "Failed to create chroot tmp directory"
 log "Verifying chroot tmp directory exists..."
