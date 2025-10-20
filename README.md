@@ -62,145 +62,34 @@ epistula/
    createdb epistula
    
    # Run migrations
-   alembic upgrade head
+   python manage.py migrate
    ```
 
 4. **Frontend Setup**
    ```bash
-   cd frontend
+   cd ../frontend
    npm install
+   npm run dev
    ```
 
-5. **Start Development Services**
+5. **Start Backend**
    ```bash
-   # Run all services with docker-compose
-   docker-compose up -d
-   
-   # Or run individual services
-   # Backend
-   cd backend && uvicorn main:app --reload
-   
-   # Frontend
-   cd frontend && npm run dev
+   cd ../backend
+   uvicorn main:app --reload
    ```
 
-## ISO Creation (For Deployment)
+## ISO Management
 
-> **Note**: As of October 2024, the ISO builder has been updated to use **Ubuntu 24.04 LTS** (Noble Numbat) instead of Ubuntu 22.04. All references and scripts have been updated accordingly.
+The `isos/` directory is designed to hold Ubuntu Desktop ISO files for classroom setups:
 
-Epistula includes a script to build a custom Ubuntu ISO with all dependencies pre-installed.
+- **Current version**: Ubuntu 24.04.3 Desktop (updated from 22.04)
+- **Purpose**: Allows professors to create bootable USB drives for student computers
+- **Size**: ~5.8 GB
+- **Download URL**: https://releases.ubuntu.com/24.04.3/ubuntu-24.04.3-desktop-amd64.iso
 
-### Quick Start
+Place the ISO file in the `isos/` directory to skip automatic downloads during setup.
 
-The simplest way to build the ISO:
-
-```bash
-sudo ./setup_epistula_iso.sh
-```
-
-This will:
-1. Check/install dependencies
-2. Download Ubuntu 24.04 LTS ISO (if not already present)
-3. Customize the ISO with Docker and Epistula
-4. Create `epistula-ubuntu.iso`
-
-### Optimizing ISO Builds
-
-The script supports caching ISOs to speed up repeated builds:
-
-**Option 1: Download to `isos/` folder**
-```bash
-mkdir -p isos
-wget https://releases.ubuntu.com/24.04/ubuntu-24.04-live-server-amd64.iso -P isos/
-```
-
-**Option 2: Copy existing ISO**
-```bash
-mkdir -p isos
-cp /path/to/ubuntu-24.04-live-server-amd64.iso isos/
-```
-
-After this, the script will use the cached ISO instead of downloading it.
-
-### What the ISO Contains
-
-The custom ISO includes:
-
-- Ubuntu 24.04 LTS base system
-- Docker Engine & Docker Compose
-- Epistula repository cloned to `/opt/epistula`
-- Systemd service for auto-starting Epistula
-- All necessary dependencies
-
-### Using the Custom ISO
-
-1. Boot from the ISO (USB/VM/Physical)
-2. Complete Ubuntu installation
-3. Epistula will automatically:
-   - Start on system boot
-   - Be accessible at `http://localhost:8000`
-   - Have all services pre-configured
-
-### Build Process Details
-
-The script performs the following steps:
-
-1. **Dependency Check**: Installs `wget`, `xorriso`, `squashfs-tools`, `git`
-2. **ISO Download**: Gets Ubuntu 24.04 LTS (if not cached)
-3. **ISO Extraction**: Mounts and extracts base ISO
-4. **Customization**: 
-   - Installs Docker & Docker Compose
-   - Clones Epistula repo
-   - Creates systemd service
-5. **ISO Rebuild**: Repackages as new bootable ISO
-
-### Quick Build Workflow
-
-For contributors doing frequent builds:
-
-```bash
-# First time setup
-mkdir -p isos
-wget -P isos https://releases.ubuntu.com/24.04/ubuntu-24.04-live-server-amd64.iso
-
-# Build ISO (uses cached ISO)
-sudo ./setup_epistula_iso.sh
-
-# Test in VM
-qemu-system-x86_64 -cdrom epistula-ubuntu.iso -m 4G -enable-kvm
-```
-
-## Contributing
-
-We welcome contributions! Here's how to get started:
-
-1. **Fork the Repository**
-2. **Create a Feature Branch**: `git checkout -b feature/amazing-feature`
-3. **Make Your Changes**
-4. **Run Tests**: Ensure all tests pass
-5. **Commit**: `git commit -m 'Add amazing feature'`
-6. **Push**: `git push origin feature/amazing-feature`
-7. **Open a Pull Request**
-
-### Code Style
-
-- **Python**: Follow PEP 8
-- **JavaScript/React**: Follow ESLint configuration
-- **Commits**: Use conventional commits format
-
-### Testing
-
-```bash
-# Backend tests
-cd backend
-pytest
-
-# Frontend tests
-cd frontend
-npm test
-```
-
-## Architecture Overview
+## Features
 
 ### Backend (FastAPI)
 
@@ -234,8 +123,75 @@ docker-compose -f docker-compose.prod.yml up -d
 ### Manual Deployment
 
 See individual service READMEs:
+
 - [Backend Deployment](backend/README.md)
 - [Frontend Deployment](frontend/README.md)
+
+## Update Workflow for Admins
+
+After initial installation, admins can update the Epistula application to get the latest features and bug fixes using the automated update script.
+
+### Automated Update (Recommended)
+
+1. **Navigate to repository directory**
+   ```bash
+   cd /path/to/epistula
+   ```
+
+2. **Run the update script**
+   ```bash
+   sudo ./update_epistula.sh
+   ```
+
+The update script will:
+- Pull the latest code from the repository
+- Check and restart backend services if running
+- Rebuild Docker containers if present
+- Display the new version number
+
+### Manual Update Process
+
+If you prefer to update manually:
+
+1. **Pull latest code**
+   ```bash
+   cd /path/to/epistula
+   git pull origin master
+   ```
+
+2. **Update backend dependencies** (if changed)
+   ```bash
+   cd epistula/backend
+   pip install -r requirements.txt
+   ```
+
+3. **Restart services**
+   ```bash
+   # For systemd services
+   sudo systemctl restart epistula-backend
+   
+   # For Docker
+   docker-compose down
+   docker-compose up -d --build
+   ```
+
+4. **Verify the update**
+   ```bash
+   # Check health endpoint
+   curl http://localhost:8000/health
+   
+   # Check version
+   curl http://localhost:8000/version
+   ```
+
+### Version Information
+
+The current version is stored in `epistula/backend/VERSION` file. The backend API exposes this via the `/version` endpoint:
+
+```bash
+curl http://localhost:8000/version
+# Returns: {"version": "0.1.0", "service": "Epistula ISO"}
+```
 
 ## License
 
@@ -244,6 +200,7 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 ## Support
 
 For questions and support:
+
 - Open an issue on GitHub
 - Check the [User Guide](USER_GUIDE.md)
 - Review existing documentation in `/docs`
