@@ -1,14 +1,12 @@
 #!/usr/bin/env python3
 """
 Epistula ISO Builder - Creates a custom Ubuntu ISO with Epistula preinstalled
-
 Usage:
     sudo python3 setup_epistula_iso.py <input_iso> [output_iso]
     
 Example:
     sudo python3 setup_epistula_iso.py ubuntu-24.04-desktop-amd64.iso epistula-ubuntu.iso
 """
-
 import os
 import sys
 import subprocess
@@ -29,6 +27,10 @@ def log(message, color=None):
         print(f"{color}{message}{Colors.NC}")
     else:
         print(message)
+
+def warn(message):
+    """Print a warning to stderr in yellow"""
+    sys.stderr.write(f"{Colors.YELLOW}WARNING: {message}{Colors.NC}\n")
 
 def error_exit(message):
     """Print error message and exit"""
@@ -108,20 +110,15 @@ def create_chroot_script():
     """Create the script that will run inside the chroot environment"""
     script = '''#!/bin/bash
 set -e
-
 # Update package lists
 apt-get update
-
 # Install required packages
 apt-get install -y git python3 python3-pip python3-venv
-
 # Clone epistula repository
 if [ -d "/opt/epistula" ]; then
     rm -rf /opt/epistula
 fi
-
 git clone https://github.com/KiselAnton/epistula.git /opt/epistula
-
 # Run epistula setup
 cd /opt/epistula
 if [ -f "setup.sh" ]; then
@@ -129,7 +126,6 @@ if [ -f "setup.sh" ]; then
 else
     echo "WARNING: setup.sh not found, skipping setup"
 fi
-
 # Create desktop shortcut
 mkdir -p /etc/skel/Desktop
 cat > /etc/skel/Desktop/epistula.desktop << 'EOF'
@@ -143,9 +139,7 @@ Icon=/opt/epistula/icon.png
 Terminal=false
 Categories=Network;Email;
 EOF
-
 chmod +x /etc/skel/Desktop/epistula.desktop
-
 # Clean up
 apt-get clean
 rm -rf /var/lib/apt/lists/*
@@ -269,18 +263,34 @@ def create_iso(extract_dir, output_iso):
     except subprocess.CalledProcessError:
         error_exit("Failed to create ISO file")
 
+def autodetect_iso(isos_dir: Path) -> Path:
+    """Find the most recent .iso file in the given directory."""
+    if not isos_dir.exists():
+        return None
+    iso_files = sorted(isos_dir.glob('*.iso'), key=lambda p: p.stat().st_mtime, reverse=True)
+    return iso_files[0] if iso_files else None
+
 def main():
     """Main function"""
-    # Parse arguments
+    # If no args, auto-detect input from ./isos and default output name
+    input_iso = None
+    output_iso = None
     if len(sys.argv) < 2:
-        print(__doc__)
-        sys.exit(1)
-    
-    input_iso = Path(sys.argv[1])
-    output_iso = Path(sys.argv[2]) if len(sys.argv) > 2 else Path('epistula-ubuntu.iso')
+        detected = autodetect_iso(Path('./isos'))
+        if detected is None:
+            # Fall back to old behavior and show usage when no ISO found
+            sys.stderr.write("No ISO provided and none found in ./isos.\n")
+            print(__doc__)
+            sys.exit(1)
+        warn(f"No arguments supplied. Auto-selected input ISO: {detected}")
+        input_iso = detected
+        output_iso = Path('epistula-ubuntu.iso')
+    else:
+        input_iso = Path(sys.argv[1])
+        output_iso = Path(sys.argv[2]) if len(sys.argv) > 2 else Path('epistula-ubuntu.iso')
     
     # Validate input
-    if not input_iso.exists():
+    if not Path(input_iso).exists():
         error_exit(f"Input ISO not found: {input_iso}")
     
     check_root()
