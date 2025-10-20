@@ -4,9 +4,9 @@
 set -e
 
 # Configuration
-UBUNTU_VERSION="24.04"
-ISO_URL="https://releases.ubuntu.com/${UBUNTU_VERSION}/ubuntu-${UBUNTU_VERSION}-live-server-amd64.iso"
-ISO_NAME="ubuntu-${UBUNTU_VERSION}-live-server-amd64.iso"
+UBUNTU_VERSION="24.04.3"
+ISO_URL="https://releases.ubuntu.com/noble/ubuntu-24.04.3-desktop-amd64.iso"
+ISO_NAME="ubuntu-24.04.3-desktop-amd64.iso"
 OUTPUT_ISO="epistula-ubuntu.iso"
 WORK_DIR="./iso_work"
 MOUNT_DIR="${WORK_DIR}/mnt"
@@ -47,7 +47,7 @@ if [ -f "${ISOS_DIR}/${ISO_NAME}" ]; then
 elif [ -f "${WORK_DIR}/${ISO_NAME}" ]; then
   echo "[3/7] Ubuntu ISO already in work directory, skipping..."
 else
-  echo "[3/7] Downloading Ubuntu ${UBUNTU_VERSION} LTS ISO..."
+  echo "[3/7] Downloading Ubuntu ${UBUNTU_VERSION} Desktop ISO (recommended for professors)..."
   echo "Tip: Place ISOs in the '${ISOS_DIR}' folder to skip downloading."
   wget -P "${WORK_DIR}" "${ISO_URL}"
 fi
@@ -69,9 +69,10 @@ unsquashfs -f -d "${FILESYSTEM_DIR}" "${MOUNT_DIR}/casper/filesystem.squashfs"
 # Unmount original ISO
 umount "${MOUNT_DIR}"
 
-# Chroot and install packages
-echo "[6/7] Installing Docker and Epistula..."
-# Bind necessary filesystems
+# Customize filesystem
+echo "[6/7] Customizing filesystem..."
+
+# Mount necessary filesystems for chroot
 mount --bind /dev "${FILESYSTEM_DIR}/dev"
 mount --bind /proc "${FILESYSTEM_DIR}/proc"
 mount --bind /sys "${FILESYSTEM_DIR}/sys"
@@ -81,24 +82,31 @@ cat > "${FILESYSTEM_DIR}/tmp/install.sh" << 'EOF'
 #!/bin/bash
 set -e
 
-# Update package list
+# Update package lists
 apt-get update
 
-# Install Docker
-apt-get install -y ca-certificates curl gnupg
-install -m 0755 -d /etc/apt/keyrings
+# Install dependencies
+apt-get install -y \
+  ca-certificates \
+  curl \
+  gnupg \
+  lsb-release
+
+# Add Docker's official GPG key
+mkdir -p /etc/apt/keyrings
 curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg
-chmod a+r /etc/apt/keyrings/docker.gpg
 
-echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null
+# Set up Docker repository
+echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null
 
+# Install Docker Engine
 apt-get update
 apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
 
 # Clone Epistula repository
+mkdir -p /opt
 cd /opt
 git clone https://github.com/KiselAnton/epistula.git
-chown -R 1000:1000 /opt/epistula
 
 # Create systemd service for Epistula
 cat > /etc/systemd/system/epistula.service << 'SERVICE'
