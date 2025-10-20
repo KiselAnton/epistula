@@ -5,12 +5,14 @@ and user management endpoints for the Epistula ISO application.
 """
 
 from datetime import datetime
-from typing import Dict, Optional
+from typing import Dict
+
 import hashlib
 import secrets
 
 from fastapi import APIRouter, HTTPException, status, Depends
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+
 from models import (
     UserCreate, UserLogin, UserUpdate, User, Student, Teacher, Admin,
     UserRole, TokenResponse, RolePermissions
@@ -116,6 +118,7 @@ def require_role(*allowed_roles: UserRole):
                 )
             )
         return current_user
+
     return role_checker
 
 
@@ -196,6 +199,7 @@ async def login_user(credentials: UserLogin) -> TokenResponse:
     # Find user by email
     user = None
     user_id = None
+
     for uid, u in users_db.items():
         if isinstance(u, (User, Student, Teacher, Admin)):
             if u.email == credentials.email:
