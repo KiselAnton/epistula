@@ -20,14 +20,14 @@ class Permission(str, Enum):
     EDIT_NOTES = "edit_notes"
     VIEW_AI_PAGES = "view_ai_pages"
     CHANGE_OWN_PROFILE = "change_own_profile"
-    
+
     # Teacher permissions
     CREATE_SUBJECTS = "create_subjects"
     CREATE_LECTURE_PAGES = "create_lecture_pages"
     SIGNUP_STUDENTS = "signup_students"
     MANAGE_SIGNUP_REQUESTS = "manage_signup_requests"
     EDIT_AI_PAGES = "edit_ai_pages"
-    
+
     # Admin permissions
     MANAGE_ALL_USERS = "manage_all_users"
     VIEW_ALL = "view_all"
@@ -36,7 +36,7 @@ class Permission(str, Enum):
 
 class RolePermissions:
     """Mapping of roles to their permissions"""
-    
+
     STUDENT_PERMISSIONS = [
         Permission.VIEW_SUBJECTS,
         Permission.REQUEST_SUBJECT_SIGNUP,
@@ -45,7 +45,7 @@ class RolePermissions:
         Permission.VIEW_AI_PAGES,
         Permission.CHANGE_OWN_PROFILE,
     ]
-    
+
     TEACHER_PERMISSIONS = [
         Permission.CREATE_SUBJECTS,
         Permission.CREATE_LECTURE_PAGES,
@@ -57,13 +57,13 @@ class RolePermissions:
         Permission.VIEW_LECTURES,
         Permission.VIEW_AI_PAGES,
     ]
-    
+
     ADMIN_PERMISSIONS = TEACHER_PERMISSIONS + [
         Permission.MANAGE_ALL_USERS,
         Permission.VIEW_ALL,
         Permission.RESET_PASSWORDS,
     ]
-    
+
     @classmethod
     def get_permissions(cls, role: UserRole) -> List[Permission]:
         """Get permissions for a given role"""
@@ -106,7 +106,7 @@ class User(UserBase):
     created_at: datetime
     updated_at: datetime
     is_active: bool = True
-    
+
     class Config:
         from_attributes = True
 
@@ -117,7 +117,7 @@ class Student(User):
     workspace_id: Optional[str] = None
     enrolled_subjects: List[str] = Field(default_factory=list)  # List of subject IDs
     pending_requests: List[str] = Field(default_factory=list)  # List of subject IDs
-    
+
     def get_permissions(self) -> List[Permission]:
         return RolePermissions.STUDENT_PERMISSIONS
 
@@ -126,7 +126,7 @@ class Teacher(User):
     """Teacher user model with teacher-specific attributes"""
     role: UserRole = UserRole.TEACHER
     created_subjects: List[str] = Field(default_factory=list)  # List of subject IDs
-    
+
     def get_permissions(self) -> List[Permission]:
         return RolePermissions.TEACHER_PERMISSIONS
 
@@ -134,7 +134,7 @@ class Teacher(User):
 class Admin(User):
     """Admin user model with admin-specific attributes"""
     role: UserRole = UserRole.ADMIN
-    
+
     def get_permissions(self) -> List[Permission]:
         return RolePermissions.ADMIN_PERMISSIONS
 
