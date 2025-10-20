@@ -52,6 +52,21 @@ else
   wget -P "${WORK_DIR}" "${ISO_URL}"
 fi
 
+# Check if MOUNT_DIR is already mounted
+if mountpoint -q "${MOUNT_DIR}"; then
+  echo "Warning: ${MOUNT_DIR} is already mounted."
+  read -p "Do you want to unmount it? (y/n): " -n 1 -r
+  echo
+  if [[ $REPLY =~ ^[Yy]$ ]]; then
+    echo "Unmounting ${MOUNT_DIR}..."
+    umount "${MOUNT_DIR}"
+    echo "Successfully unmounted ${MOUNT_DIR}"
+  else
+    echo "Cannot proceed with ${MOUNT_DIR} already mounted. Exiting."
+    exit 1
+  fi
+fi
+
 # Mount ISO
 echo "[4/7] Mounting Ubuntu ISO..."
 mount -o loop "${WORK_DIR}/${ISO_NAME}" "${MOUNT_DIR}"
@@ -69,10 +84,8 @@ unsquashfs -f -d "${FILESYSTEM_DIR}" "${MOUNT_DIR}/casper/filesystem.squashfs"
 # Unmount original ISO
 umount "${MOUNT_DIR}"
 
-# Customize filesystem
-echo "[6/7] Customizing filesystem..."
-
-# Mount necessary filesystems for chroot
+# Mount filesystems for chroot
+echo "[6/7] Installing Epistula in the filesystem..."
 mount --bind /dev "${FILESYSTEM_DIR}/dev"
 mount --bind /proc "${FILESYSTEM_DIR}/proc"
 mount --bind /sys "${FILESYSTEM_DIR}/sys"
@@ -82,34 +95,31 @@ cat > "${FILESYSTEM_DIR}/tmp/install.sh" << 'EOF'
 #!/bin/bash
 set -e
 
-# Update package lists
-apt-get update
-
-# Install dependencies
-apt-get install -y \
-  ca-certificates \
-  curl \
-  gnupg \
-  lsb-release
-
+echo "Installing Docker..."
 # Add Docker's official GPG key
-mkdir -p /etc/apt/keyrings
+apt-get update
+apt-get install -y ca-certificates curl gnupg
+install -m 0755 -d /etc/apt/keyrings
 curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+chmod a+r /etc/apt/keyrings/docker.gpg
 
-# Set up Docker repository
-echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null
+# Add Docker repository
+echo \
+  "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu \
+  $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | \
+  tee /etc/apt/sources.list.d/docker.list > /dev/null
 
-# Install Docker Engine
+# Install Docker
 apt-get update
 apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
 
-# Clone Epistula repository
-mkdir -p /opt
+echo "Cloning Epistula repository..."
 cd /opt
 git clone https://github.com/KiselAnton/epistula.git
+cd epistula
 
-# Create systemd service for Epistula
-cat > /etc/systemd/system/epistula.service << 'SERVICE'
+echo "Creating Epistula systemd service..."
+cat > /etc/systemd/system/epistula.service << 'SYSTEMD_EOF'
 [Unit]
 Description=Epistula Email Server
 After=docker.service
@@ -121,15 +131,13 @@ RemainAfterExit=yes
 WorkingDirectory=/opt/epistula
 ExecStart=/usr/bin/docker compose up -d
 ExecStop=/usr/bin/docker compose down
-User=root
 
 [Install]
 WantedBy=multi-user.target
-SERVICE
+SYSTEMD_EOF
 
 # Enable Epistula service
 systemctl enable epistula.service
-
 echo "Installation complete!"
 EOF
 
