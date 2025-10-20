@@ -1,141 +1,9 @@
 #!/usr/bin/env bash
-
-# Strict interpreter validation: This script requires Bash
-if [ -z "$BASH_VERSION" ]; then
-  echo "ERROR: This script must be run with Bash, not sh or other shells." >&2
-  echo "Please run with: bash $0" >&2
-  exit 1
-fi
-
-# Bash-only strict mode options
-set -euo pipefail
-
-REPO_URL="https://github.com/KiselAnton/epistula.git"
-BRANCH="master"
-REPO_DIR="/opt/epistula"
-CLONE_DIR="/tmp/epistula_git"
-
-log() {
-  echo "[$(date +'%Y-%m-%d %H:%M:%S')]" "$@"
-}
-
-error_exit() {
-  log "ERROR: $1" >&2
-  exit 1
-}
-
-check_root() {
-  if [ "$(id -u)" -ne 0 ]; then
-    error_exit "This script must be run as root"
-  fi
-}
-
-detect_squashfs() {
-  local casper_dir="${1:-}"
-  local squashfs_file=""
-  
-  log "Detecting squashfs file in ${casper_dir}..."
-  
-  # Priority 1: minimal.enhanced-secureboot.en.squashfs (desktop ISO with secure boot)
-  if [ -f "${casper_dir}/minimal.enhanced-secureboot.en.squashfs" ]; then
-    squashfs_file="${casper_dir}/minimal.enhanced-secureboot.en.squashfs"
-    log "Found: minimal.enhanced-secureboot.en.squashfs (desktop ISO with secure boot)"
-  # Priority 2: minimal.en.squashfs (standard desktop ISO)
-  elif [ -f "${casper_dir}/minimal.en.squashfs" ]; then
-    squashfs_file="${casper_dir}/minimal.en.squashfs"
-    log "Found: minimal.en.squashfs (standard desktop ISO)"
-  # Priority 3: any minimal.*.squashfs (other desktop ISO variants)
-  else
-    for f in "${casper_dir}"/minimal.*.squashfs; do
-      [ -e "$f" ] || continue
-      squashfs_file="$f"
-      log "Found: $(basename "$squashfs_file") (desktop ISO variant)"
-      break
-    done
-  fi
-  
-  # Priority 4: filesystem.squashfs (fallback for server ISO)
-  if [ -z "${squashfs_file}" ] && [ -f "${casper_dir}/filesystem.squashfs" ]; then
-    squashfs_file="${casper_dir}/filesystem.squashfs"
-    log "Found: filesystem.squashfs (server ISO)"
-  fi
-  
-  # Check if we found anything
-  if [ -z "${squashfs_file}" ]; then
-    error_exit "No suitable squashfs file found in ${casper_dir}"
-  fi
-  
-  # Verify file is readable and non-empty
-  if [ ! -r "$squashfs_file" ]; then
-    error_exit "Squashfs file not readable: $squashfs_file"
-  fi
-  
-  if [ ! -s "$squashfs_file" ]; then
-    error_exit "Squashfs file is empty: $squashfs_file"
-  fi
-  
-  log "Selected squashfs file: $squashfs_file"
-  echo "$squashfs_file"
-}
-
-check_root
-
-# Auto-detect ISO if no argument provided
-if [ $# -eq 0 ]; then
-  log "No ISO path provided, attempting to auto-detect from ./isos/"
-  
-  # Check if ./isos/ directory exists
-  if [ ! -d "./isos" ]; then
-    error_exit "No ISO path provided and ./isos/ directory does not exist"
-  fi
-  
-  # Find most recent .iso file
-  ISO_PATH=$(find ./isos -maxdepth 1 -type f -name '*.iso' -printf '%T@ %p\n' 2>/dev/null | sort -rn | head -1 | cut -d' ' -f2-)
-  
-  if [ -z "${ISO_PATH}" ]; then
-    error_exit "No ISO files found in ./isos/ directory"
-  fi
-  
-  log "WARNING: Auto-detected ISO: $ISO_PATH"
-else
-  ISO_PATH="$1"
-fi
-
-if [ ! -f "$ISO_PATH" ]; then
-  error_exit "ISO file not found: $ISO_PATH"
-fi
-
-MOUNT_DIR="/mnt/ubuntu_iso"
-EXTRACT_DIR="/tmp/ubuntu_extract"
-SQUASHFS_MOUNT="/mnt/squashfs"
-CUSTOM_SQUASHFS="/tmp/custom_squashfs"
-NEW_ISO="/tmp/epistula_ubuntu.iso"
-
-log "Cleaning up any previous mounts and directories..."
-umount "$MOUNT_DIR" 2>/dev/null || true
-umount "$SQUASHFS_MOUNT" 2>/dev/null || true
-rm -rf "$MOUNT_DIR" "$EXTRACT_DIR" "$SQUASHFS_MOUNT" "$CUSTOM_SQUASHFS" "$NEW_ISO"
-
-log "Creating mount points and extraction directories..."
-mkdir -p "$MOUNT_DIR" "$EXTRACT_DIR" "$SQUASHFS_MOUNT" "$CUSTOM_SQUASHFS"
-
-log "Mounting ISO..."
-mount -o loop "$ISO_PATH" "$MOUNT_DIR" || error_exit "Failed to mount ISO"
-
-log "Copying ISO contents to extraction directory..."
-rsync -a --exclude=casper/filesystem.squashfs --exclude=casper/minimal.*.squashfs "$MOUNT_DIR/" "$EXTRACT_DIR/" || error_exit "Failed to copy ISO contents"
-
 log "Detecting squashfs file..."
 SQUASHFS_FILE=$(detect_squashfs "$MOUNT_DIR/casper")
 
-log "Mounting squashfs: $SQUASHFS_FILE"
-mount -o loop "$SQUASHFS_FILE" "$SQUASHFS_MOUNT" || error_exit "Failed to mount squashfs"
-
-log "Copying squashfs contents..."
-rsync -a "$SQUASHFS_MOUNT/" "$CUSTOM_SQUASHFS/" || error_exit "Failed to copy squashfs contents"
-
-log "Unmounting squashfs..."
-umount "$SQUASHFS_MOUNT" || error_exit "Failed to unmount squashfs"
+log "Extracting squashfs: $SQUASHFS_FILE"
+unsquashfs -d "$CUSTOM_SQUASHFS" "$SQUASHFS_FILE" || error_exit "Failed to extract squashfs"
 
 log "Preparing chroot environment..."
 cp /etc/resolv.conf "$CUSTOM_SQUASHFS/etc/resolv.conf" || error_exit "Failed to copy resolv.conf"
@@ -149,17 +17,13 @@ log "Installing epistula in chroot..."
 cat << 'CHROOT_SCRIPT' > "$CUSTOM_SQUASHFS/tmp/install_epistula.sh"
 #!/bin/bash
 set -euo pipefail
-
 apt-get update
 apt-get install -y git
-
 if [ -d "/opt/epistula" ]; then
   rm -rf /opt/epistula
 fi
-
 git clone https://github.com/KiselAnton/epistula.git /opt/epistula
 cd /opt/epistula
-
 if [ -f "setup.sh" ]; then
   bash setup.sh
 else
@@ -206,7 +70,7 @@ xorriso -as mkisofs \
 
 log "Cleaning up..."
 umount "$MOUNT_DIR" || true
-rm -rf "$MOUNT_DIR" "$EXTRACT_DIR" "$SQUASHFS_MOUNT" "$CUSTOM_SQUASHFS"
+rm -rf "$MOUNT_DIR" "$EXTRACT_DIR" "$CUSTOM_SQUASHFS"
 
 log "SUCCESS: New ISO created at $NEW_ISO"
 log "You can now burn this ISO to a USB drive or CD"
