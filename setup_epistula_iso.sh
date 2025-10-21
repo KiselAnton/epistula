@@ -240,21 +240,73 @@ setup_directories() {
 download_iso() {
     log_info "Checking for Ubuntu ${UBUNTU_VERSION} ISO..."
     
-    local iso_filename="ubuntu-${UBUNTU_VERSION}-desktop-amd64.iso"
+    # Check for existing ISOs in preferred order
+    local iso_patterns=(
+        "ubuntu-${UBUNTU_VERSION}.3-desktop-amd64.iso"
+        "ubuntu-${UBUNTU_VERSION}.2-desktop-amd64.iso"
+        "ubuntu-${UBUNTU_VERSION}.1-desktop-amd64.iso"
+        "ubuntu-${UBUNTU_VERSION}-desktop-amd64.iso"
+    )
+    
+    # Search for existing ISO files
+    for pattern in "${iso_patterns[@]}"; do
+        local candidate="${ISO_DIR}/${pattern}"
+        if [ -f "${candidate}" ]; then
+            ISO_PATH="${candidate}"
+            log_info "Found existing ISO: ${ISO_PATH}"
+            return 0
+        fi
+    done
+    
+    # No ISO found, need to download
+    log_info "No ISO found in ${ISO_DIR}"
+    
+    # Determine the latest point release to download
+    local iso_filename="ubuntu-${UBUNTU_VERSION}.3-desktop-amd64.iso"
+    local iso_url="${UBUNTU_MIRROR}/${UBUNTU_VERSION}/ubuntu-${UBUNTU_VERSION}.3-desktop-amd64.iso"
     ISO_PATH="${ISO_DIR}/${iso_filename}"
-    
-    if [ -f "${ISO_PATH}" ]; then
-        log_info "ISO already exists: ${ISO_PATH}"
-        return 0
-    fi
-    
-    log_info "ISO not found, would download from ${UBUNTU_MIRROR}"
     
     if [ "${DRY_RUN}" = "true" ]; then
         log_info "[DRY-RUN] Would download: ${iso_filename}"
+        log_info "[DRY-RUN] From: ${iso_url}"
+        log_info "[DRY-RUN] To: ${ISO_PATH}"
     else
         log_info "Downloading ${iso_filename}..."
-        log_info "(Download functionality to be implemented)"
+        log_info "From: ${iso_url}"
+        log_info "To: ${ISO_PATH}"
+        log_info "This may take a while (approximately 5-6 GB)..."
+        
+        # Use wget with progress bar and resume capability
+        if ! wget -c -O "${ISO_PATH}" "${iso_url}"; then
+            log_error "Failed to download ISO from ${iso_url}"
+            
+            # Try fallback to .2 or .1 release
+            log_info "Trying alternative download URLs..."
+            local fallback_patterns=("2" "1" "")
+            
+            for ver in "${fallback_patterns[@]}"; do
+                if [ -n "${ver}" ]; then
+                    iso_filename="ubuntu-${UBUNTU_VERSION}.${ver}-desktop-amd64.iso"
+                    iso_url="${UBUNTU_MIRROR}/${UBUNTU_VERSION}/ubuntu-${UBUNTU_VERSION}.${ver}-desktop-amd64.iso"
+                else
+                    iso_filename="ubuntu-${UBUNTU_VERSION}-desktop-amd64.iso"
+                    iso_url="${UBUNTU_MIRROR}/${UBUNTU_VERSION}/ubuntu-${UBUNTU_VERSION}-desktop-amd64.iso"
+                fi
+                
+                ISO_PATH="${ISO_DIR}/${iso_filename}"
+                log_info "Trying: ${iso_url}"
+                
+                if wget -c -O "${ISO_PATH}" "${iso_url}"; then
+                    log_info "Successfully downloaded ${iso_filename}"
+                    return 0
+                fi
+            done
+            
+            log_error "All download attempts failed"
+            return 1
+        fi
+        
+        log_info "Successfully downloaded ${iso_filename}"
     fi
 }
 
