@@ -20,6 +20,7 @@ fi
 #==============================================================================
 # CONSTANTS
 #==============================================================================
+
 readonly SCRIPT_NAME="$(basename "${BASH_SOURCE[0]}")"
 readonly SCRIPT_VERSION="0.2.0"
 readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -31,6 +32,7 @@ readonly WORK_DIR="${SCRIPT_DIR}/work"
 #==============================================================================
 # GLOBAL VARIABLES
 #==============================================================================
+
 VERBOSE="false"
 DRY_RUN="false"
 CONFIG_FILE=""
@@ -125,6 +127,35 @@ parse_arguments() {
     done
 }
 
+# Install missing packages with apt-get
+install_missing_packages() {
+    local packages=("$@")
+    
+    log_info "Installing missing packages: ${packages[*]}"
+    
+    if [ "${DRY_RUN}" = "true" ]; then
+        log_info "[DRY-RUN] Would run: sudo apt-get update && sudo apt-get install -y ${packages[*]}"
+        return 0
+    fi
+    
+    # Update package lists
+    log_verbose "Running apt-get update..."
+    if ! sudo apt-get update; then
+        log_error "Failed to update package lists"
+        return 1
+    fi
+    
+    # Install packages
+    log_verbose "Installing packages: ${packages[*]}"
+    if ! sudo apt-get install -y "${packages[@]}"; then
+        log_error "Failed to install packages"
+        return 1
+    fi
+    
+    log_info "Successfully installed all missing packages"
+    return 0
+}
+
 # Check system prerequisites
 check_prerequisites() {
     log_info "Checking system prerequisites..."
@@ -132,6 +163,7 @@ check_prerequisites() {
     
     local required_commands=("wget" "mkisofs" "mount" "umount")
     local missing_commands=()
+    local packages_to_install=()
     
     for cmd in "${required_commands[@]}"; do
         if ! command -v "${cmd}" >/dev/null 2>&1; then
@@ -141,8 +173,49 @@ check_prerequisites() {
     
     if [ ${#missing_commands[@]} -gt 0 ]; then
         log_error "Missing required commands: ${missing_commands[*]}"
-        log_error "Please install the required packages"
-        return 1
+        
+        # Map commands to package names
+        for cmd in "${missing_commands[@]}"; do
+            case "${cmd}" in
+                wget)
+                    packages_to_install+=("wget")
+                    ;;
+                mkisofs)
+                    packages_to_install+=("genisoimage")
+                    ;;
+                mount|umount)
+                    # These are typically in util-linux, which is usually pre-installed
+                    # but we'll add it just in case
+                    if [[ ! " ${packages_to_install[*]} " =~ " util-linux " ]]; then
+                        packages_to_install+=("util-linux")
+                    fi
+                    ;;
+            esac
+        done
+        
+        # Ask user for approval to install
+        echo ""
+        echo "The following packages need to be installed: ${packages_to_install[*]}"
+        echo -n "Do you want to install them now? [Y/n]: "
+        read -r response
+        
+        # Default to yes if empty response
+        response=${response:-Y}
+        
+        if [[ "${response}" =~ ^[Yy]$ ]]; then
+            log_info "User approved package installation"
+            if install_missing_packages "${packages_to_install[@]}"; then
+                log_info "All prerequisites satisfied after installation"
+                return 0
+            else
+                log_error "Failed to install required packages"
+                return 1
+            fi
+        else
+            log_info "User declined package installation"
+            log_error "Please install the required packages manually"
+            return 1
+        fi
     fi
     
     log_info "All prerequisites satisfied"
