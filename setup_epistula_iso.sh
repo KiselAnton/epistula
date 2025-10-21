@@ -263,6 +263,30 @@ def create_iso(extract_dir, output_iso):
     except subprocess.CalledProcessError:
         error_exit("Failed to create ISO file")
 
+# New: robust squashfs detection in casper/
+def detect_squashfs(casper_dir: Path) -> Path:
+    """Return filesystem.squashfs if present; otherwise pick any *.squashfs in casper/.
+    Preference order: filesystem.squashfs > single non-matching *.squashfs > newest *.squashfs.
+    Logs the chosen file. Returns None if nothing found.
+    """
+    primary = casper_dir / 'filesystem.squashfs'
+    if primary.exists():
+        log(f"Using squashfs: {primary}", Colors.GREEN)
+        return primary
+    # gather alternatives
+    candidates = sorted(casper_dir.glob('*.squashfs'))
+    candidates = [p for p in candidates if p.name != 'filesystem.squashfs']
+    if not candidates:
+        return None
+    if len(candidates) == 1:
+        log(f"Using squashfs (auto-detected): {candidates[0]}", Colors.YELLOW)
+        return candidates[0]
+    # pick newest by mtime
+    newest = max(candidates, key=lambda p: p.stat().st_mtime)
+    warn(f"Multiple squashfs images found, selecting newest: {newest.name}")
+    log(f"Using squashfs (auto-detected): {newest}", Colors.YELLOW)
+    return newest
+
 def autodetect_iso(isos_dir: Path) -> Path:
     """Find the most recent .iso file in the given directory."""
     if not isos_dir.exists():
@@ -311,17 +335,17 @@ def main():
             # Unmount ISO
             run_command(['umount', str(mount_dir)])
             
-            # Extract squashfs
-            squashfs_file = extract_dir / 'casper' / 'filesystem.squashfs'
-            if not squashfs_file.exists():
-                error_exit(f"Squashfs file not found: {squashfs_file}")
-            
+            # Detect and extract squashfs
+            casper_dir = extract_dir / 'casper'
+            squashfs_file = detect_squashfs(casper_dir)
+            if not squashfs_file or not squashfs_file.exists():
+                error_exit(f"No squashfs image found in {casper_dir}")
             extract_squashfs(squashfs_file, squashfs_dir)
             
             # Setup chroot and install Epistula
             setup_chroot(squashfs_dir)
             
-            # Create new squashfs
+            # Create new squashfs (replace the original used one)
             squashfs_file.unlink()
             create_squashfs(squashfs_dir, squashfs_file)
             
