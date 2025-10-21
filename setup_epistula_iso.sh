@@ -9,65 +9,51 @@
 #
 # Author: KiselAnton
 # License: MIT
-
 set -euo pipefail
-
 #==============================================================================
 # CONSTANTS
 #==============================================================================
-
 readonly SCRIPT_NAME="$(basename "${BASH_SOURCE[0]}")"
 readonly SCRIPT_VERSION="0.1.0"
 readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-
 #==============================================================================
 # FUNCTIONS
 #==============================================================================
-
 # Display usage information
 show_usage() {
     cat << EOF
 Usage: ${SCRIPT_NAME} [OPTIONS]
-
 Epistula ISO Setup Script - Initial stub for modular development.
-
 OPTIONS:
     -h, --help          Show this help message and exit
     -v, --version       Show version information and exit
     -d, --dry-run       Run in dry-run mode (show what would be done)
     --verbose           Enable verbose output
     --config FILE       Use custom configuration file
-
 EXAMPLES:
     ${SCRIPT_NAME} --help
     ${SCRIPT_NAME} --dry-run
     ${SCRIPT_NAME} --verbose
     ${SCRIPT_NAME} --config /path/to/config.conf
-
 For more information, visit: https://github.com/KiselAnton/epistula
 EOF
 }
-
 # Display version information
 show_version() {
     echo "${SCRIPT_NAME} version ${SCRIPT_VERSION}"
 }
-
 # Log functions for better output management
 log_info() {
     echo "[INFO] $*"
 }
-
 log_error() {
     echo "[ERROR] $*" >&2
 }
-
 log_verbose() {
     if [[ "${VERBOSE}" == "true" ]]; then
         echo "[VERBOSE] $*"
     fi
 }
-
 # Main setup function (stub for future implementation)
 run_setup() {
     log_info "Starting Epistula ISO setup..."
@@ -86,16 +72,13 @@ run_setup() {
     
     log_info "Setup stub complete. Ready for modular implementation."
 }
-
 #==============================================================================
 # ARGUMENT PARSING
 #==============================================================================
-
 # Default values
 DRY_RUN="false"
 VERBOSE="false"
 CONFIG_FILE=""
-
 # Parse command line arguments
 while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -132,11 +115,9 @@ while [[ $# -gt 0 ]]; do
             ;;
     esac
 done
-
 #==============================================================================
 # MAIN EXECUTION
 #==============================================================================
-
 main() {
     log_verbose "Script started with PID: $$"
     
@@ -154,6 +135,5 @@ main() {
     
     log_info "Script execution completed successfully."
 }
-
 # Execute main function
 main
