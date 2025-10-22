@@ -322,6 +322,51 @@ setup_iso_environment() {
     fi
 }
 
+# Extract ISO contents to work directory
+extract_iso() {
+  log_info "Extracting ISO contents to work directory..."
+  local extract_dir="${WORK_DIR}/iso"
+  mkdir -p "$extract_dir"
+  
+  if [ "$DRY_RUN" = "true" ]; then
+    log_info "[DRY-RUN] Would extract ${ISO_PATH} to ${extract_dir}"
+    return 0
+  fi
+  
+  if command -v 7z >/dev/null 2>&1; then
+    log_info "Using 7z for ISO extraction..."
+    7z x "$ISO_PATH" -o"$extract_dir"
+  elif command -v xorriso >/dev/null 2>&1; then
+    log_info "Using xorriso for ISO extraction..."
+    xorriso -osirrox on -indev "$ISO_PATH" -extract / "$extract_dir"
+  else
+    log_error "No extraction tool available (need 7z or xorriso)"
+    exit 1
+  fi
+  
+  log_info "ISO extraction complete: $extract_dir"
+}
+
+# Customize ISO with Epistula content
+customize_iso() {
+  log_info "Customizing ISO: Adding Epistula content..."
+  local extract_dir="${WORK_DIR}/iso"
+  
+  if [ "$DRY_RUN" = "true" ]; then
+    log_info "[DRY-RUN] Would customize ISO in ${extract_dir}"
+    return 0
+  fi
+  
+  # Create Epistula directory structure
+  mkdir -p "$extract_dir/opt/epistula"
+  
+  # TODO: Copy actual Epistula files here
+  # For now, create a placeholder
+  echo "# Epistula integration point" > "$extract_dir/opt/epistula/README.txt"
+  
+  log_info "Epistula customization complete"
+}
+
 # Main execution function
 main() {
     log_info "Starting Epistula ISO Setup"
@@ -343,7 +388,14 @@ main() {
     download_iso
     
     # Setup ISO environment
-    setup_iso_environment
+    setup_iso_environmen
+    
+      # Extract ISO contents
+  extract_iso
+
+  # Customize ISO with Epistula
+  customize_iso
+t
     
     log_info "Epistula ISO Setup completed successfully"
 }
