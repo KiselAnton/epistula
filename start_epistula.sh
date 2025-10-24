@@ -273,7 +273,97 @@ clean_containers() {
 # Main Execution
 #==============================================================================
 
+check_and_install_requirements() {
+    FORCE=0
+    if [[ "${1:-}" == "--force" ]]; then
+        FORCE=1
+    fi
+
+    # System requirements - check commands and map to package names
+    MISSING_CMDS=()
+    MISSING_PKGS=()
+    
+    if ! command -v docker >/dev/null 2>&1; then
+        MISSING_CMDS+=("docker")
+        MISSING_PKGS+=("docker.io")
+    fi
+    
+    if ! command -v python3 >/dev/null 2>&1; then
+        MISSING_CMDS+=("python3")
+        MISSING_PKGS+=("python3")
+    fi
+    
+    if ! command -v pip3 >/dev/null 2>&1; then
+        MISSING_CMDS+=("pip3")
+        MISSING_PKGS+=("python3-pip")
+    fi
+
+    if [ ${#MISSING_PKGS[@]} -gt 0 ]; then
+        log_warning "Missing system packages: ${MISSING_CMDS[*]}"
+        if [ "$FORCE" -eq 1 ]; then
+            log_info "Installing missing system packages..."
+            sudo apt update
+            sudo apt install -y ${MISSING_PKGS[*]}
+        else
+            read -p "Install missing system packages? [y/N]: " -n 1 -r; echo
+            if [[ $REPLY =~ ^[Yy]$ ]]; then
+                sudo apt update
+                sudo apt install -y ${MISSING_PKGS[*]}
+            else
+                log_error "Cannot continue without required system packages."
+                exit 1
+            fi
+        fi
+    fi
+
+    # Python requirements
+    if [ -f "$EPISTULA_DIR/backend/requirements.txt" ]; then
+        if ! python3 -m pip show uvicorn >/dev/null 2>&1; then
+            log_warning "Python package 'uvicorn' is missing."
+            
+            # Try to install via apt first (for externally-managed environments)
+            APT_PKGS=("python3-uvicorn" "python3-fastapi" "python3-pydantic")
+            
+            if [ "$FORCE" -eq 1 ]; then
+                log_info "Installing Python requirements via apt..."
+                sudo apt install -y ${APT_PKGS[*]} 2>/dev/null
+                
+                # If apt install fails or packages not available, try pip with --break-system-packages
+                if ! python3 -m pip show uvicorn >/dev/null 2>&1; then
+                    log_info "Falling back to pip installation..."
+                    python3 -m pip install --break-system-packages -r "$EPISTULA_DIR/backend/requirements.txt" 2>/dev/null || \
+                    sudo python3 -m pip install --break-system-packages -r "$EPISTULA_DIR/backend/requirements.txt"
+                fi
+            else
+                read -p "Install Python requirements? [y/N]: " -n 1 -r; echo
+                if [[ $REPLY =~ ^[Yy]$ ]]; then
+                    log_info "Installing Python requirements via apt..."
+                    sudo apt install -y ${APT_PKGS[*]} 2>/dev/null
+                    
+                    # If apt install fails, try pip
+                    if ! python3 -m pip show uvicorn >/dev/null 2>&1; then
+                        log_info "Falling back to pip installation..."
+                        python3 -m pip install --break-system-packages -r "$EPISTULA_DIR/backend/requirements.txt" 2>/dev/null || \
+                        sudo python3 -m pip install --break-system-packages -r "$EPISTULA_DIR/backend/requirements.txt"
+                    fi
+                else
+                    log_error "Cannot continue without required Python packages."
+                    exit 1
+                fi
+            fi
+        fi
+    fi
+}
+
 main() {
+    # Check and install requirements
+    if [[ "${1:-}" == "--force" ]]; then
+        check_and_install_requirements --force
+        shift
+    else
+        check_and_install_requirements
+    fi
+
     # Check Docker availability
     check_docker
     
