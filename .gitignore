@@ -1,4 +1,13 @@
+# IDE
 .idea/
+
+# Build outputs
 isos/
 work/
+
+# Generated files
 md5sum.txt
+
+# Logs
+epistula/backend/backend.log
+*.log
