@@ -20,14 +20,18 @@ fi
 # Parse options
 BRANCH_DEFAULT="${EPISTULA_UPDATE_BRANCH:-${EPISTULA_BRANCH:-master}}"
 BRANCH="$BRANCH_DEFAULT"
+FORCE=0
+AUTO_STASH=auto
 
 usage() {
         cat <<EOF
-Usage: sudo ./update_epistula.sh [--branch <name>] | [<branch>]
+Usage: sudo ./update_epistula.sh [--branch <name>] [--force] [--no-stash] | [<branch>]
 
 Options:
     -b, --branch <name>   Branch to pull from (default: $BRANCH_DEFAULT)
-    -h, --help            Show this help
+        -f, --force           Do not prompt; auto-stash dirty changes before pulling
+        --no-stash            Do not stash; abort if working tree is dirty
+        -h, --help            Show this help
 
 Environment variables:
     EPISTULA_UPDATE_BRANCH or EPISTULA_BRANCH can also set the default branch.
@@ -38,7 +42,11 @@ while [[ $# -gt 0 ]]; do
     case "$1" in
         -b|--branch)
             BRANCH="$2"; shift 2 ;;
-        -h|--help)
+            -f|--force)
+                FORCE=1; shift ;;
+            --no-stash)
+                AUTO_STASH=none; shift ;;
+            -h|--help)
             usage; exit 0 ;;
         *)
             # Positional branch name
@@ -61,6 +69,29 @@ echo ""
 echo "[1/4] Pulling latest code from repository (branch: $BRANCH)..."
 cd "$SCRIPT_DIR"
 
+# Check working tree status and stash if needed
+if ! git diff --quiet || ! git diff --cached --quiet || [ -n "$(git ls-files --others --exclude-standard)" ]; then
+    if [ "$AUTO_STASH" = "none" ]; then
+        echo "Working tree has local changes. Aborting because --no-stash was provided."
+        exit 1
+    fi
+    if [ $FORCE -eq 1 ]; then
+        DO_STASH=yes
+    else
+        read -p "Local changes detected. Stash them before pulling? [Y/n]: " -r REPLY
+        if [[ "$REPLY" =~ ^[Nn]$ ]]; then
+            DO_STASH=no
+        else
+            DO_STASH=yes
+        fi
+    fi
+    if [ "$DO_STASH" = "yes" ]; then
+        STASHED=1
+        git stash push -u -m "epistula-update $(date -Iseconds)" >/dev/null || true
+        echo "Saved local changes to stash."
+    fi
+fi
+
 # Fetch remote branch
 git fetch origin "$BRANCH" || git fetch origin
 
@@ -79,6 +110,16 @@ fi
 # Pull latest changes (rebase to keep history clean)
 CURRENT_BRANCH="$(git rev-parse --abbrev-ref HEAD)"
 git pull --rebase origin "$CURRENT_BRANCH" || git pull origin "$CURRENT_BRANCH"
+
+# Restore stashed changes if any
+if [ "${STASHED:-0}" -eq 1 ]; then
+    echo "Restoring stashed changes..."
+    if ! git stash pop --quiet; then
+        echo "⚠ Merge conflicts while applying stashed changes. Please resolve them manually."
+    else
+        echo "✓ Stashed changes reapplied."
+    fi
+fi
 echo "✓ Code updated successfully"
 echo ""
 
