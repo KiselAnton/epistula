@@ -19,8 +19,6 @@ export default function Login() {
   const [emailTouched, setEmailTouched] = useState(false);
 
   const isValidEmail = (value: string) => {
-    // Special case: allow plain "root"
-    if (value.trim().toLowerCase() === 'root') return true;
     // Basic RFC-like email check
     const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return re.test(value);
@@ -40,9 +38,9 @@ export default function Login() {
     setLoading(true);
 
     try {
-      // Client-side email validation (with root exception)
+      // Client-side email validation
       if (!isValidEmail(email)) {
-        setError('Please enter a valid email address (or use "root").');
+        setError('Please enter a valid email address.');
         setEmailTouched(true);
         setLoading(false);
         return;
@@ -107,7 +105,7 @@ export default function Login() {
               />
               {emailTouched && !isValidEmail(email) && (
                 <div className={styles.error}>
-                  Please enter a valid email address (or use "root").
+                  Please enter a valid email address.
                 </div>
               )}
             </div>
@@ -137,9 +135,6 @@ export default function Login() {
               {loading ? 'Logging in...' : 'Login'}
             </button>
           </form>
-          <p className={styles.info}>
-            Tip: The special user <strong>root</strong> can type just "root" in the email field.
-          </p>
         </div>
       </div>
     </>
