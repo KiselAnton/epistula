@@ -37,12 +37,12 @@ export default function Login() {
 
   // Determine backend URL (browser-safe)
   const getBackendUrl = () => {
-    // Prefer explicit public env, else same host on port 8000
-    const configured = (process.env.NEXT_PUBLIC_BACKEND_URL as string | undefined);
-    if (configured && configured.trim() !== '') return configured;
+    // In the browser, always use the same host as the frontend but on port 8000
+    // This works in all deployment scenarios: WSL, VM, dedicated server
     if (typeof window !== 'undefined') {
       return `${window.location.protocol}//${window.location.hostname}:8000`;
     }
+    // Fallback for SSR (server-side rendering) - won't be used for client API calls
     return 'http://localhost:8000';
   };
 
