@@ -45,7 +45,8 @@ def _parse_allowed_ips(env_val: str | None) -> list[ipaddress._BaseAddress]:
     return ips
 
 
-ROOT_EMAIL = os.environ.get("EPISTULA_ROOT_EMAIL", "root@localhost")
+# Use a default root email with a valid domain format to satisfy EmailStr
+ROOT_EMAIL = os.environ.get("EPISTULA_ROOT_EMAIL", "root@localhost.localdomain")
 ROOT_NAME = os.environ.get("EPISTULA_ROOT_NAME", "root")
 ROOT_PASSWORD = os.environ.get("EPISTULA_ROOT_PASSWORD", "change-me")
 ROOT_ALLOWED_IPS = _parse_allowed_ips(os.environ.get("EPISTULA_ROOT_ALLOWED_IPS"))

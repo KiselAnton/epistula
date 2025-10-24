@@ -56,13 +56,17 @@ export default function Login() {
       }
 
       const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || window.location.protocol + '//' + window.location.hostname + ':8000';
+      // Map the special alias 'root' to the configured root email so backend EmailStr accepts it
+      const effectiveEmail = email.trim().toLowerCase() === 'root'
+        ? (process.env.NEXT_PUBLIC_ROOT_EMAIL || 'root@localhost.localdomain')
+        : email;
       const response = await fetch(`${backendUrl}/api/v1/users/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          email: email,
+          email: effectiveEmail,
           password: password,
         }),
       });

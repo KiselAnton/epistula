@@ -36,7 +36,8 @@ readonly BACKEND_PORT="8000"
 readonly FRONTEND_PORT="3000"
 
 # Root user runtime configuration (forwarded to backend container)
-ROOT_EMAIL_DEFAULT="root@localhost"
+# Default to a valid RFC-like email so backend EmailStr accepts it
+ROOT_EMAIL_DEFAULT="root@localhost.localdomain"
 ROOT_NAME_DEFAULT="root"
 ROOT_ALLOWED_IPS_DEFAULT="127.0.0.1,::1,172.17.0.1"
 
