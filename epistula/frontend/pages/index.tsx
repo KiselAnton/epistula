@@ -55,7 +55,7 @@ export default function Login() {
         return;
       }
 
-      const backendUrl = process.env.BACKEND_URL || 'http://localhost:8000';
+      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || window.location.protocol + '//' + window.location.hostname + ':8000';
       const response = await fetch(`${backendUrl}/api/v1/users/login`, {
         method: 'POST',
         headers: {
