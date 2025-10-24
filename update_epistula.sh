@@ -139,24 +139,23 @@ else
 fi
 echo ""
 
-# Rebuild Docker containers if docker-compose is present
+# Rebuild and restart Docker containers
 echo "[3/4] Checking for Docker setup..."
-if [ -f "$SCRIPT_DIR/docker-compose.yml" ] || [ -f "$SCRIPT_DIR/epistula/backend/Dockerfile" ]; then
+if [ -f "$SCRIPT_DIR/start_epistula.sh" ]; then
     if command -v docker &> /dev/null; then
-        echo "Docker found, rebuilding containers..."
-        if [ -f "$SCRIPT_DIR/docker-compose.yml" ]; then
-            docker-compose down
-            docker-compose up -d --build
-            echo "✓ Docker containers rebuilt and restarted"
-        else
-            echo "Dockerfile found but no docker-compose.yml"
-            echo "To build manually: cd $SCRIPT_DIR/epistula/backend && docker build -t epistula-backend ."
-        fi
+        echo "Docker found, rebuilding and restarting containers..."
+        # Stop existing containers
+        docker stop epistula-backend epistula-frontend 2>/dev/null || true
+        docker rm epistula-backend epistula-frontend 2>/dev/null || true
+        
+        # Run start script with force flag to rebuild
+        bash "$SCRIPT_DIR/start_epistula.sh" --force --restart
+        echo "✓ Docker containers rebuilt and restarted"
     else
         echo "⚠ Docker not installed (skipping)"
     fi
 else
-    echo "⚠ No Docker setup found (skipping)"
+    echo "⚠ No start_epistula.sh found (skipping)"
 fi
 echo ""
 
