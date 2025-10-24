@@ -9,6 +9,7 @@ class UserRole(str, Enum):
     STUDENT = "student"
     TEACHER = "teacher"
     ADMIN = "admin"
+    ROOT = "root"  # Super administrator (login restricted to local machine)
 
 
 class Permission(str, Enum):
@@ -64,6 +65,9 @@ class RolePermissions:
         Permission.RESET_PASSWORDS,
     ]
 
+    # Root has at least all admin permissions; can be extended later
+    ROOT_PERMISSIONS = ADMIN_PERMISSIONS
+
     @classmethod
     def get_permissions(cls, role: UserRole) -> List[Permission]:
         """Get permissions for a given role"""
@@ -73,6 +77,8 @@ class RolePermissions:
             return cls.TEACHER_PERMISSIONS
         elif role == UserRole.ADMIN:
             return cls.ADMIN_PERMISSIONS
+        elif role == UserRole.ROOT:
+            return cls.ROOT_PERMISSIONS
         return []
 
 
@@ -137,6 +143,18 @@ class Admin(User):
 
     def get_permissions(self) -> List[Permission]:
         return RolePermissions.ADMIN_PERMISSIONS
+
+
+class Root(User):
+    """Root user model with super administrator privileges.
+
+    Note: Authorization for this user is further restricted in the login flow
+    to only allow authentication from the local machine.
+    """
+    role: UserRole = UserRole.ROOT
+
+    def get_permissions(self) -> List[Permission]:
+        return RolePermissions.ROOT_PERMISSIONS
 
 
 class TokenResponse(BaseModel):

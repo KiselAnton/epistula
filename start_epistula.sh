@@ -35,6 +35,11 @@ readonly FRONTEND_CONTAINER="epistula-frontend"
 readonly BACKEND_PORT="8000"
 readonly FRONTEND_PORT="3000"
 
+# Root user runtime configuration (forwarded to backend container)
+ROOT_EMAIL_DEFAULT="root@localhost"
+ROOT_NAME_DEFAULT="root"
+ROOT_ALLOWED_IPS_DEFAULT="127.0.0.1,::1,172.17.0.1"
+
 #==============================================================================
 # Helper Functions
 #==============================================================================
@@ -53,6 +58,35 @@ log_warning() {
 
 log_error() {
     echo -e "${RED}[ERROR]${NC} $*"
+}
+
+random_password() {
+    # 24-char random base64 password
+    openssl rand -base64 18 2>/dev/null || cat /dev/urandom | tr -dc 'A-Za-z0-9' | head -c 24
+}
+
+ensure_root_env() {
+    # Use existing env values if provided by caller
+    export EPISTULA_ROOT_EMAIL="${EPISTULA_ROOT_EMAIL:-$ROOT_EMAIL_DEFAULT}"
+    export EPISTULA_ROOT_NAME="${EPISTULA_ROOT_NAME:-$ROOT_NAME_DEFAULT}"
+    export EPISTULA_ROOT_ALLOWED_IPS="${EPISTULA_ROOT_ALLOWED_IPS:-$ROOT_ALLOWED_IPS_DEFAULT}"
+
+    if [ -z "${EPISTULA_ROOT_PASSWORD:-}" ]; then
+        if [ "${FORCE_INSTALL:-0}" -eq 1 ]; then
+            EPISTULA_ROOT_PASSWORD="$(random_password)"
+            log_warning "No EPISTULA_ROOT_PASSWORD provided. Generated temporary password."
+        else
+            read -p "Set root password (blank to auto-generate): " -r ROOT_PW_INPUT
+            if [ -z "$ROOT_PW_INPUT" ]; then
+                EPISTULA_ROOT_PASSWORD="$(random_password)"
+                log_warning "Generated temporary root password."
+            else
+                EPISTULA_ROOT_PASSWORD="$ROOT_PW_INPUT"
+            fi
+        fi
+        export EPISTULA_ROOT_PASSWORD
+        log_info "root email: $EPISTULA_ROOT_EMAIL | Allowed IPs: $EPISTULA_ROOT_ALLOWED_IPS"
+    fi
 }
 
 check_docker() {
@@ -117,6 +151,7 @@ start_backend() {
     cd "$EPISTULA_DIR"
     
     if [ -f "backend/Dockerfile" ]; then
+        ensure_root_env
         docker build -t "$BACKEND_IMAGE" ./backend
         
         # Stop and remove old container if exists
@@ -126,6 +161,10 @@ start_backend() {
         docker run -d \
             --name "$BACKEND_CONTAINER" \
             --restart unless-stopped \
+            -e EPISTULA_ROOT_EMAIL="$EPISTULA_ROOT_EMAIL" \
+            -e EPISTULA_ROOT_NAME="$EPISTULA_ROOT_NAME" \
+            -e EPISTULA_ROOT_PASSWORD="$EPISTULA_ROOT_PASSWORD" \
+            -e EPISTULA_ROOT_ALLOWED_IPS="$EPISTULA_ROOT_ALLOWED_IPS" \
             -p "$BACKEND_PORT:8000" \
             "$BACKEND_IMAGE"
         
