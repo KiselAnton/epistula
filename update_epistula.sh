@@ -17,16 +17,68 @@ if [ "$EUID" -ne 0 ]; then
     exit 1
 fi
 
+# Parse options
+BRANCH_DEFAULT="${EPISTULA_UPDATE_BRANCH:-${EPISTULA_BRANCH:-master}}"
+BRANCH="$BRANCH_DEFAULT"
+
+usage() {
+        cat <<EOF
+Usage: sudo ./update_epistula.sh [--branch <name>] | [<branch>]
+
+Options:
+    -b, --branch <name>   Branch to pull from (default: $BRANCH_DEFAULT)
+    -h, --help            Show this help
+
+Environment variables:
+    EPISTULA_UPDATE_BRANCH or EPISTULA_BRANCH can also set the default branch.
+EOF
+}
+
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        -b|--branch)
+            BRANCH="$2"; shift 2 ;;
+        -h|--help)
+            usage; exit 0 ;;
+        *)
+            # Positional branch name
+            if [[ -z "$BRANCH" || "$BRANCH" == "$BRANCH_DEFAULT" ]]; then
+                BRANCH="$1"; shift ;
+            else
+                echo "Unknown argument: $1"; usage; exit 1
+            fi
+            ;;
+    esac
+done
+
 # Store the script's directory
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 echo "Repository location: $SCRIPT_DIR"
+echo "Using branch: $BRANCH"
 echo ""
 
-# Pull latest code from repository
-echo "[1/4] Pulling latest code from repository..."
+# Pull latest code from a specific branch
+echo "[1/4] Pulling latest code from repository (branch: $BRANCH)..."
 cd "$SCRIPT_DIR"
-git fetch origin
-git pull origin master
+
+# Fetch remote branch
+git fetch origin "$BRANCH" || git fetch origin
+
+# Checkout or create local tracking branch
+if git rev-parse --verify "$BRANCH" >/dev/null 2>&1; then
+    git checkout "$BRANCH"
+else
+    # Create local branch tracking remote if remote exists
+    if git show-ref --verify --quiet "refs/remotes/origin/$BRANCH"; then
+        git checkout -b "$BRANCH" "origin/$BRANCH"
+    else
+        echo "⚠ Branch '$BRANCH' not found on remote. Staying on current branch $(git rev-parse --abbrev-ref HEAD)."
+    fi
+fi
+
+# Pull latest changes (rebase to keep history clean)
+CURRENT_BRANCH="$(git rev-parse --abbrev-ref HEAD)"
+git pull --rebase origin "$CURRENT_BRANCH" || git pull origin "$CURRENT_BRANCH"
 echo "✓ Code updated successfully"
 echo ""
 
