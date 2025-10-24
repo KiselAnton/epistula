@@ -24,6 +24,13 @@ export default function Login() {
     return re.test(value);
   };
 
+  // Check if form is valid and ready to submit
+  const isFormValid = () => {
+    return email.trim() !== '' && 
+           password.trim() !== '' && 
+           isValidEmail(email);
+  };
+
   /**
    * Handle login form submission.
    *
@@ -130,7 +137,7 @@ export default function Login() {
             <button
               type="submit"
               className={styles.button}
-              disabled={loading}
+              disabled={loading || !isFormValid()}
             >
               {loading ? 'Logging in...' : 'Login'}
             </button>
