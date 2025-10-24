@@ -19,6 +19,8 @@ export default function Login() {
   const [emailTouched, setEmailTouched] = useState(false);
 
   const isValidEmail = (value: string) => {
+    // Special case: allow plain "root" for internal admin
+    if (value.trim().toLowerCase() === 'root') return true;
     // Basic RFC-like email check
     const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return re.test(value);
