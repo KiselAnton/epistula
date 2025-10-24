@@ -44,6 +44,7 @@ def _parse_allowed_ips(env_val: str | None) -> list[ipaddress._BaseAddress]:
             pass
     return ips
 
+
 ROOT_EMAIL = os.environ.get("EPISTULA_ROOT_EMAIL", "root@localhost")
 ROOT_NAME = os.environ.get("EPISTULA_ROOT_NAME", "root")
 ROOT_PASSWORD = os.environ.get("EPISTULA_ROOT_PASSWORD", "change-me")
@@ -448,6 +449,8 @@ async def update_user(
 
 
 @router.post("/assign-role/{user_id}", response_model=User)
+
+
 async def assign_role(
     user_id: str,
     role: UserRole,
