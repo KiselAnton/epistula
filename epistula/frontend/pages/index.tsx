@@ -31,7 +31,8 @@ export default function Login() {
   const isFormValid = () => {
     return email.trim() !== '' && 
            password.trim() !== '' && 
-           isValidEmail(email);
+           isValidEmail(email) &&
+           apiHealthy !== false;  // Disable if server unreachable
   };
 
   // Determine backend URL (browser-safe)
@@ -51,9 +52,16 @@ export default function Login() {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 3000);
     const url = `${getBackendUrl()}/health`;
+    console.log('[Health Check] Attempting to reach:', url);
     fetch(url, { signal: controller.signal })
-      .then((res) => setApiHealthy(res.ok))
-      .catch(() => setApiHealthy(false))
+      .then((res) => {
+        console.log('[Health Check] Response:', res.status, res.ok);
+        setApiHealthy(res.ok);
+      })
+      .catch((err) => {
+        console.error('[Health Check] Failed:', err.message || err);
+        setApiHealthy(false);
+      })
       .finally(() => clearTimeout(timeout));
   };
 
@@ -150,8 +158,6 @@ export default function Login() {
             {apiHealthy === false && (
               <div className={styles.error}>
                 The server is not reachable. Please ensure the backend is running on port 8000.
-                <br />
-                <a href="#" onClick={(e) => { e.preventDefault(); setApiHealthy(null); checkHealth(); }}>Retry</a>
               </div>
             )}
             <div className={styles.formGroup}>
