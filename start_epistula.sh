@@ -189,6 +189,7 @@ start_frontend() {
         docker run -d \
             --name "$FRONTEND_CONTAINER" \
             --restart unless-stopped \
+            -e BACKEND_URL="http://host.docker.internal:$BACKEND_PORT" \
             -p "$FRONTEND_PORT:3000" \
             "$FRONTEND_IMAGE"
         
