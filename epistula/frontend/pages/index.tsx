@@ -7,7 +7,7 @@
  * @returns {JSX.Element} The login page.
  */
 
-import { useState, FormEvent } from 'react';
+import { useState, useEffect, FormEvent } from 'react';
 import Head from 'next/head';
 import styles from '../styles/Login.module.css';
 
@@ -17,6 +17,7 @@ export default function Login() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [emailTouched, setEmailTouched] = useState(false);
+  const [apiHealthy, setApiHealthy] = useState<boolean | null>(null);
 
   const isValidEmail = (value: string) => {
     // Special case: allow plain "root" for internal admin
@@ -32,6 +33,34 @@ export default function Login() {
            password.trim() !== '' && 
            isValidEmail(email);
   };
+
+  // Determine backend URL (browser-safe)
+  const getBackendUrl = () => {
+    // Prefer explicit public env, else same host on port 8000
+    const configured = (process.env.NEXT_PUBLIC_BACKEND_URL as string | undefined);
+    if (configured && configured.trim() !== '') return configured;
+    if (typeof window !== 'undefined') {
+      return `${window.location.protocol}//${window.location.hostname}:8000`;
+    }
+    return 'http://localhost:8000';
+  };
+
+  // Health preflight on mount to avoid slow timeouts during login
+  useEffect(() => {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 3000);
+
+    const url = `${getBackendUrl()}/health`;
+    fetch(url, { signal: controller.signal })
+      .then((res) => setApiHealthy(res.ok))
+      .catch(() => setApiHealthy(false))
+      .finally(() => clearTimeout(timeout));
+
+    return () => {
+      clearTimeout(timeout);
+      controller.abort();
+    };
+  }, []);
 
   /**
    * Handle login form submission.
@@ -55,16 +84,19 @@ export default function Login() {
         return;
       }
 
-      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || window.location.protocol + '//' + window.location.hostname + ':8000';
+      const backendUrl = getBackendUrl();
       // Map the special alias 'root' to the configured root email so backend EmailStr accepts it
       const effectiveEmail = email.trim().toLowerCase() === 'root'
         ? (process.env.NEXT_PUBLIC_ROOT_EMAIL || 'root@localhost.localdomain')
         : email;
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 8000);
       const response = await fetch(`${backendUrl}/api/v1/users/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
+        signal: controller.signal,
         body: JSON.stringify({
           email: effectiveEmail,
           password: password,
@@ -72,6 +104,7 @@ export default function Login() {
       });
 
       const data = await response.json();
+      clearTimeout(timeout);
 
       if (response.ok) {
         // Store the token
@@ -85,8 +118,12 @@ export default function Login() {
       } else {
         setError(data.detail || 'Login failed. Please check your credentials.');
       }
-    } catch (err) {
-      setError('Unable to connect to server. Please try again.');
+    } catch (err: any) {
+      if (err?.name === 'AbortError') {
+        setError('Server took too long to respond. Please try again.');
+      } else {
+        setError('Unable to connect to server. Please try again.');
+      }
     } finally {
       setLoading(false);
     }
@@ -103,6 +140,11 @@ export default function Login() {
           <h1 className={styles.title}>Epistula</h1>
           <p className={styles.subtitle}>Welcome back</p>
           <form onSubmit={handleSubmit} className={styles.form} noValidate>
+            {apiHealthy === false && (
+              <div className={styles.error}>
+                The server is not reachable. Please ensure the backend is running on port 8000.
+              </div>
+            )}
             <div className={styles.formGroup}>
               <label htmlFor="email" className={styles.label}>
                 Email
