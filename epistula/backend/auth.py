@@ -28,6 +28,7 @@ security = HTTPBearer()
 users_db: Dict[str, User] = {}
 tokens_db: Dict[str, str] = {}  # token -> user_id
 
+
 def _parse_allowed_ips(env_val: str | None) -> list[ipaddress._BaseAddress]:
     default = ["127.0.0.1", "::1", "172.17.0.1"]
     raw = (env_val or ",".join(default)).split(",")
@@ -49,6 +50,7 @@ ROOT_PASSWORD = os.environ.get("EPISTULA_ROOT_PASSWORD", "change-me")
 ROOT_ALLOWED_IPS = _parse_allowed_ips(os.environ.get("EPISTULA_ROOT_ALLOWED_IPS"))
 
 
+
 def hash_password(password: str) -> str:
     """Hash password using SHA-256.
 
@@ -59,6 +61,7 @@ def hash_password(password: str) -> str:
         str: Hexadecimal digest of hashed password.
     """
     return hashlib.sha256(password.encode()).hexdigest()
+
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
@@ -74,6 +77,7 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
     return hash_password(plain_password) == hashed_password
 
 
+
 def generate_token() -> str:
     """Generate secure random token.
 
@@ -81,6 +85,7 @@ def generate_token() -> str:
         str: URL-safe random token.
     """
     return secrets.token_urlsafe(32)
+
 
 
 def _ensure_root_user() -> None:
