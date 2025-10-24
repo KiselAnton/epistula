@@ -12,10 +12,19 @@ import Head from 'next/head';
 import styles from '../styles/Login.module.css';
 
 export default function Login() {
-  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [emailTouched, setEmailTouched] = useState(false);
+
+  const isValidEmail = (value: string) => {
+    // Special case: allow plain "root"
+    if (value.trim().toLowerCase() === 'root') return true;
+    // Basic RFC-like email check
+    const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return re.test(value);
+  };
 
   /**
    * Handle login form submission.
@@ -31,6 +40,14 @@ export default function Login() {
     setLoading(true);
 
     try {
+      // Client-side email validation (with root exception)
+      if (!isValidEmail(email)) {
+        setError('Please enter a valid email address (or use "root").');
+        setEmailTouched(true);
+        setLoading(false);
+        return;
+      }
+
       const backendUrl = process.env.BACKEND_URL || 'http://localhost:8000';
       const response = await fetch(`${backendUrl}/api/v1/users/login`, {
         method: 'POST',
@@ -38,7 +55,7 @@ export default function Login() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          email: username,
+          email: email,
           password: password,
         }),
       });
@@ -48,8 +65,12 @@ export default function Login() {
       if (response.ok) {
         // Store the token
         localStorage.setItem('token', data.access_token);
+        // Store user for greeting page
+        if (data.user) {
+          localStorage.setItem('user', JSON.stringify(data.user));
+        }
         // Redirect to dashboard or home page
-        window.location.href = '/dashboard';
+        window.location.href = '/hello';
       } else {
         setError(data.detail || 'Login failed. Please check your credentials.');
       }
@@ -70,20 +91,25 @@ export default function Login() {
         <div className={styles.loginBox}>
           <h1 className={styles.title}>Epistula</h1>
           <p className={styles.subtitle}>Welcome back</p>
-          <form onSubmit={handleSubmit} className={styles.form}>
+          <form onSubmit={handleSubmit} className={styles.form} noValidate>
             <div className={styles.formGroup}>
-              <label htmlFor="username" className={styles.label}>
-                Username
+              <label htmlFor="email" className={styles.label}>
+                Email
               </label>
               <input
                 type="text"
-                id="username"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
+                id="email"
+                value={email}
+                onChange={(e) => { setEmail(e.target.value); setEmailTouched(true); }}
                 className={styles.input}
                 required
                 autoFocus
               />
+              {emailTouched && !isValidEmail(email) && (
+                <div className={styles.error}>
+                  Please enter a valid email address (or use "root").
+                </div>
+              )}
             </div>
             <div className={styles.formGroup}>
               <label htmlFor="password" className={styles.label}>
@@ -112,7 +138,7 @@ export default function Login() {
             </button>
           </form>
           <p className={styles.info}>
-            First login? Use username: Administrator with your server password.
+            Tip: The special user <strong>root</strong> can type just "root" in the email field.
           </p>
         </div>
       </div>
