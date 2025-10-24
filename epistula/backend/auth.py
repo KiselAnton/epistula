@@ -10,11 +10,13 @@ from typing import Dict
 import hashlib
 import secrets
 
-from fastapi import APIRouter, HTTPException, status, Depends
+import os
+import ipaddress
+from fastapi import APIRouter, HTTPException, status, Depends, Request
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
 from models import (
-    UserCreate, UserLogin, UserUpdate, User, Student, Teacher, Admin,
+    UserCreate, UserLogin, UserUpdate, User, Student, Teacher, Admin, Root,
     UserRole, TokenResponse, RolePermissions
 )
 
@@ -25,6 +27,28 @@ security = HTTPBearer()
 # In-memory storage (replace with database in production)
 users_db: Dict[str, User] = {}
 tokens_db: Dict[str, str] = {}  # token -> user_id
+
+
+def _parse_allowed_ips(env_val: str | None) -> list[ipaddress._BaseAddress]:
+    default = ["127.0.0.1", "::1", "172.17.0.1"]
+    raw = (env_val or ",".join(default)).split(",")
+    ips: list[ipaddress._BaseAddress] = []
+    for r in raw:
+        r = r.strip()
+        if not r:
+            continue
+        try:
+            ips.append(ipaddress.ip_address(r))
+        except ValueError:
+            # ignore invalid entries
+            pass
+    return ips
+
+
+ROOT_EMAIL = os.environ.get("EPISTULA_ROOT_EMAIL", "root@localhost")
+ROOT_NAME = os.environ.get("EPISTULA_ROOT_NAME", "root")
+ROOT_PASSWORD = os.environ.get("EPISTULA_ROOT_PASSWORD", "change-me")
+ROOT_ALLOWED_IPS = _parse_allowed_ips(os.environ.get("EPISTULA_ROOT_ALLOWED_IPS"))
 
 
 def hash_password(password: str) -> str:
@@ -59,6 +83,36 @@ def generate_token() -> str:
         str: URL-safe random token.
     """
     return secrets.token_urlsafe(32)
+
+
+def _ensure_root_user() -> None:
+    """Ensure a Root user exists in the in-memory store.
+
+    This runs at import time to bootstrap a super administrator account.
+    Password can be overridden via EPISTULA_ROOT_PASSWORD.
+    """
+    # Check if already exists
+    for u in users_db.values():
+        if isinstance(u, Root):
+            return
+    # Create one
+    user_id = "root_1"
+    now = datetime.now()
+    user = Root(
+        id=user_id,
+        email=ROOT_EMAIL,
+        name=ROOT_NAME,
+        role=UserRole.ROOT,
+        created_at=now,
+        updated_at=now,
+        is_active=True,
+    )
+    users_db[user_id] = user
+    users_db[f"{user_id}_pw"] = hash_password(ROOT_PASSWORD)
+
+
+# Bootstrap Root user on startup
+_ensure_root_user()
 
 
 def get_current_user(
@@ -184,7 +238,7 @@ async def register_user(user_data: UserCreate) -> User:
 
 
 @router.post("/login", response_model=TokenResponse)
-async def login_user(credentials: UserLogin) -> TokenResponse:
+async def login_user(credentials: UserLogin, request: Request) -> TokenResponse:
     """Login user and receive authentication token.
 
     Args:
@@ -222,6 +276,24 @@ async def login_user(credentials: UserLogin) -> TokenResponse:
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect email or password"
         )
+
+    # If logging in as Root user, enforce local-only rule
+    if isinstance(user, Root) or user.role == UserRole.ROOT:
+        # Prefer X-Forwarded-For if present (remove spaces and take first IP)
+        xff = request.headers.get("x-forwarded-for") or request.headers.get("X-Real-IP")
+        client_ip_str = (xff.split(",")[0].strip() if xff else request.client.host)
+        try:
+            client_ip = ipaddress.ip_address(client_ip_str)
+        except ValueError:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="root login blocked: unable to determine client IP"
+            )
+        if client_ip not in ROOT_ALLOWED_IPS:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="root login allowed only from the local machine"
+            )
 
     # Generate token
     token = generate_token()
