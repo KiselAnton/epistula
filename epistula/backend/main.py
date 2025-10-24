@@ -28,16 +28,13 @@ app = FastAPI(title="Epistula ISO", version=VERSION)
 # Include authentication and user management router
 app.include_router(auth_router)
 
-# Enable CORS so the browser frontend can call the API from a different port
-origins = [
-    "http://localhost:3000",
-    "http://127.0.0.1:3000",
-]
-
+# Enable CORS so the browser frontend can call the API from a different port.
+# Allow all origins (no cookies used), which avoids origin mismatch when accessing
+# via LAN IP, hostname, WSL, or different loopback aliases.
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
-    allow_credentials=True,
+    allow_origins=["*"],
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"]
 )

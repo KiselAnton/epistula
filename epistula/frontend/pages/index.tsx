@@ -46,20 +46,27 @@ export default function Login() {
   };
 
   // Health preflight on mount to avoid slow timeouts during login
-  useEffect(() => {
+  // Health check helper with short timeout
+  const checkHealth = () => {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 3000);
-
     const url = `${getBackendUrl()}/health`;
     fetch(url, { signal: controller.signal })
       .then((res) => setApiHealthy(res.ok))
       .catch(() => setApiHealthy(false))
       .finally(() => clearTimeout(timeout));
+  };
 
-    return () => {
-      clearTimeout(timeout);
-      controller.abort();
-    };
+  // Initial health check + quick retry once after 2s
+  useEffect(() => {
+    checkHealth();
+    const retry = setTimeout(() => {
+      if (apiHealthy === false || apiHealthy === null) {
+        checkHealth();
+      }
+    }, 2000);
+    return () => clearTimeout(retry);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   /**
@@ -143,6 +150,8 @@ export default function Login() {
             {apiHealthy === false && (
               <div className={styles.error}>
                 The server is not reachable. Please ensure the backend is running on port 8000.
+                <br />
+                <a href="#" onClick={(e) => { e.preventDefault(); setApiHealthy(null); checkHealth(); }}>Retry</a>
               </div>
             )}
             <div className={styles.formGroup}>
