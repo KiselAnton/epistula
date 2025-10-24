@@ -36,10 +36,11 @@ if systemctl is-active --quiet epistula-backend 2>/dev/null; then
     echo "Backend service is running, restarting..."
     systemctl restart epistula-backend
     echo "✓ Backend service restarted"
-elif [ -f "$SCRIPT_DIR/epistula/backend/main.py" ]; then
-    echo "Backend files found but service not running"
-    echo "To start the backend service manually, run:"
-    echo "  cd $SCRIPT_DIR/epistula/backend && uvicorn main:app --host 0.0.0.0 --port 8000"
+    elif [ -f "$SCRIPT_DIR/epistula/backend/main.py" ]; then
+        echo "Backend files found but service not running. Starting backend automatically..."
+        cd "$SCRIPT_DIR/epistula/backend"
+        nohup uvicorn main:app --host 0.0.0.0 --port 8000 > "$SCRIPT_DIR/epistula/backend/backend.log" 2>&1 &
+        echo "✓ Backend started with uvicorn (see backend.log for output)"
 else
     echo "⚠ No backend service found (skipping)"
 fi
