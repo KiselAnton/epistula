@@ -67,6 +67,15 @@ export default function Login() {
 
   // Initial health check + quick retry once after 2s
   useEffect(() => {
+    // Check if user is already logged in, redirect to dashboard
+    if (typeof window !== 'undefined') {
+      const token = localStorage.getItem('token');
+      if (token) {
+        window.location.href = '/dashboard';
+        return;
+      }
+    }
+
     checkHealth();
     const retry = setTimeout(() => {
       if (apiHealthy === false || apiHealthy === null) {
@@ -128,8 +137,10 @@ export default function Login() {
         if (data.user) {
           localStorage.setItem('user', JSON.stringify(data.user));
         }
-        // Redirect to dashboard or home page
-        window.location.href = '/hello';
+        // Trigger storage event for other tabs
+        window.dispatchEvent(new Event('storage'));
+        // Redirect to dashboard
+        window.location.href = '/dashboard';
       } else {
         setError(data.detail || 'Login failed. Please check your credentials.');
       }

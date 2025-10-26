@@ -3,7 +3,7 @@ import Head from 'next/head';
 
 const INACTIVITY_TIMEOUT = 60 * 60 * 1000; // 1 hour in milliseconds
 
-export default function Hello() {
+export default function Dashboard() {
   const [name, setName] = useState<string>('');
 
   useEffect(() => {
@@ -19,6 +19,23 @@ export default function Hello() {
     } catch (e) {
       window.location.href = '/';
     }
+  }, []);
+
+  // Sync login state across tabs
+  useEffect(() => {
+    const handleStorageChange = (e: StorageEvent) => {
+      // If token is added in another tab, reload this page
+      if (e.key === 'token' && e.newValue) {
+        window.location.reload();
+      }
+      // If token is removed in another tab, logout
+      if (e.key === 'token' && !e.newValue) {
+        window.location.href = '/';
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
   }, []);
 
   // Auto-logout after 1 hour of inactivity
@@ -65,7 +82,7 @@ export default function Hello() {
   return (
     <>
       <Head>
-        <title>Hello</title>
+        <title>Epistula - Dashboard</title>
       </Head>
       <main style={{ display: 'flex', minHeight: '100vh', alignItems: 'center', justifyContent: 'center', fontFamily: 'system-ui, Arial' }}>
         <div style={{ textAlign: 'center' }}>
