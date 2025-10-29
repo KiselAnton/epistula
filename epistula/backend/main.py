@@ -29,6 +29,8 @@ app = FastAPI(title="Epistula ISO", version=VERSION)
 # Include authentication and user management router
 app.include_router(auth_router)
 
+# CORS configuration ---------------------------------------------------------
+
 def _get_allowed_origins() -> list[str]:
     """Return CORS allow_origins from env.
 
@@ -48,9 +50,16 @@ ALLOWED_ORIGINS = _get_allowed_origins()
 # WARNING (production): avoid using "*" for allow_origins in production.
 # Set EPISTULA_CORS_ORIGINS to a comma-separated list of trusted origins.
 # Example: EPISTULA_CORS_ORIGINS="http://localhost:3000,http://my-host:3000"
-if os.environ.get("EPISTULA_ENV", "development").lower() == "production" and "*" in ALLOWED_ORIGINS:
+if (
+    os.environ.get("EPISTULA_ENV", "development").lower() == "production"
+    and "*" in ALLOWED_ORIGINS
+):
     # Print a clear warning in logs if misconfigured in production
-    print("[WARN] CORS allow_origins='*' detected in production. Set EPISTULA_CORS_ORIGINS to restrict origins.")
+    warn_msg = (
+        "[WARN] CORS allow_origins='*' detected in production. "
+        "Set EPISTULA_CORS_ORIGINS to restrict origins."
+    )
+    print(warn_msg)
 
 app.add_middleware(
     CORSMiddleware,
