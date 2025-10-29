@@ -36,7 +36,8 @@ readonly BACKEND_PORT="8000"
 readonly FRONTEND_PORT="3000"
 
 # Root user runtime configuration (forwarded to backend container)
-ROOT_EMAIL_DEFAULT="root@localhost"
+# Default to a valid RFC-like email so backend EmailStr accepts it
+ROOT_EMAIL_DEFAULT="root@localhost.localdomain"
 ROOT_NAME_DEFAULT="root"
 ROOT_ALLOWED_IPS_DEFAULT="127.0.0.1,::1,172.17.0.1"
 
@@ -180,7 +181,10 @@ start_frontend() {
     cd "$EPISTULA_DIR"
     
     if [ -f "frontend/Dockerfile" ]; then
-        docker build -t "$FRONTEND_IMAGE" ./frontend
+        # Build with BACKEND_URL baked at build time for Next.js
+        docker build \
+            --build-arg BACKEND_URL="http://host.docker.internal:$BACKEND_PORT" \
+            -t "$FRONTEND_IMAGE" ./frontend
         
         # Stop and remove old container if exists
         docker rm -f "$FRONTEND_CONTAINER" 2>/dev/null || true
@@ -189,6 +193,7 @@ start_frontend() {
         docker run -d \
             --name "$FRONTEND_CONTAINER" \
             --restart unless-stopped \
+            --add-host=host.docker.internal:host-gateway \
             -p "$FRONTEND_PORT:3000" \
             "$FRONTEND_IMAGE"
         

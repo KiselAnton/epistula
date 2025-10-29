@@ -11,3 +11,22 @@ md5sum.txt
 # Logs
 epistula/backend/backend.log
 *.log
+
+# Node / Next.js
+# Ignore any accidental root-level Node artifacts and build outputs
+node_modules/
+**/node_modules/
+**/.next/
+**/out/
+
+# Python caches and virtual envs
+__pycache__/
+.pytest_cache/
+.mypy_cache/
+.venv/
+venv/
+
+# Editor settings
+.vscode/
+*.swp
+*.swo

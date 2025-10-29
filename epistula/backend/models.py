@@ -96,7 +96,7 @@ class UserCreate(UserBase):
 
 class UserLogin(BaseModel):
     """Model for user login"""
-    email: EmailStr
+    email: str  # Accept any string for login to avoid validation errors
     password: str
 
 

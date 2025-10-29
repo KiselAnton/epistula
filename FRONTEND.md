@@ -1,200 +1,79 @@
-# Epistula Frontend Setup Guide
+# Frontend (current build)
 
-## Overview
+This Next.js 14 app provides a minimal login + dashboard. It’s packaged to run in Docker via `start_epistula.sh`, but you can also run it in dev mode.
 
-The Epistula frontend is built with Next.js (React) and TypeScript, providing a modern web interface for the application. The first version runs locally and is accessible via IP address.
+## Tech
 
-## Technology Stack
+- Next.js 14 + React 18 + TypeScript
+- CSS Modules
+- Fetch API for backend calls
 
-- **Framework**: Next.js 14
-- **Language**: TypeScript
-- **Styling**: CSS Modules
-- **API Communication**: Fetch API
-
-## Project Structure
+## Structure
 
 ```
 frontend/
-├── pages/
-│   ├── _app.tsx          # Next.js app wrapper
-│   └── index.tsx         # Login page (default route)
-├── styles/
-│   ├── globals.css       # Global styles
-│   └── Login.module.css  # Login page styles
-├── next.config.js        # Next.js configuration
-├── package.json          # Dependencies
-└── tsconfig.json         # TypeScript configuration
+├─ pages/
+│  ├─ _app.tsx
+│  ├─ index.tsx        # login
+│  └─ dashboard.tsx    # post‑login view, auto‑logout
+├─ styles/
+│  ├─ globals.css
+│  └─ Login.module.css
+├─ next.config.js
+├─ package.json
+└─ tsconfig.json
 ```
 
-## Installation
+## How the frontend finds the backend
 
-1. **Navigate to the frontend directory**:
-   ```bash
-   cd epistula/frontend
-   ```
+- In the browser, the app calls the backend at `http(s)://<current-host>:8000`.
+- During SSR, a safe fallback is used. In Docker, SSR can reach the host via `host.docker.internal` (configured at build time), but all user actions are called from the browser, so the browser rule dominates.
 
-2. **Install dependencies**:
-   ```bash
-   npm install
-   ```
+This design works the same on localhost, LAN hostnames, WSL, and VMs.
 
-3. **Set up environment variables** (optional):
-   The frontend is configured to connect to `http://localhost:8000` by default.
-   To change this, set the `BACKEND_URL` environment variable:
-   ```bash
-   export BACKEND_URL=http://your-server-ip:8000
-   ```
+## Login
 
-4. **Start the development server**:
-   ```bash
-   npm run dev
-   ```
+POST ` /api/v1/users/login ` with body:
 
-   The frontend will be available at `http://localhost:3000`
-
-5. **Build for production** (optional):
-   ```bash
-   npm run build
-   npm start
-   ```
-
-## Login Page
-
-The login page (`pages/index.tsx`) is the entry point of the application. It provides a clean, modern interface for user authentication.
-
-### Features:
-
-- **Username/Password Authentication**: Users log in with their username and password
-- **Error Handling**: Clear error messages for failed login attempts
-- **Loading States**: Visual feedback during authentication
-- **Responsive Design**: Works on desktop and mobile devices
-
-### First-Time Admin Login
-
-On the first launch of Epistula, the system requires an administrator to set up the application:
-
-- **Username**: `Administrator`
-- **Password**: The server password (the same password used to access the server)
-
-This admin account has full access to manage the application and create other user accounts.
-
-### API Integration
-
-The login page connects to the backend API at:
-```
-POST /api/v1/users/login
-```
-
-**Request Body**:
 ```json
-{
-  "email": "username",
-  "password": "password"
-}
+{ "email": "<string>", "password": "<string>" }
 ```
 
-**Response**:
-```json
-{
-  "access_token": "jwt-token-here",
-  "token_type": "bearer"
-}
-```
+UI behavior:
 
-The access token is stored in localStorage and used for subsequent API requests.
+- Health check runs on page load to avoid slow login timeouts
+- Email validation allows `root` alias (mapped to `root@localhost.localdomain`)
+- On success, token + user are stored in `localStorage`; redirect to `/dashboard`
+- Tabs are synchronized via the Storage event
 
-## Network Access
+## Dashboard
 
-By default, the Next.js development server only listens on localhost. To make it accessible from other devices on your network:
+- Greets the user, provides a logout button
+- Auto‑logout after 1 hour of inactivity (mouse/keyboard/scroll/touch)
 
-### Development Mode:
+## Rebuilds matter (Next.js)
+
+Next.js embeds code at build time. If you change frontend code, you must rebuild the image:
+
 ```bash
-npm run dev -- -H 0.0.0.0
+sudo ./update_epistula.sh --force   # rebuilds and restarts containers
 ```
 
-Or modify `package.json`:
-```json
-{
-  "scripts": {
-    "dev": "next dev -H 0.0.0.0"
-  }
-}
-```
+If the UI still behaves like an older version (e.g., hitting a stale endpoint), rebuild with the command above.
 
-Then access the application at:
-- Local: `http://localhost:3000`
-- Network: `http://your-ip-address:3000`
+## Dev mode (optional)
 
-### Production Mode:
 ```bash
-npm run build
-npm start -- -H 0.0.0.0 -p 3000
+cd epistula/frontend
+npm install
+npm run dev
+# open http://localhost:3000
 ```
 
-## Styling
+You’ll also need the backend running (see `epistula/backend`).
 
-The application uses CSS Modules for component-scoped styling:
+## Common issues
 
-- **Global Styles** (`styles/globals.css`): CSS reset, base typography, and global styles
-- **Login Styles** (`styles/Login.module.css`): Login page specific styles with modern gradient design
-
-## Configuration
-
-The `next.config.js` file contains:
-
-- **React Strict Mode**: Enabled for better development experience
-- **Environment Variables**: Backend URL configuration
-
-## Common Issues
-
-### Cannot Connect to Backend
-
-**Problem**: Login fails with "Unable to connect to server"
-
-**Solutions**:
-1. Ensure the backend is running on `http://localhost:8000`
-2. Check that CORS is configured on the backend to allow frontend origin
-3. Verify the BACKEND_URL environment variable
-
-### Port Already in Use
-
-**Problem**: "Port 3000 is already in use"
-
-**Solution**: Use a different port
-```bash
-npm run dev -- -p 3001
-```
-
-## Development Workflow
-
-1. **Start the backend** (in separate terminal):
-   ```bash
-   cd epistula/backend
-   python -m uvicorn main:app --reload
-   ```
-
-2. **Start the frontend**:
-   ```bash
-   cd epistula/frontend
-   npm run dev
-   ```
-
-3. **Access the application**:
-   - Open browser to `http://localhost:3000`
-   - Log in with Administrator credentials
-
-## Next Steps
-
-After setting up the frontend:
-
-1. Test the login functionality with the Administrator account
-2. Explore the backend API endpoints
-3. Add additional pages and components as needed
-4. Configure for production deployment
-
-## Support
-
-For issues or questions:
-- Check the main [README.md](README.md)
-- Review the [USER_GUIDE.md](USER_GUIDE.md)
-- Open an issue on GitHub
+- “Server not reachable” banner on login page: ensure the backend is up on port 8000.
+- CORS: the backend allows all origins with no credentials, so browsers can reach it from a different port/host locally.
+- Windows: prefer running with Docker + WSL; ensure Docker Desktop is running.
