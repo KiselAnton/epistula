@@ -31,6 +31,7 @@ app.include_router(auth_router)
 
 # CORS configuration ---------------------------------------------------------
 
+
 def _get_allowed_origins() -> list[str]:
     """Return CORS allow_origins from env.
 
