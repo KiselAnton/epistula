@@ -40,12 +40,21 @@ export default function MainLayout({ children, breadcrumbs = ['Dashboard'] }: Ma
     }
   }, []);
 
-  // Auto-logout after 1 hour inactivity (same as previous behavior)
+  // Auto-logout after 1 hour inactivity with throttled event handling
   useEffect(() => {
     const INACTIVITY_TIMEOUT = 60 * 60 * 1000; // 1 hour
+    const THROTTLE_INTERVAL = 5 * 1000; // Only reset timer once every 5 seconds
     let inactivityTimer: ReturnType<typeof setTimeout>;
+    let lastResetTime = 0;
 
     const resetTimer = () => {
+      const now = Date.now();
+      // Throttle: only reset if enough time has passed since last reset
+      if (now - lastResetTime < THROTTLE_INTERVAL) {
+        return;
+      }
+      lastResetTime = now;
+      
       if (inactivityTimer) clearTimeout(inactivityTimer);
       inactivityTimer = setTimeout(() => {
         console.log('[Auto-Logout] Session expired due to inactivity');
@@ -53,7 +62,8 @@ export default function MainLayout({ children, breadcrumbs = ['Dashboard'] }: Ma
       }, INACTIVITY_TIMEOUT);
     };
 
-    const activityEvents = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart', 'click'];
+    // Remove mousemove to avoid excessive firing; keeping meaningful interaction events
+    const activityEvents = ['mousedown', 'keypress', 'scroll', 'touchstart', 'click'];
     activityEvents.forEach((event) => document.addEventListener(event, resetTimer, true));
     resetTimer();
     return () => {
