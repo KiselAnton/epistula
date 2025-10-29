@@ -7,7 +7,7 @@ export default function Dashboard() {
       <Head>
         <title>Epistula - Dashboard</title>
       </Head>
-      <MainLayout breadcrumbs={["Home", "Dashboard"]}>
+      <MainLayout breadcrumbs={["Epistula", "Dashboard"]}>
         <div style={{
           border: '1px dashed rgba(255,255,255,0.2)',
           borderRadius: 8,

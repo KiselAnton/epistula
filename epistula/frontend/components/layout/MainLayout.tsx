@@ -8,7 +8,6 @@ export interface MainLayoutProps {
 
 export default function MainLayout({ children, breadcrumbs = ['Dashboard'] }: MainLayoutProps) {
   const [collapsed, setCollapsed] = useState(false);
-  const [name, setName] = useState<string>('');
 
   // Logout clears local storage and redirects to login
   const logout = useCallback(() => {
@@ -21,13 +20,13 @@ export default function MainLayout({ children, breadcrumbs = ['Dashboard'] }: Ma
     }
   }, []);
 
-  // Load user for greeting or future use
+  // Load user for authentication check
   useEffect(() => {
     try {
       const userRaw = typeof window !== 'undefined' ? localStorage.getItem('user') : null;
       if (userRaw) {
         const user = JSON.parse(userRaw);
-        setName(user?.name || user?.email || 'user');
+        // User exists, continue
       } else {
         // If no user, go back to login
         if (typeof window !== 'undefined') {
@@ -93,21 +92,11 @@ export default function MainLayout({ children, breadcrumbs = ['Dashboard'] }: Ma
         </div>
 
         <nav className={styles.nav} aria-label="Main Navigation">
-          {/* Placeholder items; to be wired later */}
-          <button className={styles.navItem} disabled={!collapsed && false}>
-            {!collapsed && <span>Home</span>}
-          </button>
-          <button className={styles.navItem} disabled>
-            {!collapsed && <span>Settings</span>}
-          </button>
-          <button className={styles.navItem} disabled>
-            {!collapsed && <span>Reports</span>}
-          </button>
+          {/* Navigation items will be added as pages are implemented */}
         </nav>
 
         <div className={styles.sidebarBottom}>
-          {!collapsed && <div className={styles.userBox} title={name}>Hello, {name}</div>}
-          <button className={styles.logoutBtn} onClick={logout}>Log out</button>
+          {!collapsed && <button className={styles.logoutBtn} onClick={logout}>Log out</button>}
         </div>
       </aside>
 
