@@ -51,7 +51,7 @@ while [[ $# -gt 0 ]]; do
         *)
             # Positional branch name
             if [[ -z "$BRANCH" || "$BRANCH" == "$BRANCH_DEFAULT" ]]; then
-                BRANCH="$1"; shift ;
+                BRANCH="$1"; shift;
             else
                 echo "Unknown argument: $1"; usage; exit 1
             fi
