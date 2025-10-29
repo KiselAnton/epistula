@@ -7,7 +7,7 @@
  * @returns {JSX.Element} The login page.
  */
 
-import { useState, useEffect, FormEvent } from 'react';
+import { useState, useEffect, FormEvent, useCallback } from 'react';
 import Head from 'next/head';
 import styles from '../styles/Login.module.css';
 
@@ -48,7 +48,7 @@ export default function Login() {
 
   // Health preflight on mount to avoid slow timeouts during login
   // Health check helper with short timeout
-  const checkHealth = () => {
+  const checkHealth = useCallback(() => {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 3000);
     const url = `${getBackendUrl()}/health`;
@@ -63,9 +63,9 @@ export default function Login() {
         setApiHealthy(false);
       })
       .finally(() => clearTimeout(timeout));
-  };
+  }, []);
 
-  // Initial health check + quick retry once after 2s
+  // Initial health check + quick retry once after 2s (run once on mount)
   useEffect(() => {
     // Check if user is already logged in, redirect to dashboard
     if (typeof window !== 'undefined') {
@@ -78,12 +78,11 @@ export default function Login() {
 
     checkHealth();
     const retry = setTimeout(() => {
-      if (apiHealthy === false || apiHealthy === null) {
-        checkHealth();
-      }
+      // Perform a single quick retry regardless of previous result to cover transient network hiccups
+      checkHealth();
     }, 2000);
     return () => clearTimeout(retry);
-  }, [apiHealthy]);
+  }, [checkHealth]);
 
   /**
    * Handle login form submission.
