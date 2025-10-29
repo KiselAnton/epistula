@@ -226,7 +226,7 @@ start_frontend() {
     
     if [ -f "frontend/Dockerfile" ]; then
         # Build with BACKEND_URL baked at build time for Next.js
-        DOCKER_BUILDKIT=1 docker build \
+        docker build \
             --build-arg BACKEND_URL="http://host.docker.internal:$BACKEND_PORT" \
             -t "$FRONTEND_IMAGE" ./frontend
         
