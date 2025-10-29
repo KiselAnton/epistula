@@ -42,7 +42,7 @@ while [[ $# -gt 0 ]]; do
     case "$1" in
         -b|--branch)
             BRANCH="$2"; shift 2 ;;
-            -f|--force)
+        -f|--force)
                 FORCE=1; shift ;;
             --no-stash)
                 AUTO_STASH=none; shift ;;
