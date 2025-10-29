@@ -23,15 +23,9 @@ export default function MainLayout({ children, breadcrumbs = ['Dashboard'] }: Ma
   // Load user for authentication check
   useEffect(() => {
     try {
-      const userRaw = typeof window !== 'undefined' ? localStorage.getItem('user') : null;
-      if (userRaw) {
-        const user = JSON.parse(userRaw);
-        // User exists, continue
-      } else {
-        // If no user, go back to login
-        if (typeof window !== 'undefined') {
-          window.location.href = '/';
-        }
+      const hasUser = typeof window !== 'undefined' && !!localStorage.getItem('user');
+      if (!hasUser && typeof window !== 'undefined') {
+        window.location.href = '/';
       }
     } catch (_) {
       if (typeof window !== 'undefined') {
