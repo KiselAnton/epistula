@@ -69,6 +69,9 @@ echo ""
 echo "[1/4] Pulling latest code from repository (branch: $BRANCH)..."
 cd "$SCRIPT_DIR"
 
+# Avoid interactive git prompts in non-interactive environments (e.g., WSL root)
+export GIT_TERMINAL_PROMPT=0
+
 # Check working tree status and stash if needed
 if ! git diff --quiet || ! git diff --cached --quiet || [ -n "$(git ls-files --others --exclude-standard)" ]; then
     if [ "$AUTO_STASH" = "none" ]; then
@@ -92,24 +95,41 @@ if ! git diff --quiet || ! git diff --cached --quiet || [ -n "$(git ls-files --o
     fi
 fi
 
-# Fetch remote branch
-git fetch origin "$BRANCH" || git fetch origin
+# Try to fetch remote without blocking for credentials
+set +e
+git fetch origin "$BRANCH" </dev/null
+FETCH_RC=$?
+if [ $FETCH_RC -ne 0 ]; then
+    git fetch origin </dev/null
+    FETCH_RC=$?
+fi
+set -e
 
-# Checkout or create local tracking branch
-if git rev-parse --verify "$BRANCH" >/dev/null 2>&1; then
-    git checkout "$BRANCH"
+if [ $FETCH_RC -ne 0 ]; then
+    echo "⚠ Could not fetch from remote (possibly due to missing credentials in this shell)."
+    echo "  Continuing without pulling latest commits. Local branch will be used."
+    SKIP_PULL=1
 else
-    # Create local branch tracking remote if remote exists
-    if git show-ref --verify --quiet "refs/remotes/origin/$BRANCH"; then
-        git checkout -b "$BRANCH" "origin/$BRANCH"
-    else
-        echo "⚠ Branch '$BRANCH' not found on remote. Staying on current branch $(git rev-parse --abbrev-ref HEAD)."
-    fi
+    SKIP_PULL=0
 fi
 
-# Pull latest changes (rebase to keep history clean)
-CURRENT_BRANCH="$(git rev-parse --abbrev-ref HEAD)"
-git pull --rebase origin "$CURRENT_BRANCH" || git pull origin "$CURRENT_BRANCH"
+if [ $SKIP_PULL -eq 0 ]; then
+    # Checkout or create local tracking branch
+    if git rev-parse --verify "$BRANCH" >/dev/null 2>&1; then
+        git checkout "$BRANCH"
+    else
+        # Create local branch tracking remote if remote exists
+        if git show-ref --verify --quiet "refs/remotes/origin/$BRANCH"; then
+            git checkout -b "$BRANCH" "origin/$BRANCH"
+        else
+            echo "⚠ Branch '$BRANCH' not found on remote. Staying on current branch $(git rev-parse --abbrev-ref HEAD)."
+        fi
+    fi
+
+    # Pull latest changes (rebase to keep history clean); this is offline after fetch
+    CURRENT_BRANCH="$(git rev-parse --abbrev-ref HEAD)"
+    git pull --rebase origin "$CURRENT_BRANCH" || git pull origin "$CURRENT_BRANCH"
+fi
 
 # Restore stashed changes if any
 if [ "${STASHED:-0}" -eq 1 ]; then
