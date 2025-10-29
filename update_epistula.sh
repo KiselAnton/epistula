@@ -197,3 +197,12 @@ echo "To verify the update:"
 echo "  - Check backend health: curl http://localhost:8000/health"
 echo "  - Check version: curl http://localhost:8000/version"
 echo ""
+
+# Print repo status (branch/commit) for quick visibility
+if command -v git >/dev/null 2>&1; then
+    GIT_BRANCH=$(git -C "$SCRIPT_DIR" rev-parse --abbrev-ref HEAD 2>/dev/null || echo "unknown")
+    GIT_COMMIT=$(git -C "$SCRIPT_DIR" rev-parse --short HEAD 2>/dev/null || echo "unknown")
+    GIT_SUBJ=$(git -C "$SCRIPT_DIR" log -1 --pretty=%s 2>/dev/null || echo "")
+    echo "Repo: $GIT_BRANCH @ $GIT_COMMIT ${GIT_SUBJ:+- $GIT_SUBJ}"
+fi
+
