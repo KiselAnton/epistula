@@ -1,0 +1,147 @@
+/* App shell layout */
+.appShell {
+  display: grid;
+  grid-template-columns: 250px 1fr;
+  grid-template-rows: 56px 1fr;
+  grid-template-areas:
+    "sidebar header"
+    "sidebar content";
+  min-height: 100%;
+  background: #0b0f1a;
+  color: #e5e7eb;
+}
+
+.sidebar {
+  grid-area: sidebar;
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid rgba(255,255,255,0.06);
+  background: #0a0e17;
+  transition: width 0.2s ease-in-out;
+  width: 250px;
+}
+
+.sidebarCollapsed {
+  width: 64px;
+}
+
+.sidebarTopRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+
+.collapseBtn {
+  background: transparent;
+  border: 1px solid rgba(255,255,255,0.15);
+  color: #e5e7eb;
+  border-radius: 6px;
+  width: 32px;
+  height: 32px;
+  cursor: pointer;
+}
+
+.logo {
+  font-weight: 600;
+  letter-spacing: 0.2px;
+}
+
+.nav {
+  display: flex;
+  flex-direction: column;
+  padding: 8px;
+  gap: 6px;
+  flex: 1 1 auto;
+}
+
+.navItem {
+  text-align: left;
+  padding: 10px 12px;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: #cbd5e1;
+  cursor: not-allowed; /* placeholder */
+}
+
+.navItem:hover {
+  background: rgba(255,255,255,0.04);
+}
+
+.sidebarBottom {
+  border-top: 1px solid rgba(255,255,255,0.06);
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.userBox {
+  font-size: 12px;
+  color: #94a3b8;
+}
+
+.logoutBtn {
+  padding: 10px 12px;
+  border-radius: 6px;
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  background: rgba(239, 68, 68, 0.08);
+  color: #fca5a5;
+  cursor: pointer;
+}
+
+.logoutBtn:hover {
+  background: rgba(239, 68, 68, 0.14);
+}
+
+.mainPane {
+  grid-area: content;
+  display: grid;
+  grid-template-rows: 56px 1fr;
+}
+
+.header {
+  grid-row: 1;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  background: rgba(255,255,255,0.02);
+  backdrop-filter: blur(6px);
+}
+
+.breadcrumbs {
+  height: 56px;
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+}
+
+.breadcrumbs ol {
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.crumb {
+  color: #cbd5e1;
+}
+
+.crumbSep {
+  color: #475569;
+  padding: 0 4px;
+}
+
+.content {
+  padding: 16px;
+}
+
+/* Responsive: collapse sidebar on very small widths */
+@media (max-width: 640px) {
+  .appShell {
+    grid-template-columns: 64px 1fr;
+  }
+  .sidebar {
+    width: 64px;
+  }
+}
