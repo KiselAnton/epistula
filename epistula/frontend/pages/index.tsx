@@ -83,8 +83,7 @@ export default function Login() {
       }
     }, 2000);
     return () => clearTimeout(retry);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [apiHealthy]);
 
   /**
    * Handle login form submission.

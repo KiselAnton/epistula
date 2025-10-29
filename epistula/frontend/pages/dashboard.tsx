@@ -1,10 +1,17 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import Head from 'next/head';
 
 const INACTIVITY_TIMEOUT = 60 * 60 * 1000; // 1 hour in milliseconds
 
 export default function Dashboard() {
   const [name, setName] = useState<string>('');
+
+  // Stable logout function reference to satisfy hooks dependency rules
+  const logout = useCallback(() => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    window.location.href = '/';
+  }, []);
 
   useEffect(() => {
     try {
@@ -40,7 +47,7 @@ export default function Dashboard() {
 
   // Auto-logout after 1 hour of inactivity
   useEffect(() => {
-    let inactivityTimer: NodeJS.Timeout;
+  let inactivityTimer: ReturnType<typeof setTimeout>;
 
     const resetTimer = () => {
       // Clear existing timer
@@ -71,13 +78,7 @@ export default function Dashboard() {
         document.removeEventListener(event, resetTimer, true);
       });
     };
-  }, []);
-
-  const logout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    window.location.href = '/';
-  };
+  }, [logout]);
 
   return (
     <>
