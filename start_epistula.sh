@@ -90,6 +90,50 @@ ensure_root_env() {
     fi
 }
 
+install_docker_buildx() {
+    log_info "Installing Docker buildx plugin..."
+    
+    # Check if docker-buildx-plugin package is available (modern approach)
+    if apt-cache show docker-buildx-plugin >/dev/null 2>&1; then
+        sudo apt update
+        sudo apt install -y docker-buildx-plugin
+        log_success "Docker buildx installed via apt"
+        return 0
+    fi
+    
+    # Fallback: manual installation from GitHub releases
+    log_info "Package not available, installing buildx manually..."
+    
+    BUILDX_VERSION=$(curl -s https://api.github.com/repos/docker/buildx/releases/latest | grep '"tag_name"' | sed -E 's/.*"v([^"]+)".*/\1/')
+    if [ -z "$BUILDX_VERSION" ]; then
+        BUILDX_VERSION="0.12.0"  # Fallback version
+    fi
+    
+    ARCH=$(uname -m)
+    case "$ARCH" in
+        x86_64) BUILDX_ARCH="amd64" ;;
+        aarch64|arm64) BUILDX_ARCH="arm64" ;;
+        armv7l) BUILDX_ARCH="arm-v7" ;;
+        *) log_error "Unsupported architecture: $ARCH"; return 1 ;;
+    esac
+    
+    BUILDX_URL="https://github.com/docker/buildx/releases/download/v${BUILDX_VERSION}/buildx-v${BUILDX_VERSION}.linux-${BUILDX_ARCH}"
+    PLUGIN_DIR="${HOME}/.docker/cli-plugins"
+    
+    mkdir -p "$PLUGIN_DIR"
+    curl -sSL "$BUILDX_URL" -o "$PLUGIN_DIR/docker-buildx"
+    chmod +x "$PLUGIN_DIR/docker-buildx"
+    
+    # Verify installation
+    if docker buildx version >/dev/null 2>&1; then
+        log_success "Docker buildx installed successfully"
+        docker buildx create --use --name epistula-builder 2>/dev/null || true
+    else
+        log_error "Failed to install Docker buildx"
+        return 1
+    fi
+}
+
 check_docker() {
     if ! command -v docker >/dev/null 2>&1; then
         log_error "Docker is not installed or not in PATH"
@@ -342,6 +386,15 @@ check_and_install_requirements() {
         MISSING_PKGS+=("python3-pip")
     fi
 
+    # Check for Docker BuildKit/buildx
+    NEEDS_BUILDX=0
+    if command -v docker >/dev/null 2>&1; then
+        if ! docker buildx version >/dev/null 2>&1; then
+            log_warning "Docker buildx (BuildKit) is not available"
+            NEEDS_BUILDX=1
+        fi
+    fi
+
     if [ ${#MISSING_PKGS[@]} -gt 0 ]; then
         log_warning "Missing system packages: ${MISSING_CMDS[*]}"
         if [ "$FORCE" -eq 1 ]; then
@@ -356,6 +409,21 @@ check_and_install_requirements() {
             else
                 log_error "Cannot continue without required system packages."
                 exit 1
+            fi
+        fi
+    fi
+
+    # Install Docker buildx if needed
+    if [ "$NEEDS_BUILDX" -eq 1 ]; then
+        if [ "$FORCE" -eq 1 ]; then
+            log_info "Installing Docker buildx (BuildKit)..."
+            install_docker_buildx
+        else
+            read -p "Install Docker buildx for faster builds? [Y/n]: " -n 1 -r; echo
+            if [[ ! $REPLY =~ ^[Nn]$ ]]; then
+                install_docker_buildx
+            else
+                log_warning "Continuing without buildx. Builds will use legacy builder (slower, deprecated)."
             fi
         fi
     fi
