@@ -12,12 +12,16 @@ This Next.js 14 app provides a minimal login + dashboard. It’s packaged to run
 
 ```
 frontend/
+├─ components/
+│  └─ layout/
+│     └─ MainLayout.tsx   # app shell: sidebar + header + content
 ├─ pages/
 │  ├─ _app.tsx
 │  ├─ index.tsx        # login
-│  └─ dashboard.tsx    # post‑login view, auto‑logout
+│  └─ dashboard.tsx    # uses MainLayout, post‑login view
 ├─ styles/
 │  ├─ globals.css
+│  ├─ Layout.module.css   # styles for app shell
 │  └─ Login.module.css
 ├─ next.config.js
 ├─ package.json
@@ -48,7 +52,12 @@ UI behavior:
 
 ## Dashboard
 
-- Greets the user, provides a logout button
+The dashboard is now a proper app shell:
+
+- Left sidebar (collapsible) reserved for navigation
+	- Logout button is pinned to the bottom
+- Top breadcrumbs bar
+- Main content area for the page content
 - Auto‑logout after 1 hour of inactivity (mouse/keyboard/scroll/touch)
 
 ## Rebuilds matter (Next.js)
