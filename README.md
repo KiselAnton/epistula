@@ -66,6 +66,7 @@ Environment variables the backend honors (forwarded by `start_epistula.sh`):
 - `EPISTULA_ROOT_NAME` (default: `root`)
 - `EPISTULA_ROOT_PASSWORD` (prompted/generated if empty)
 - `EPISTULA_ROOT_ALLOWED_IPS` (comma‑separated list)
+- `EPISTULA_CORS_ORIGINS` (comma‑separated list of allowed origins; default `*` for local use. In production, set explicit origins.)
 
 ## Frontend behavior
 
