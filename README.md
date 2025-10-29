@@ -1,212 +1,104 @@
-# Epistula - Contributor Guide
+# Epistula – ISO App (Docs for current state)
 
-## Overview
+This repository contains a minimal, containerized Epistula build intended for turnkey classroom/lab installs and local demos. It provides a small FastAPI backend and a Next.js frontend, both packaged with helper scripts for build/run/update.
 
-Epistula is a platform for exchanging letters with peers and AI - enabling thoughtful, asynchronous communication. This README is designed for developers and contributors who want to understand the project structure, contribute code, or set up the development environment.
+If you're looking for how to use the app (login, dashboard, etc.), see the updated [USER_GUIDE.md](USER_GUIDE.md). For a 2‑minute setup, see [QUICKSTART.md](QUICKSTART.md).
 
-For professors and students looking to understand how to use Epistula, please see the [USER_GUIDE.md](USER_GUIDE.md).
+## What’s in this build
 
-## What is Epistula?
+- Backend: FastAPI with in‑memory users and a bootstrapped Root account
+- Frontend: Next.js 14 (TypeScript) with a simple login and dashboard
+- ISO helper tooling: optional scripts to assemble an ISO that auto‑starts containers
+- Docker scripts: one‑command start/stop/restart/update
 
-Epistula is a modern take on letter-writing that combines the thoughtfulness of asynchronous correspondence with the power of AI assistance. The platform provides a space for meaningful, deliberate communication - whether writing to peers or engaging with AI.
+This build intentionally avoids external dependencies (no DB, no Keycloak). It’s perfect for offline or constrained environments.
 
-## Tech Stack
-
-- **Backend**: FastAPI (Python web framework)
-- **Database**: PostgreSQL (relational database)
-- **AI Integration**: Ollama (local LLM inference)
-- **Authentication**: Keycloak (identity and access management)
-- **Frontend**: React/Next.js (modern web UI)
-
-## Project Structure
+## Repository layout
 
 ```
 epistula/
-├── backend/          # FastAPI backend application
-├── frontend/         # Next.js/React frontend
-├── database/         # Database schemas and migrations
-├── docker/           # Docker configuration files
-├── isos/             # Place Ubuntu ISOs here to skip downloads
-└── docs/             # Additional documentation
+├─ backend/            # FastAPI app (auth, health, version)
+├─ frontend/           # Next.js app (login + dashboard)
+├─ isos/               # Place Ubuntu ISOs here (optional)
+└─ …
 ```
 
-## Getting Started for Contributors
+Top‑level scripts:
 
-### Prerequisites
+- `start_epistula.sh` – build and run containers (also stop/restart/status/logs)
+- `update_epistula.sh` – pull latest code and rebuild/restart containers
+- `setup_epistula_iso.sh` – optional ISO tooling
 
-- Python 3.9+
-- Node.js 18+
-- PostgreSQL 14+
-- Docker and Docker Compose (optional but recommended)
-- Ollama (for AI features)
+## Requirements
 
-### Development Environment Setup
+- Docker (Docker Desktop on Windows; dockerd on Linux)
+- Bash shell (on Windows, use WSL Ubuntu)
 
-1. **Clone the repository**
-   ```bash
-   git clone https://github.com/KiselAnton/epistula.git
-   cd epistula
-   ```
+Windows tip: run the scripts from WSL in the repo directory (e.g., `/mnt/d/epistula/epistula`) and ensure Docker Desktop is running.
 
-2. **Backend Setup**
-   ```bash
-   cd backend
-   python -m venv venv
-   source venv/bin/activate  # On Windows: venv\Scripts\activate
-   pip install -r requirements.txt
-   ```
+## Quick start
 
-3. **Database Setup**
-   ```bash
-   # Create PostgreSQL database
-   createdb epistula
-   
-   # Run migrations
-   python manage.py migrate
-   ```
-
-4. **Frontend Setup**
-   ```bash
-   cd ../frontend
-   npm install
-   npm run dev
-   ```
-
-5. **Start Backend**
-   ```bash
-   cd ../backend
-   uvicorn main:app --reload
-   ```
-
-## ISO Management
-
-The `isos/` directory is designed to hold Ubuntu Desktop ISO files for classroom setups:
-
-- **Current version**: Ubuntu 24.04.3 Desktop (updated from 22.04)
-- **Purpose**: Allows professors to create bootable USB drives for student computers
-- **Size**: ~5.8 GB
-- **Download URL**: https://releases.ubuntu.com/24.04.3/ubuntu-24.04.3-desktop-amd64.iso
-
-Place the ISO file in the `isos/` directory to skip automatic downloads during setup.
-
-## Features
-
-### Backend (FastAPI)
-
-- RESTful API design
-- JWT-based authentication via Keycloak
-- PostgreSQL for data persistence
-- Ollama integration for AI features
-
-### Frontend (Next.js/React)
-
-- Server-side rendering
-- Modern React with hooks
-- Tailwind CSS for styling
-- Real-time updates
-
-### AI Integration
-
-- Ollama for local LLM inference
-- Supports multiple models
-- Privacy-focused (all processing local)
-
-## Deployment
-
-### Docker Deployment (Recommended)
+See the full quick guide in [QUICKSTART.md](QUICKSTART.md). The short version:
 
 ```bash
-# Production deployment
-docker-compose -f docker-compose.prod.yml up -d
+cd /path/to/epistula
+sudo ./start_epistula.sh            # first run builds & starts containers
+# or
+sudo ./update_epistula.sh --force   # pull, rebuild, restart
 ```
 
-### Manual Deployment
+Open the app at:
 
-See individual service READMEs:
+- Frontend: http://localhost:3000
+- Backend:  http://localhost:8000
 
-- [Backend Deployment](backend/README.md)
-- [Frontend Deployment](frontend/README.md)
+## Authentication model (current)
 
-## Update Workflow for Admins
+- A Root user is created on startup with:
+  - email: `root@localhost.localdomain` (UI allows typing just `root`)
+  - password: provided at first start (or auto‑generated) via `start_epistula.sh`
+  - local‑only login: Root can log in only from allowed IPs (`127.0.0.1`, `::1`, `172.17.0.1` by default)
+- Users are stored in memory for this minimal build (no persistent DB).
 
-After initial installation, admins can update the Epistula application to get the latest features and bug fixes using the automated update script.
+Environment variables the backend honors (forwarded by `start_epistula.sh`):
 
-### Automated Update (Recommended)
+- `EPISTULA_ROOT_EMAIL` (default: `root@localhost.localdomain`)
+- `EPISTULA_ROOT_NAME` (default: `root`)
+- `EPISTULA_ROOT_PASSWORD` (prompted/generated if empty)
+- `EPISTULA_ROOT_ALLOWED_IPS` (comma‑separated list)
 
-1. **Navigate to repository directory**
-   ```bash
-   cd /path/to/epistula
-   ```
+## Frontend behavior
 
-2. **Run the update script**
-   ```bash
-   sudo ./update_epistula.sh
-   ```
+- Health probe on page load to avoid slow login timeouts
+- Login form validation; accepts `root` alias and standard emails
+- On success: token saved in `localStorage`, redirect to `/dashboard`
+- Cross‑tab sync: login/logout is synchronized across browser tabs
+- Auto‑redirect from login if already authenticated
+- Dashboard auto‑logout after 1 hour of inactivity
 
-The update script will:
-- Pull the latest code from the repository
-- Check and restart backend services if running
-- Rebuild Docker containers if present
-- Display the new version number
+Backend CORS is open (`allow_origins=["*"]` and no cookies) so the browser can call the API from a different port/host during local use.
 
-### Manual Update Process
+## Update flow
 
-If you prefer to update manually:
-
-1. **Pull latest code**
-   ```bash
-   cd /path/to/epistula
-   git pull origin master
-   ```
-
-2. **Update backend dependencies** (if changed)
-   ```bash
-   cd epistula/backend
-   pip install -r requirements.txt
-   ```
-
-3. **Restart services**
-   ```bash
-   # For systemd services
-   sudo systemctl restart epistula-backend
-   
-   # For Docker
-   docker-compose down
-   docker-compose up -d --build
-   ```
-
-4. **Verify the update**
-   ```bash
-   # Check health endpoint
-   curl http://localhost:8000/health
-   
-   # Check version
-   curl http://localhost:8000/version
-   ```
-
-### Version Information
-
-The current version is stored in `epistula/backend/VERSION` file. The backend API exposes this via the `/version` endpoint:
+Run the updater from the repo root:
 
 ```bash
-curl http://localhost:8000/version
-# Returns: {"version": "0.1.0", "service": "Epistula ISO"}
+sudo ./update_epistula.sh --force           # optional: --branch <name>
 ```
+
+It will pull the branch, rebuild images, and restart both containers. This also fixes issues caused by stale frontend builds (Next.js embeds code at build time).
+
+## Troubleshooting
+
+- Windows: If PowerShell says Docker isn’t running, try the same command from WSL; Docker Desktop exposes a Linux engine accessible from WSL.
+- “No such file or directory” when running scripts: ensure you’re in the repo root and use `./update_epistula.sh` (note the underscore). Grant exec permission with `chmod +x *.sh` if needed.
+- Login shows 422 on bad email: the UI will show a validation message. Wrong credentials return “Incorrect email or password”.
+- Frontend calls the wrong endpoint after an update: rebuild using the updater; Next.js requires a new build to pick up code changes.
 
 ## License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+MIT – see [LICENSE](LICENSE).
 
-## Support
+## Contributing
 
-For questions and support:
-
-- Open an issue on GitHub
-- Check the [User Guide](USER_GUIDE.md)
-- Review existing documentation in `/docs`
-
-## Acknowledgments
-
-- FastAPI team for the excellent web framework
-- Ollama team for making local LLMs accessible
-- All contributors who have helped improve Epistula
+Lightweight contributions are welcome. Please follow [CODESTYLE.md](CODESTYLE.md). For now, keep changes small and focused on this minimal build.
