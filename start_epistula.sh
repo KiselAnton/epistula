@@ -104,8 +104,14 @@ install_docker_buildx() {
     # Fallback: manual installation from GitHub releases
     log_info "Package not available, installing buildx manually..."
     
-    BUILDX_VERSION=$(curl -s https://api.github.com/repos/docker/buildx/releases/latest | grep '"tag_name"' | sed -E 's/.*"v([^"]+)".*/\1/')
-    if [ -z "$BUILDX_VERSION" ]; then
+    # Extract latest buildx version using jq if available, else fallback to grep/sed
+    if command -v jq >/dev/null 2>&1; then
+        BUILDX_VERSION=$(curl -s https://api.github.com/repos/docker/buildx/releases/latest | jq -r .tag_name | sed 's/^v//')
+    else
+        BUILDX_VERSION=$(curl -s https://api.github.com/repos/docker/buildx/releases/latest | grep '"tag_name"' | sed -E 's/.*"v([^"]+)".*/\1/')
+    fi
+    # Validate extracted version (must be non-empty and look like a version)
+    if [[ -z "$BUILDX_VERSION" || ! "$BUILDX_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+ ]]; then
         BUILDX_VERSION="0.12.0"  # Fallback version
     fi
     
