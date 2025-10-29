@@ -153,7 +153,7 @@ start_backend() {
     
     if [ -f "backend/Dockerfile" ]; then
         ensure_root_env
-        docker build -t "$BACKEND_IMAGE" ./backend
+        DOCKER_BUILDKIT=1 docker build -t "$BACKEND_IMAGE" ./backend
         
         # Stop and remove old container if exists
         docker rm -f "$BACKEND_CONTAINER" 2>/dev/null || true
@@ -182,7 +182,7 @@ start_frontend() {
     
     if [ -f "frontend/Dockerfile" ]; then
         # Build with BACKEND_URL baked at build time for Next.js
-        docker build \
+        DOCKER_BUILDKIT=1 docker build \
             --build-arg BACKEND_URL="http://host.docker.internal:$BACKEND_PORT" \
             -t "$FRONTEND_IMAGE" ./frontend
         
