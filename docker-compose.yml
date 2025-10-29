@@ -1,0 +1,98 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database - PERSISTENT, DO NOT REBUILD
+  database:
+    image: postgres:16-alpine
+    container_name: epistula_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: epistula
+      POSTGRES_USER: epistula_user
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-change_me_in_production}
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      # Persistent data volume - survives container recreation
+      - epistula_db_data:/var/lib/postgresql/data
+      # Initialization scripts (run only on first start)
+      - ./epistula/database/init:/docker-entrypoint-initdb.d:ro
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    networks:
+      - epistula_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U epistula_user -d epistula"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Backend API - Can be rebuilt without affecting database
+  backend:
+    build:
+      context: ./epistula/backend
+      dockerfile: Dockerfile
+    container_name: epistula_backend
+    restart: unless-stopped
+    depends_on:
+      database:
+        condition: service_healthy
+    environment:
+      # Database connection
+      DB_HOST: database
+      DB_PORT: 5432
+      DB_NAME: epistula
+      DB_USER: epistula_user
+      DB_PASSWORD: ${DB_PASSWORD:-change_me_in_production}
+      
+      # Application settings
+      EPISTULA_ENV: ${EPISTULA_ENV:-development}
+      EPISTULA_CORS_ORIGINS: ${EPISTULA_CORS_ORIGINS:-http://localhost:3000}
+      
+      # JWT settings
+      JWT_SECRET: ${JWT_SECRET:-change_me_in_production_use_strong_random_string}
+      JWT_ALGORITHM: HS256
+      JWT_EXPIRATION_MINUTES: ${JWT_EXPIRATION_MINUTES:-60}
+      
+      # Root user (for initial setup)
+      ROOT_EMAIL: ${ROOT_EMAIL:-root@localhost}
+      ROOT_PASSWORD: ${ROOT_PASSWORD:-root_password_change_me}
+    ports:
+      - "${BACKEND_PORT:-8000}:8000"
+    networks:
+      - epistula_network
+    volumes:
+      # Mount backend code for development (remove in production)
+      - ./epistula/backend:/app:ro
+    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+
+  # Frontend - Can be rebuilt without affecting database
+  frontend:
+    build:
+      context: ./epistula/frontend
+      dockerfile: Dockerfile
+    container_name: epistula_frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    environment:
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8000}
+    ports:
+      - "${FRONTEND_PORT:-3000}:3000"
+    networks:
+      - epistula_network
+    volumes:
+      # Mount frontend code for development (remove in production)
+      - ./epistula/frontend:/app:ro
+      - /app/node_modules
+      - /app/.next
+
+networks:
+  epistula_network:
+    driver: bridge
+
+volumes:
+  # CRITICAL: This volume persists database data
+  # Do NOT delete this volume unless you want to lose all data
+  epistula_db_data:
+    driver: local
+    name: epistula_db_data

@@ -26,6 +26,11 @@ __pycache__/
 .venv/
 venv/
 
+# Environment files (contains secrets)
+.env
+*.env
+!.env.example
+
 # Editor settings
 .vscode/
 *.swp

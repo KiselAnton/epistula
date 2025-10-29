@@ -4,518 +4,95 @@ This module provides user authentication, role-based access control,
 and user management endpoints for the Epistula ISO application.
 """
 
-from datetime import datetime
-from typing import Dict
+from fastapi import APIRouter, HTTPException, status, Depends
+from sqlalchemy.orm import Session
 
-import hashlib
-import secrets
-
-import os
-import ipaddress
-from fastapi import APIRouter, HTTPException, status, Depends, Request
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-
-from models import (
-    UserCreate, UserLogin, UserUpdate, User, Student, Teacher, Admin, Root,
-    UserRole, TokenResponse, RolePermissions
+from models import UserLogin, User, TokenResponse, UserDB
+from database import get_db
+from auth_utils import (
+    authenticate_user,
+    create_access_token,
+    get_current_user,
+    db_user_to_pydantic,
 )
 
 # Create router
-router = APIRouter(prefix="/api/v1/users", tags=["users"])
-security = HTTPBearer()
-
-# In-memory storage (replace with database in production)
-users_db: Dict[str, User] = {}
-tokens_db: Dict[str, str] = {}  # token -> user_id
-
-
-def _parse_allowed_ips(env_val: str | None) -> list[ipaddress._BaseAddress]:
-    default = ["127.0.0.1", "::1", "172.17.0.1"]
-    raw = (env_val or ",".join(default)).split(",")
-    ips: list[ipaddress._BaseAddress] = []
-    for r in raw:
-        r = r.strip()
-        if not r:
-            continue
-        try:
-            ips.append(ipaddress.ip_address(r))
-        except ValueError:
-            # ignore invalid entries
-            pass
-    return ips
-
-
-# Use a default root email with a valid domain format to satisfy EmailStr
-ROOT_EMAIL = os.environ.get("EPISTULA_ROOT_EMAIL", "root@localhost.localdomain")
-ROOT_NAME = os.environ.get("EPISTULA_ROOT_NAME", "root")
-ROOT_PASSWORD = os.environ.get("EPISTULA_ROOT_PASSWORD", "change-me")
-ROOT_ALLOWED_IPS = _parse_allowed_ips(os.environ.get("EPISTULA_ROOT_ALLOWED_IPS"))
-
-
-def hash_password(password: str) -> str:
-    """Hash password using SHA-256.
-
-    Args:
-        password: Plain text password to hash.
-
-    Returns:
-        str: Hexadecimal digest of hashed password.
-    """
-    return hashlib.sha256(password.encode()).hexdigest()
-
-
-def verify_password(plain_password: str, hashed_password: str) -> bool:
-    """Verify password against its hash.
-
-    Args:
-        plain_password: Plain text password to verify.
-        hashed_password: Hashed password to compare against.
-
-    Returns:
-        bool: True if password matches hash, False otherwise.
-    """
-    return hash_password(plain_password) == hashed_password
-
-
-def generate_token() -> str:
-    """Generate secure random token.
-
-    Returns:
-        str: URL-safe random token.
-    """
-    return secrets.token_urlsafe(32)
-
-
-def _ensure_root_user() -> None:
-    """Ensure a Root user exists in the in-memory store.
-
-    This runs at import time to bootstrap a super administrator account.
-    Password can be overridden via EPISTULA_ROOT_PASSWORD.
-    """
-    # Check if already exists
-    for u in users_db.values():
-        if isinstance(u, Root):
-            return
-    # Create one
-    user_id = "root_1"
-    now = datetime.now()
-    user = Root(
-        id=user_id,
-        email=ROOT_EMAIL,
-        name=ROOT_NAME,
-        role=UserRole.ROOT,
-        created_at=now,
-        updated_at=now,
-        is_active=True,
-    )
-    users_db[user_id] = user
-    users_db[f"{user_id}_pw"] = hash_password(ROOT_PASSWORD)
-
-
-# Bootstrap Root user on startup
-_ensure_root_user()
-
-
-def get_current_user(
-    credentials: HTTPAuthorizationCredentials = Depends(security)
-) -> User:
-    """Get current authenticated user from token.
-
-    Args:
-        credentials: HTTP Bearer authentication credentials.
-
-    Returns:
-        User: Authenticated user object.
-
-    Raises:
-        HTTPException: If token is invalid or user not found.
-    """
-    token = credentials.credentials
-    user_id = tokens_db.get(token)
-
-    if not user_id or user_id not in users_db:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid authentication credentials",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-
-    return users_db[user_id]
-
-
-def require_role(*allowed_roles: UserRole):
-    """Create dependency to check if user has required role.
-
-    Args:
-        *allowed_roles: Variable length list of allowed user roles.
-
-    Returns:
-        Callable: Role checker dependency function.
-    """
-    def role_checker(current_user: User = Depends(get_current_user)) -> User:
-        """Check if current user has required role.
-
-        Args:
-            current_user: Current authenticated user.
-
-        Returns:
-            User: Current user if authorized.
-
-        Raises:
-            HTTPException: If user role not in allowed roles.
-        """
-        if current_user.role not in allowed_roles:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail=(
-                    f"Access forbidden. Required roles: "
-                    f"{[r.value for r in allowed_roles]}"
-                )
-            )
-        return current_user
-
-    return role_checker
-
-
-@router.post(
-    "/register", response_model=User, status_code=status.HTTP_201_CREATED
-)
-async def register_user(user_data: UserCreate) -> User:
-    """Register new user.
-
-    Args:
-        user_data: User registration data.
-
-    Returns:
-        User: Created user object.
-
-    Raises:
-        HTTPException: If email already registered or invalid role.
-    """
-    # Check if user already exists
-    for user in users_db.values():
-        if isinstance(user, (User, Student, Teacher, Admin)):
-            if user.email == user_data.email:
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail="Email already registered"
-                )
-
-    # Generate user ID
-    user_id = f"user_{len(users_db) + 1}"
-
-    # Hash password
-    hashed_pw = hash_password(user_data.password)
-
-    # Create user based on role
-    now = datetime.now()
-    user_dict = {
-        "id": user_id,
-        "email": user_data.email,
-        "name": user_data.name,
-        "role": user_data.role,
-        "created_at": now,
-        "updated_at": now,
-        "is_active": True
-    }
-
-    if user_data.role == UserRole.STUDENT:
-        user = Student(**user_dict)
-    elif user_data.role == UserRole.TEACHER:
-        user = Teacher(**user_dict)
-    elif user_data.role == UserRole.ADMIN:
-        user = Admin(**user_dict)
-    else:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid role"
-        )
-
-    # Store user and password hash
-    users_db[user_id] = user
-    users_db[f"{user_id}_pw"] = hashed_pw
-
-    return user
+router = APIRouter(prefix="/api/v1/auth", tags=["authentication"])
 
 
 @router.post("/login", response_model=TokenResponse)
-async def login_user(credentials: UserLogin, request: Request) -> TokenResponse:
-    """Login user and receive authentication token.
-
-    Args:
-        credentials: User login credentials.
-
-    Returns:
-        TokenResponse: Authentication token and user data.
-
-    Raises:
-        HTTPException: If credentials are incorrect.
+async def login(
+    credentials: UserLogin,
+    db: Session = Depends(get_db)
+) -> TokenResponse:
     """
-    # Find user by email
-    user = None
-    user_id = None
-
-    for uid, u in users_db.items():
-        if isinstance(u, (User, Student, Teacher, Admin)):
-            if u.email == credentials.email:
-                user = u
-                user_id = uid
-                break
-
-    if not user:
+    Authenticate user and generate JWT token.
+    
+    Args:
+        credentials: User login credentials (email and password)
+        db: Database session
+        
+    Returns:
+        TokenResponse with access token and user data
+        
+    Raises:
+        HTTPException: If credentials are invalid
+    """
+    # Authenticate user
+    db_user = authenticate_user(db, credentials.email, credentials.password)
+    
+    if not db_user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect email or password"
+            detail="Incorrect email or password",
+            headers={"WWW-Authenticate": "Bearer"},
         )
-
-    # Verify password
-    stored_hash = users_db.get(f"{user_id}_pw")
-    if not stored_hash or not verify_password(
-        credentials.password, stored_hash
-    ):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect email or password"
-        )
-
-    # If logging in as Root user, enforce local-only rule
-    if isinstance(user, Root) or user.role == UserRole.ROOT:
-        # Prefer X-Forwarded-For if present (remove spaces and take first IP)
-        xff = request.headers.get("x-forwarded-for") or request.headers.get("X-Real-IP")
-        client_ip_str = (xff.split(",")[0].strip() if xff else request.client.host)
-        try:
-            client_ip = ipaddress.ip_address(client_ip_str)
-        except ValueError:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="root login blocked: unable to determine client IP"
-            )
-        if client_ip not in ROOT_ALLOWED_IPS:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="root login allowed only from the local machine"
-            )
-
-    # Generate token
-    token = generate_token()
-    tokens_db[token] = user_id
-
-    return TokenResponse(access_token=token, user=user)
+    
+    # Create JWT token with user ID as subject
+    access_token = create_access_token(data={"sub": db_user.id})
+    
+    # Convert DB user to Pydantic model
+    user = db_user_to_pydantic(db_user)
+    
+    return TokenResponse(
+        access_token=access_token,
+        token_type="bearer",
+        user=user
+    )
 
 
 @router.get("/me", response_model=User)
-async def get_current_user_info(
-    current_user: User = Depends(get_current_user)
+async def get_me(
+    current_user: UserDB = Depends(get_current_user)
 ) -> User:
-    """Get current user information.
-
-    Args:
-        current_user: Current authenticated user.
-
-    Returns:
-        User: Current user data.
     """
-    return current_user
-
-
-@router.patch("/me", response_model=User)
-async def update_current_user(
-    user_update: UserUpdate,
-    current_user: User = Depends(get_current_user)
-) -> User:
-    """Update current user profile.
-
+    Get current authenticated user information.
+    
     Args:
-        user_update: User update data.
-        current_user: Current authenticated user.
-
+        current_user: Current authenticated user from JWT token
+        
     Returns:
-        User: Updated user data.
+        Current user data
     """
-    if user_update.name:
-        current_user.name = user_update.name
-
-    if user_update.password:
-        # Hash and update password
-        hashed_pw = hash_password(user_update.password)
-        users_db[f"{current_user.id}_pw"] = hashed_pw
-
-    current_user.updated_at = datetime.now()
-    users_db[current_user.id] = current_user
-
-    return current_user
+    return db_user_to_pydantic(current_user)
 
 
-@router.get("/", response_model=list[User])
-async def list_users(
-    current_user: User = Depends(require_role(UserRole.ADMIN))
-) -> list[User]:
-    """List all users.
-
+@router.post("/logout")
+async def logout(
+    current_user: UserDB = Depends(get_current_user)
+) -> dict:
+    """
+    Logout current user.
+    
+    Note: Since we're using stateless JWT tokens, this endpoint primarily
+    serves as a confirmation. The client should discard the token.
+    In a production system with token blacklisting, we would add the
+    token to a blacklist here.
+    
     Args:
-        current_user: Current authenticated admin user.
-
+        current_user: Current authenticated user
+        
     Returns:
-        list[User]: List of all users.
+        Success message
     """
-    return [
-        u for uid, u in users_db.items()
-        if isinstance(u, (User, Student, Teacher, Admin))
-    ]
-
-
-@router.get("/{user_id}", response_model=User)
-async def get_user(
-    user_id: str,
-    current_user: User = Depends(
-        require_role(UserRole.ADMIN, UserRole.TEACHER)
-    )
-) -> User:
-    """Get user by ID.
-
-    Args:
-        user_id: Target user ID.
-        current_user: Current authenticated user (admin or teacher).
-
-    Returns:
-        User: Requested user data.
-
-    Raises:
-        HTTPException: If user not found.
-    """
-    if user_id not in users_db:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="User not found"
-        )
-
-    user = users_db[user_id]
-    if not isinstance(user, (User, Student, Teacher, Admin)):
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="User not found"
-        )
-
-    return user
-
-
-@router.patch("/{user_id}", response_model=User)
-async def update_user(
-    user_id: str,
-    user_update: UserUpdate,
-    current_user: User = Depends(require_role(UserRole.ADMIN))
-) -> User:
-    """Update any user profile.
-
-    Args:
-        user_id: Target user ID.
-        user_update: User update data.
-        current_user: Current authenticated admin user.
-
-    Returns:
-        User: Updated user data.
-
-    Raises:
-        HTTPException: If user not found.
-    """
-    if user_id not in users_db:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="User not found"
-        )
-
-    user = users_db[user_id]
-    if not isinstance(user, (User, Student, Teacher, Admin)):
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="User not found"
-        )
-
-    if user_update.name:
-        user.name = user_update.name
-
-    if user_update.password:
-        # Hash and update password (password reset)
-        hashed_pw = hash_password(user_update.password)
-        users_db[f"{user_id}_pw"] = hashed_pw
-
-    user.updated_at = datetime.now()
-    users_db[user_id] = user
-
-    return user
-
-
-@router.post("/assign-role/{user_id}", response_model=User)
-async def assign_role(
-    user_id: str,
-    role: UserRole,
-    current_user: User = Depends(require_role(UserRole.ADMIN))
-) -> User:
-    """Assign or change user role.
-
-    Args:
-        user_id: Target user ID.
-        role: New role to assign.
-        current_user: Current authenticated admin user.
-
-    Returns:
-        User: User with updated role.
-
-    Raises:
-        HTTPException: If user not found or invalid role.
-    """
-    if user_id not in users_db:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="User not found"
-        )
-
-    old_user = users_db[user_id]
-    if not isinstance(old_user, (User, Student, Teacher, Admin)):
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="User not found"
-        )
-
-    # Create new user object with updated role
-    user_dict = {
-        "id": old_user.id,
-        "email": old_user.email,
-        "name": old_user.name,
-        "role": role,
-        "created_at": old_user.created_at,
-        "updated_at": datetime.now(),
-        "is_active": old_user.is_active
-    }
-
-    if role == UserRole.STUDENT:
-        new_user = Student(**user_dict)
-    elif role == UserRole.TEACHER:
-        new_user = Teacher(**user_dict)
-    elif role == UserRole.ADMIN:
-        new_user = Admin(**user_dict)
-    else:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid role"
-        )
-
-    users_db[user_id] = new_user
-
-    return new_user
-
-
-@router.get("/permissions/me", response_model=list[str])
-async def get_my_permissions(
-    current_user: User = Depends(get_current_user)
-) -> list[str]:
-    """Get current user permissions based on their role.
-
-    Args:
-        current_user: Current authenticated user.
-
-    Returns:
-        list[str]: List of permission strings.
-    """
-    permissions = RolePermissions.get_permissions(current_user.role)
-    return [p.value for p in permissions]
+    return {"message": "Successfully logged out"}

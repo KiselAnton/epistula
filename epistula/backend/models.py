@@ -1,15 +1,30 @@
-from enum import Enum
+"""Data models for Epistula application.
+
+This module contains:
+- Pydantic models for API request/response validation
+- SQLAlchemy ORM models for database operations
+- Enums and permissions
+"""
+
+from enum import Enum as PyEnum
 from pydantic import BaseModel, EmailStr, Field
 from typing import Optional, List
 from datetime import datetime
+from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey, Text, Enum
+from sqlalchemy.sql import func
+from database import Base
 
 
-class UserRole(str, Enum):
-    """User role enumeration"""
+# ============================================================================
+# Enums
+# ============================================================================
+
+class UserRole(str, PyEnum):
+    """User role enumeration - matches database enum"""
+    ROOT = "root"
+    UNI_ADMIN = "uni_admin"
+    PROFESSOR = "professor"
     STUDENT = "student"
-    TEACHER = "teacher"
-    ADMIN = "admin"
-    ROOT = "root"  # Super administrator (login restricted to local machine)
 
 
 class Permission(str, Enum):
@@ -117,44 +132,9 @@ class User(UserBase):
         from_attributes = True
 
 
-class Student(User):
-    """Student user model with student-specific attributes"""
-    role: UserRole = UserRole.STUDENT
-    workspace_id: Optional[str] = None
-    enrolled_subjects: List[str] = Field(default_factory=list)  # List of subject IDs
-    pending_requests: List[str] = Field(default_factory=list)  # List of subject IDs
-
-    def get_permissions(self) -> List[Permission]:
-        return RolePermissions.STUDENT_PERMISSIONS
-
-
-class Teacher(User):
-    """Teacher user model with teacher-specific attributes"""
-    role: UserRole = UserRole.TEACHER
-    created_subjects: List[str] = Field(default_factory=list)  # List of subject IDs
-
-    def get_permissions(self) -> List[Permission]:
-        return RolePermissions.TEACHER_PERMISSIONS
-
-
-class Admin(User):
-    """Admin user model with admin-specific attributes"""
-    role: UserRole = UserRole.ADMIN
-
-    def get_permissions(self) -> List[Permission]:
-        return RolePermissions.ADMIN_PERMISSIONS
-
-
-class Root(User):
-    """Root user model with super administrator privileges.
-
-    Note: Authorization for this user is further restricted in the login flow
-    to only allow authentication from the local machine.
-    """
-    role: UserRole = UserRole.ROOT
-
-    def get_permissions(self) -> List[Permission]:
-        return RolePermissions.ROOT_PERMISSIONS
+# Note: Student, Teacher, Admin, Root Pydantic models removed
+# These will be replaced with proper role-based user context
+# For now, User model with UserRole enum is sufficient
 
 
 class TokenResponse(BaseModel):
@@ -162,3 +142,76 @@ class TokenResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
     user: User
+
+
+# ============================================================================
+# SQLAlchemy ORM Models
+# ============================================================================
+
+class UserDB(Base):
+    """SQLAlchemy ORM model for users table"""
+    __tablename__ = "users"
+    __table_args__ = {"schema": "public"}
+    
+    id = Column(Integer, primary_key=True, index=True)
+    email = Column(String(255), unique=True, nullable=False, index=True)
+    password_hash = Column(String(255), nullable=False)
+    name = Column(String(100), nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
+    is_active = Column(Boolean, default=True, nullable=False)
+    is_root = Column(Boolean, default=False, nullable=False)
+
+
+class UniversityDB(Base):
+    """SQLAlchemy ORM model for universities table"""
+    __tablename__ = "universities"
+    __table_args__ = {"schema": "public"}
+    
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(255), nullable=False)
+    short_name = Column(String(50), unique=True, nullable=False, index=True)
+    schema_name = Column(String(63), unique=True, nullable=False, index=True)
+    description = Column(Text)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    is_active = Column(Boolean, default=True, nullable=False)
+
+
+class UserUniversityRoleDB(Base):
+    """SQLAlchemy ORM model for user_university_roles table"""
+    __tablename__ = "user_university_roles"
+    __table_args__ = {"schema": "public"}
+    
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("public.users.id", ondelete="CASCADE"), nullable=False, index=True)
+    university_id = Column(Integer, ForeignKey("public.universities.id", ondelete="CASCADE"), nullable=False, index=True)
+    role = Column(Enum("root", "uni_admin", "professor", "student", name="user_role", schema="public"), nullable=False)
+    granted_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    granted_by = Column(Integer, ForeignKey("public.users.id", ondelete="SET NULL"))
+
+
+# ============================================================================
+# Pydantic Models for Universities
+# ============================================================================
+
+class UniversityBase(BaseModel):
+    """Base university model"""
+    name: str = Field(..., min_length=1, max_length=255)
+    short_name: str = Field(..., min_length=1, max_length=50)
+    description: Optional[str] = None
+
+
+class UniversityCreate(UniversityBase):
+    """Model for university creation"""
+    pass
+
+
+class University(UniversityBase):
+    """Complete university model"""
+    id: int
+    schema_name: str
+    created_at: datetime
+    is_active: bool = True
+
+    class Config:
+        from_attributes = True

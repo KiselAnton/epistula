@@ -8,7 +8,26 @@ from pathlib import Path
 import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from contextlib import asynccontextmanager
+
 from auth import router as auth_router
+from init_root_user import init_root_user
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """
+    Application lifespan manager - runs on startup and shutdown.
+    
+    This ensures the root user is created from environment variables
+    when the application starts.
+    """
+    # Startup
+    print("Starting up Epistula...")
+    init_root_user()
+    yield
+    # Shutdown
+    print("Shutting down Epistula...")
 
 
 def get_version_from_file() -> str:
@@ -24,7 +43,7 @@ def get_version_from_file() -> str:
 
 
 VERSION = get_version_from_file()
-app = FastAPI(title="Epistula ISO", version=VERSION)
+app = FastAPI(title="Epistula ISO", version=VERSION, lifespan=lifespan)
 
 # Include authentication and user management router
 app.include_router(auth_router)
