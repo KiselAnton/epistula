@@ -109,7 +109,7 @@ export default function MainLayout({ children, breadcrumbs = ['Dashboard'] }: Ma
           <nav className={styles.breadcrumbs} aria-label="Breadcrumbs">
             <ol>
               {breadcrumbs.map((crumb, idx) => (
-                <li key={idx}>
+                <li key={`${crumb}-${idx}`}>
                   <span className={styles.crumb}>{crumb}</span>
                   {idx < breadcrumbs.length - 1 && <span className={styles.crumbSep}>/</span>}
                 </li>
