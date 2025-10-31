@@ -11,6 +11,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 
 from auth import router as auth_router
+from universities import router as universities_router
 from init_root_user import init_root_user
 
 
@@ -47,6 +48,7 @@ app = FastAPI(title="Epistula ISO", version=VERSION, lifespan=lifespan)
 
 # Include authentication and user management router
 app.include_router(auth_router)
+app.include_router(universities_router)
 
 # CORS configuration ---------------------------------------------------------
 

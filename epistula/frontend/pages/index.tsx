@@ -113,7 +113,7 @@ export default function Login() {
         : email;
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), 8000);
-      const response = await fetch(`${backendUrl}/api/v1/users/login`, {
+  const response = await fetch(`${backendUrl}/api/v1/auth/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

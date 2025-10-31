@@ -27,7 +27,7 @@ class UserRole(str, PyEnum):
     STUDENT = "student"
 
 
-class Permission(str, Enum):
+class Permission(str, PyEnum):
     """Permission types for different roles"""
     # Student permissions
     VIEW_SUBJECTS = "view_subjects"
@@ -88,9 +88,9 @@ class RolePermissions:
         """Get permissions for a given role"""
         if role == UserRole.STUDENT:
             return cls.STUDENT_PERMISSIONS
-        elif role == UserRole.TEACHER:
+        elif role == UserRole.PROFESSOR:
             return cls.TEACHER_PERMISSIONS
-        elif role == UserRole.ADMIN:
+        elif role == UserRole.UNI_ADMIN:
             return cls.ADMIN_PERMISSIONS
         elif role == UserRole.ROOT:
             return cls.ROOT_PERMISSIONS
@@ -170,7 +170,7 @@ class UniversityDB(Base):
     
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String(255), nullable=False)
-    short_name = Column(String(50), unique=True, nullable=False, index=True)
+    code = Column(String(50), unique=True, nullable=False, index=True)
     schema_name = Column(String(63), unique=True, nullable=False, index=True)
     description = Column(Text)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
@@ -197,7 +197,7 @@ class UserUniversityRoleDB(Base):
 class UniversityBase(BaseModel):
     """Base university model"""
     name: str = Field(..., min_length=1, max_length=255)
-    short_name: str = Field(..., min_length=1, max_length=50)
+    code: str = Field(..., min_length=1, max_length=50)
     description: Optional[str] = None
 
 
