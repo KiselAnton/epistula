@@ -96,8 +96,8 @@ export default function UniversityBackupSection({
   }, [backend, universityId]);
 
   useEffect(() => {
-    // If we don't have initial backups, load them; always get temp status
-    if (!initialBackups) {
+    // If we don't have initial backups, or it is an empty list, load them; always get temp status
+    if (!initialBackups || (Array.isArray(initialBackups) && initialBackups.length === 0)) {
       fetchBackups();
     }
     refreshTempStatus();

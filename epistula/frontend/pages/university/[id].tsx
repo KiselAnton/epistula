@@ -226,24 +226,31 @@ export default function UniversityPage() {
     fetchFaculties();
   }, [id, router]);
 
-  // Determine if current user can restore (root in current UI model)
+  // Determine if current user can restore (root or uni_admin for this university)
   useEffect(() => {
     try {
       const userRaw = typeof window !== 'undefined' ? localStorage.getItem('user') : null;
       if (userRaw) {
         const user = JSON.parse(userRaw);
-        if (user?.role === 'root') { setCanRestore(true); setIsRoot(true); }
+        let canEditLocal = false;
+        if (user?.role === 'root') { setIsRoot(true); canEditLocal = true; }
         // Edit rights: root or uni_admin for this university
         const uniId = parseInt(id as string);
         if (user?.role === 'root') {
           setCanEdit(true);
         } else if (user?.role === 'uni_admin') {
           if (user?.universities && Array.isArray(user.universities)) {
-            setCanEdit(user.universities.includes(uniId));
+            const isAdmin = user.universities.includes(uniId);
+            setCanEdit(isAdmin);
+            canEditLocal = canEditLocal || isAdmin;
           } else if (user?.primary_university_id) {
-            setCanEdit(Number(user.primary_university_id) === uniId);
+            const isAdmin = Number(user.primary_university_id) === uniId;
+            setCanEdit(isAdmin);
+            canEditLocal = canEditLocal || isAdmin;
           }
         }
+        // Restore permissions mirror edit permissions for now
+        setCanRestore(canEditLocal);
       }
     } catch {}
   }, [id]);
