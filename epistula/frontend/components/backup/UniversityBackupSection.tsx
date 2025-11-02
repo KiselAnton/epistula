@@ -335,10 +335,10 @@ export default function UniversityBackupSection({
         <div style={{ display: 'flex', gap: '0.5rem' }}>
           {hasTemp && (
             <>
-              <button onClick={handlePromoteTemp} disabled={promoting} className={styles.promoteButton} title="Promote temporary schema to production">
+              <button onClick={handlePromoteTemp} disabled={promoting} className={`${btn.btn} ${btn.btnSuccess}`} title="Promote temporary schema to production">
                 {promoting ? '⏳ Promoting...' : '✅ Promote to Live'}
               </button>
-              <button onClick={handleDeleteTemp} disabled={deletingTemp} className={styles.deleteButton} title="Delete temporary schema">
+              <button onClick={handleDeleteTemp} disabled={deletingTemp} className={`${btn.btn} ${btn.btnDanger}`} title="Delete temporary schema">
                 {deletingTemp ? '⏳ Deleting...' : '🗑️ Discard Temp'}
               </button>
             </>
@@ -460,7 +460,7 @@ export default function UniversityBackupSection({
                           <button
                             onClick={() => handleRestore(backup.name, true)}
                             disabled={isRestoringToTemp || !!restoringTempKey}
-                            className={styles.restoreToTempButton}
+                            className={`${btn.btn} ${btn.btnWarning}`}
                             title="Restore to temporary schema for validation (safe)"
                           >
                             {isRestoringToTemp ? 'Restoring...' : '🔁 Restore to Temp'}
@@ -468,20 +468,20 @@ export default function UniversityBackupSection({
                           <button
                             onClick={() => handleRestore(backup.name, false)}
                             disabled={isRestoring || !!restoringKey}
-                            className={styles.restoreButton}
+                            className={`${btn.btn} ${btn.btnDanger}`}
                             title="Restore directly to production (REPLACES LIVE DATA!)"
                           >
                             {isRestoring ? 'Restoring...' : '⚠️ Restore to Live'}
                           </button>
                           {!backup.in_minio && (
-                            <button onClick={() => handleUploadToMinio(backup.name)} disabled={isUploading || !!uploadingKey} className={styles.uploadButton}>
+                            <button onClick={() => handleUploadToMinio(backup.name)} disabled={isUploading || !!uploadingKey} className={`${btn.btn} ${btn.btnPrimary}`}>
                               {isUploading ? 'Uploading...' : '☁️ Upload to MinIO'}
                             </button>
                           )}
                           <button
                             onClick={() => handleDeleteBackup(backup.name)}
                             disabled={isDeleting || !!deletingKey}
-                            className={styles.deleteButton}
+                            className={`${btn.btn} ${btn.btnDanger}`}
                             title="Delete backup file (and MinIO object if present)"
                           >
                             {isDeleting ? 'Deleting...' : '🗑️ Delete'}

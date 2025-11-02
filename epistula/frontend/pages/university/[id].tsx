@@ -8,6 +8,7 @@ import EditUniversityModal from '../../components/university/EditUniversityModal
 import MarkdownDisplay from '../../components/common/MarkdownDisplay';
 import UniversityBackupSection from '../../components/backup/UniversityBackupSection';
 import { getBackendUrl } from '../../lib/config';
+import buttons from '../../styles/Buttons.module.css';
 
 interface University {
   id: number;
@@ -465,7 +466,7 @@ export default function UniversityPage() {
                   {/* Unified editing: replace per-control buttons with a single Edit action */}
                   {canEdit && (
                     <div style={{ marginTop: '1rem', display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                      <button onClick={() => setShowEditModal(true)} style={{ padding: '0.5rem 1rem', background: '#007bff', color: 'white', border: 'none', borderRadius: 6, cursor: 'pointer' }}>✏️ Edit</button>
+                      <button onClick={() => setShowEditModal(true)} className={`${buttons.btn} ${buttons.btnPrimary}`}>✏️ Edit</button>
                       {/* Placeholder space for future uni-level exports if needed */}
                     </div>
                   )}

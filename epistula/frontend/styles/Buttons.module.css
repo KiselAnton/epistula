@@ -42,6 +42,14 @@
   background-color: #c82333;
 }
 
+.btnWarning {
+  background-color: #ff9800;
+  color: #fff;
+}
+.btnWarning:hover:not(:disabled) {
+  background-color: #f57c00;
+}
+
 .btnSecondary {
   background-color: #6c757d;
   color: #fff;

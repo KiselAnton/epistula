@@ -4,6 +4,7 @@ import Head from 'next/head';
 import MainLayout from '../components/layout/MainLayout';
 import DataTransferPanel from '../components/backup/DataTransferPanel';
 import styles from '../styles/Backups.module.css';
+import UniversityBackupSection from '../components/backup/UniversityBackupSection';
 import btn from '../styles/Buttons.module.css';
 
 interface BackupInfo {
@@ -497,203 +498,16 @@ export default function Backups() {
           </div>
         )}
 
-        {backupsData?.universities.map((uni) => {
-          const uniTempStatus = tempStatus[uni.university_id];
-          const hasTemp = uniTempStatus?.has_temp_schema || false;
-          const isCollapsed = collapsedSections[uni.university_id] ?? true;
-          
-          return (
-          <div key={uni.university_id} className={styles.universitySection}>
-            <div className={styles.universityHeader}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flex: 1 }}>
-                <button
-                  onClick={() => toggleSection(uni.university_id)}
-                  className={styles.toggleButton}
-                  title={isCollapsed ? "Expand section" : "Collapse section"}
-                  aria-label={isCollapsed ? "Expand" : "Collapse"}
-                >
-                  {isCollapsed ? '▶' : '▼'}
-                </button>
-                <h2 className={styles.universityName}>
-                  {uni.university_name}
-                  <span className={styles.backupCount}>({uni.backups.length} backups)</span>
-                  {hasTemp && (
-                    <span className={styles.tempBadge} title="Has temporary restore ready for validation">
-                      🔍 Temp Schema Active
-                    </span>
-                  )}
-                </h2>
-              </div>
-              <div style={{ display: 'flex', gap: '0.5rem' }}>
-                {hasTemp && (
-                  <>
-                    <button
-                      onClick={() => handlePromoteTemp(uni.university_id, uni.university_name)}
-                      disabled={promoting === uni.university_id}
-                      className={styles.promoteButton}
-                      title="Promote temporary schema to production"
-                    >
-                      {promoting === uni.university_id ? '⏳ Promoting...' : '✅ Promote to Live'}
-                    </button>
-                    <button
-                      onClick={() => handleDeleteTemp(uni.university_id, uni.university_name)}
-                      disabled={deletingTemp === uni.university_id}
-                      className={styles.deleteButton}
-                      title="Delete temporary schema"
-                    >
-                      {deletingTemp === uni.university_id ? '⏳ Deleting...' : '🗑️ Discard Temp'}
-                    </button>
-                  </>
-                )}
-                <button
-                  onClick={() => handleCreateBackup(uni.university_id, uni.university_name)}
-                  disabled={creatingBackup === uni.university_id}
-                  className={`${btn.btn} ${btn.btnOutlineLight}`}
-                  title="Create a new backup immediately"
-                >
-                  {creatingBackup === uni.university_id ? '⏳ Creating...' : '💾 Backup Now'}
-                </button>
-              </div>
-            </div>
-
-            {!isCollapsed && (
-              <>
-                {hasTemp && uniTempStatus?.temp_info && (
-                  <div className={styles.tempInfo}>
-                    <strong>📋 Temporary Schema Info:</strong> 
-                    {' '}Faculties: {uniTempStatus.temp_info.faculty_count || 0}
-                    {', '}Users: {uniTempStatus.temp_info.user_count || 0}
-                    {' '}(Ready for validation)
-                  </div>
-                )}
-
-                {/* Data Transfer Panel - Only shown when temp schema exists */}
-                {hasTemp && (
-                  <DataTransferPanel
-                    universityId={uni.university_id}
-                    universityName={uni.university_name}
-                    hasTempSchema={hasTemp}
-                    onTransferComplete={() => {
-                      fetchBackups();
-                      checkTempStatus(uni.university_id);
-                    }}
-                  />
-                )}
-
-                <div className={styles.backupsTable}>
-              <table>
-                <thead>
-                  <tr>
-                    <th>Backup</th>
-                    <th>Created</th>
-                    <th>Size</th>
-                    <th>Storage</th>
-                    <th>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {uni.backups.map((backup) => {
-                    const restoreKey = `${uni.university_id}-${backup.name}`;
-                    const uploadKey = `${uni.university_id}-${backup.name}`;
-                    const isRestoring = restoring === restoreKey;
-                    const isRestoringToTemp = restoringToTemp === restoreKey;
-                    const isUploading = uploading === uploadKey;
-
-                    return (
-                      <tr key={backup.name}>
-                        <td className={styles.backupName}>
-                          <div style={{display:'flex', flexDirection:'column', gap:4}}>
-                            <div style={{fontWeight:600}}>{backup.title?.trim() ? backup.title : '(no title)'}</div>
-                            <div style={{fontSize:12, color:'#666'}} title={backup.name}>{backup.name}</div>
-                            {editingMeta[`${uni.university_id}-${backup.name}`] ? (
-                              <div style={{marginTop:6, display:'grid', gap:6}}>
-                                <input
-                                  type="text"
-                                  placeholder="Title"
-                                  value={editingMeta[`${uni.university_id}-${backup.name}`].title}
-                                  onChange={e => setEditingMeta(prev => ({...prev, [`${uni.university_id}-${backup.name}`]: {...prev[`${uni.university_id}-${backup.name}`], title: e.target.value}}))}
-                                  style={{padding:6, border:'1px solid #ccc', borderRadius:4}}
-                                />
-                                <textarea
-                                  placeholder="Description / notes"
-                                  value={editingMeta[`${uni.university_id}-${backup.name}`].description}
-                                  onChange={e => setEditingMeta(prev => ({...prev, [`${uni.university_id}-${backup.name}`]: {...prev[`${uni.university_id}-${backup.name}`], description: e.target.value}}))}
-                                  rows={2}
-                                  style={{padding:6, border:'1px solid #ccc', borderRadius:4}}
-                                />
-                                <div style={{display:'flex', gap:8}}>
-                                  <button onClick={() => saveMeta(uni.university_id, backup.name)} disabled={editingMeta[`${uni.university_id}-${backup.name}`].saving} className={styles.saveButton}>
-                                    {editingMeta[`${uni.university_id}-${backup.name}`].saving ? 'Saving...' : '💾 Save'}
-                                  </button>
-                                  <button onClick={() => cancelEditMeta(uni.university_id, backup.name)} className={styles.cancelButton}>Cancel</button>
-                                </div>
-                              </div>
-                            ) : (
-                              <div style={{marginTop:4}}>
-                                <button onClick={() => startEditMeta(uni.university_id, backup)} className={styles.editButton}>✏️ Edit details</button>
-                              </div>
-                            )}
-                          </div>
-                        </td>
-                        <td>{formatDate(backup.created_at)}</td>
-                        <td>{formatBytes(backup.size_bytes)}</td>
-                        <td>
-                          <div className={styles.storageIndicators}>
-                            <span className={styles.storageLocal} title="Stored locally">
-                              💾 Local
-                            </span>
-                            {backup.in_minio && (
-                              <span className={styles.storageMinio} title="Stored in MinIO">
-                                ☁️ MinIO
-                              </span>
-                            )}
-                          </div>
-                        </td>
-                        <td className={styles.actions}>
-                          <button
-                            onClick={() => handleRestore(uni.university_id, backup.name, uni.university_name, true)}
-                            disabled={isRestoringToTemp || !!restoringToTemp}
-                            className={styles.restoreToTempButton}
-                            title="Restore to temporary schema for validation (safe)"
-                          >
-                            {isRestoringToTemp ? 'Restoring...' : '� Restore to Temp'}
-                          </button>
-                          <button
-                            onClick={() => handleRestore(uni.university_id, backup.name, uni.university_name, false)}
-                            disabled={isRestoring || !!restoring}
-                            className={styles.restoreButton}
-                            title="Restore directly to production (REPLACES LIVE DATA!)"
-                          >
-                            {isRestoring ? 'Restoring...' : '⚠️ Restore to Live'}
-                          </button>
-                          {!backup.in_minio && (
-                            <button
-                              onClick={() => handleUploadToMinio(uni.university_id, backup.name)}
-                              disabled={isUploading || !!uploading}
-                              className={styles.uploadButton}
-                            >
-                              {isUploading ? 'Uploading...' : '☁️ Upload to MinIO'}
-                            </button>
-                          )}
-                          <button
-                            onClick={() => handleDeleteBackup(uni.university_id, backup.name, uni.university_name)}
-                            disabled={deletingBackup === `${uni.university_id}-${backup.name}` || !!deletingBackup}
-                            className={styles.deleteButton}
-                            title="Delete backup file (and MinIO object if present)"
-                          >
-                            {deletingBackup === `${uni.university_id}-${backup.name}` ? 'Deleting...' : '🗑️ Delete'}
-                          </button>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-              </>
-            )}
-          </div>
-        )})}
+        {backupsData?.universities.map((uni) => (
+          <UniversityBackupSection
+            key={uni.university_id}
+            universityId={uni.university_id}
+            universityName={uni.university_name}
+            defaultCollapsed={true}
+            initialBackups={uni.backups}
+            onChanged={() => fetchBackups()}
+          />
+        ))}
       </div>
     </MainLayout>
   );
