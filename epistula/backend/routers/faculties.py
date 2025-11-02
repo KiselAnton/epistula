@@ -333,21 +333,51 @@ def update_faculty(
             detail=f"Faculty with ID {faculty_id} not found",
         )
 
-    # Build dynamic update statement based on provided fields
+    # Normalize inputs and collect updates only for provided fields
     updates = []
     params: dict = {"faculty_id": faculty_id}
+
+    # Start from current values to compare and validate
+    current_name, current_short, current_code, current_desc = row[2], row[3], row[4], row[5]
+
     if payload.name is not None:
-        updates.append("name = :name")
-        params["name"] = payload.name
+        name = payload.name.strip()
+        if not name:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Name cannot be empty")
+        if name != current_name:
+            updates.append("name = :name")
+            params["name"] = name
+
     if payload.short_name is not None:
-        updates.append("short_name = :short_name")
-        params["short_name"] = payload.short_name
+        short_name = payload.short_name.strip()
+        if not short_name:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Short name cannot be empty")
+        if short_name != current_short:
+            updates.append("short_name = :short_name")
+            params["short_name"] = short_name
+
     if payload.code is not None:
-        updates.append("code = :code")
-        params["code"] = payload.code
+        code = payload.code.strip().upper()
+        if not code:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Code cannot be empty")
+        if code != current_code:
+            # Ensure uniqueness when code is changing
+            dup_check = text(f"SELECT id FROM {schema_name}.faculties WHERE code = :code AND id <> :id LIMIT 1")
+            dup = db.execute(dup_check, {"code": code, "id": faculty_id}).fetchone()
+            if dup:
+                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Faculty with code '{code}' already exists")
+            updates.append("code = :code")
+            params["code"] = code
+
     if payload.description is not None:
-        updates.append("description = :description")
-        params["description"] = payload.description
+        description = None
+        if isinstance(payload.description, str):
+            d = payload.description.strip()
+            description = d if d else None
+        # Only push update if actually changes
+        if description != current_desc:
+            updates.append("description = :description")
+            params["description"] = description
 
     if not updates:
         # Nothing to update; return current row
