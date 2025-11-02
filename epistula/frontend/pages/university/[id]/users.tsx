@@ -448,7 +448,7 @@ export default function UniversityUsersPage() {
     };
 
     fetchData();
-  }, [id, router.isReady, selectedRole, debouncedSearch]);
+  }, [id, router, router.isReady, selectedRole, debouncedSearch]);
 
   // Keep URL query in sync (shareable/back-forward friendly)
   useEffect(() => {
@@ -457,7 +457,7 @@ export default function UniversityUsersPage() {
     if (selectedRole !== 'all') query.role = selectedRole; else delete query.role;
     if (debouncedSearch) query.q = search; else delete query.q;
     router.replace({ pathname: router.pathname, query: { ...query, id } }, undefined, { shallow: true });
-  }, [selectedRole, debouncedSearch]);
+  }, [selectedRole, debouncedSearch, search, id, router]);
 
   useEffect(() => {
     // Debounce search input

@@ -6,6 +6,7 @@ import DataTransferPanel from '../components/backup/DataTransferPanel';
 import styles from '../styles/Backups.module.css';
 import UniversityBackupSection from '../components/backup/UniversityBackupSection';
 import btn from '../styles/Buttons.module.css';
+import { getBackendUrl } from '../lib/config';
 
 interface BackupInfo {
   name: string;
@@ -68,7 +69,7 @@ export default function Backups() {
       }
 
       log('info', 'Making API request to /api/v1/backups/all');
-      const response = await fetch('http://localhost:8000/api/v1/backups/all', {
+      const response = await fetch(`${getBackendUrl()}/api/v1/backups/all`, {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
@@ -104,19 +105,12 @@ export default function Backups() {
     } finally {
       setLoading(false);
     }
-  }, []); // Remove router from dependencies
+  }, [router]);
 
   useEffect(() => {
     log('info', '🔄 Backups page mounted, fetching data...');
     fetchBackups();
-    
-    // Also check temp status for all universities after initial load
-    if (backupsData?.universities) {
-      backupsData.universities.forEach(uni => {
-        checkTempStatus(uni.university_id);
-      });
-    }
-  }, []);
+  }, [fetchBackups]);
 
   const formatBytes = (bytes: number): string => {
     if (bytes === 0) return '0 Bytes';
@@ -154,8 +148,8 @@ export default function Backups() {
     log('info', `Starting ${toTemp ? 'temp' : 'production'} restore: ${restoreKey}`);
 
     try {
-      const token = localStorage.getItem('token');
-      const url = `http://localhost:8000/api/v1/backups/${universityId}/${backupName}/restore?to_temp=${toTemp}`;
+  const token = localStorage.getItem('token');
+  const url = `${getBackendUrl()}/api/v1/backups/${universityId}/${backupName}/restore?to_temp=${toTemp}`;
       
       log('info', `Making restore API request: POST ${url}`);
       const response = await fetch(url, {
@@ -209,8 +203,8 @@ export default function Backups() {
     setError(null);
 
     try {
-      const token = localStorage.getItem('token');
-      const url = `http://localhost:8000/api/v1/backups/${universityId}/${backupName}/upload-to-minio`;
+  const token = localStorage.getItem('token');
+  const url = `${getBackendUrl()}/api/v1/backups/${universityId}/${backupName}/upload-to-minio`;
       
       log('info', `Making upload API request: POST ${url}`);
       const response = await fetch(url, {
@@ -255,8 +249,8 @@ export default function Backups() {
     setError(null);
 
     try {
-      const token = localStorage.getItem('token');
-      const url = `http://localhost:8000/api/v1/backups/${universityId}/create`;
+  const token = localStorage.getItem('token');
+  const url = `${getBackendUrl()}/api/v1/backups/${universityId}/create`;
       
       log('info', `Making create backup API request: POST ${url}`);
       const response = await fetch(url, {
@@ -291,10 +285,10 @@ export default function Backups() {
     }
   };
 
-  const checkTempStatus = async (universityId: number) => {
+  const checkTempStatus = useCallback(async (universityId: number) => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost:8000/api/v1/backups/${universityId}/temp-status`, {
+      const response = await fetch(`${getBackendUrl()}/api/v1/backups/${universityId}/temp-status`, {
         headers: { 'Authorization': `Bearer ${token}` },
       });
       if (response.ok) {
@@ -304,7 +298,15 @@ export default function Backups() {
     } catch (err) {
       log('error', `Failed to check temp status for university ${universityId}`, err);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    if (backupsData?.universities) {
+      backupsData.universities.forEach(uni => {
+        checkTempStatus(uni.university_id);
+      });
+    }
+  }, [backupsData, checkTempStatus]);
 
   const handlePromoteTemp = async (universityId: number, universityName: string) => {
     if (!confirm(`⚠️ PROMOTE TO PRODUCTION\n\nThis will:\n1. Create a safety backup of current production\n2. Replace production with the temporary schema\n3. The current production data will be backed up and replaced\n\nPromote "${universityName}" temporary schema to production?`)) {
@@ -313,8 +315,8 @@ export default function Backups() {
 
     setPromoting(universityId);
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost:8000/api/v1/backups/${universityId}/promote-temp`, {
+  const token = localStorage.getItem('token');
+  const response = await fetch(`${getBackendUrl()}/api/v1/backups/${universityId}/promote-temp`, {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${token}` },
       });
@@ -344,7 +346,7 @@ export default function Backups() {
     setDeletingTemp(universityId);
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost:8000/api/v1/backups/${universityId}/temp-schema`, {
+  const response = await fetch(`${getBackendUrl()}/api/v1/backups/${universityId}/temp-schema`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${token}` },
       });
@@ -376,7 +378,7 @@ export default function Backups() {
 
     try {
       const token = localStorage.getItem('token');
-      const url = `http://localhost:8000/api/v1/backups/${universityId}/${backupName}?delete_from_minio=true`;
+  const url = `${getBackendUrl()}/api/v1/backups/${universityId}/${backupName}?delete_from_minio=true`;
       const response = await fetch(url, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${token}` },
@@ -405,7 +407,7 @@ export default function Backups() {
     // Fetch latest meta to avoid stale data
     try {
       const token = localStorage.getItem('token');
-      const resp = await fetch(`http://localhost:8000/api/v1/backups/${universityId}/${backup.name}/meta`, {
+  const resp = await fetch(`${getBackendUrl()}/api/v1/backups/${universityId}/${backup.name}/meta`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       let title = backup.title ?? '';
@@ -441,7 +443,7 @@ export default function Backups() {
     setEditingMeta(prev => ({...prev, [key]: {...meta, saving: true} }));
     try {
       const token = localStorage.getItem('token');
-      const resp = await fetch(`http://localhost:8000/api/v1/backups/${universityId}/${backupName}/meta`, {
+  const resp = await fetch(`${getBackendUrl()}/api/v1/backups/${universityId}/${backupName}/meta`, {
         method: 'PUT',
         headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ title: meta.title || null, description: meta.description || null })
