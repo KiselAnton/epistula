@@ -18,7 +18,7 @@ import ImportLectureWizard from '../../../../../../components/subject/ImportLect
 import ImportSubjectProfessorsWizard from '../../../../../../components/subject/ImportSubjectProfessorsWizard';
 import ImportLectureMaterialsWizard from '../../../../../../components/subject/ImportLectureMaterialsWizard';
 import ImportSubjectStudentsWizard from '../../../../../../components/subject/ImportSubjectStudentsWizard';
-import { exportSubjectProfessorsFiltered, exportSubjectStudentsLocal } from '../../../../../../utils/exportHelpers';
+import { exportSubjectProfessorsFiltered, exportSubjectStudentsLocal, exportLecturesFiltered, exportLectureMaterialsFiltered } from '../../../../../../utils/exportHelpers';
 
 export default function SubjectDetailPage() {
   const router = useRouter();
@@ -171,11 +171,14 @@ export default function SubjectDetailPage() {
             onTogglePublish={togglePublishLecture}
             publishingLecture={publishingLecture}
             onImportMaterials={(lid) => setShowImportMaterials({ open: true, lectureId: lid })}
+            onExportMaterials={async (lid) => { try { await exportLectureMaterialsFiltered(id as string, lid); } catch (e: any) { alert(e?.message || 'Export failed'); } }}
+            onExportLectures={async () => { try { await exportLecturesFiltered(id as string, subjectId as string); } catch (e: any) { alert(e?.message || 'Export failed'); } }}
           />
           <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1rem', flexWrap: 'wrap' }}>
             <button onClick={() => setShowImportLectures(true)} style={{ padding: '0.5rem 1rem', background: '#6c757d', color: 'white', border: 'none', borderRadius: 6, cursor: 'pointer' }}>⬆️ Import Lectures</button>
             <button onClick={() => setShowImportProfessors(true)} style={{ padding: '0.5rem 1rem', background: '#6c757d', color: 'white', border: 'none', borderRadius: 6, cursor: 'pointer' }}>⬆️ Import Professors</button>
             <button onClick={async () => { try { await exportSubjectProfessorsFiltered(id as string, subjectId as string); } catch (e: any) { alert(e?.message || 'Export failed'); } }} style={{ padding: '0.5rem 1rem', background: '#5a6268', color: 'white', border: 'none', borderRadius: 6, cursor: 'pointer' }}>⬇️ Export Professors</button>
+            <button onClick={async () => { try { await exportLecturesFiltered(id as string, subjectId as string); } catch (e: any) { alert(e?.message || 'Export failed'); } }} style={{ padding: '0.5rem 1rem', background: '#5a6268', color: 'white', border: 'none', borderRadius: 6, cursor: 'pointer' }}>⬇️ Export Lectures</button>
             <button onClick={() => setShowImportStudents(true)} style={{ padding: '0.5rem 1rem', background: '#6c757d', color: 'white', border: 'none', borderRadius: 6, cursor: 'pointer' }}>⬆️ Import Students</button>
             <button onClick={() => {
               try {

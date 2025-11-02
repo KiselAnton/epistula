@@ -26,6 +26,7 @@ ENTITY_TYPES = [
     'faculty_students',
     'subjects',
     'subject_professors',
+    'subject_students',
     'lectures',
     'lecture_materials',
 ]

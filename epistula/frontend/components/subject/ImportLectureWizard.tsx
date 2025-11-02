@@ -130,6 +130,10 @@ const ImportLectureWizard: React.FC<ImportLectureWizardProps> = ({ isOpen, onClo
         {step === 1 && (
           <div>
             <p>Upload a JSON export of lectures.</p>
+            <ul style={{ marginTop: 0 }}>
+              <li>{`{ entity_type: 'lectures', data: [{ title, description?, order_number?, is_published? }, ...] }`}</li>
+              <li>Single object fallback: {`{`}title: Intro, order_number: 1{`}`}</li>
+            </ul>
             <input type="file" accept="application/json" onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFile(f); }} />
             <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '1rem' }}>
               <button onClick={onClose} className={styles.cancelButton}>Cancel</button>

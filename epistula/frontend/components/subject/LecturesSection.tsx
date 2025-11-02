@@ -11,6 +11,8 @@ interface LecturesSectionProps {
   onTogglePublish?: (lectureId: number, publish: boolean) => void;
   publishingLecture?: number | null;
   onImportMaterials?: (lectureId: number) => void;
+  onExportMaterials?: (lectureId: number) => void;
+  onExportLectures?: () => void;
 }
 
 export default function LecturesSection({
@@ -21,7 +23,9 @@ export default function LecturesSection({
   deletingLecture,
   onTogglePublish,
   publishingLecture,
-  onImportMaterials
+  onImportMaterials,
+  onExportMaterials,
+  onExportLectures
 }: LecturesSectionProps) {
   const formatDateTime = (dateString: string | null) => {
     if (!dateString) return 'Not scheduled';
@@ -43,12 +47,17 @@ export default function LecturesSection({
     <div style={{ marginTop: '2rem' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
         <h2>Lectures ({lectures.length})</h2>
-        <button
-          onClick={onCreateLecture}
-          className={`${buttons.btn} ${buttons.btnPrimary}`}
-        >
-          + Create Lecture
-        </button>
+        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+          {onExportLectures && (
+            <button onClick={onExportLectures} className={`${buttons.btn} ${buttons.btnSecondary}`}>Export Lectures</button>
+          )}
+          <button
+            onClick={onCreateLecture}
+            className={`${buttons.btn} ${buttons.btnPrimary}`}
+          >
+            + Create Lecture
+          </button>
+        </div>
       </div>
 
       {lectures.length > 0 ? (
@@ -138,6 +147,14 @@ export default function LecturesSection({
                       className={`${buttons.btn} ${buttons.btnSecondary}`}
                     >
                       Import Materials
+                    </button>
+                  )}
+                  {onExportMaterials && (
+                    <button
+                      onClick={() => onExportMaterials(lecture.id)}
+                      className={`${buttons.btn} ${buttons.btnSecondary}`}
+                    >
+                      Export Materials
                     </button>
                   )}
                 </div>

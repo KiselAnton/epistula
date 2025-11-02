@@ -98,6 +98,10 @@ const ImportSubjectProfessorsWizard: React.FC<ImportSubjectProfessorsWizardProps
         {step === 1 && (
           <div>
             <p>Upload a JSON export of subject_professors.</p>
+            <ul style={{ marginTop: 0 }}>
+              <li>{`{ entity_type: 'subject_professors', data: [{ professor_id, can_edit?, is_active? }, ...] }`}</li>
+              <li>Single object fallback: {`{`}professor_id: 123, can_edit: true{`}`}</li>
+            </ul>
             <input type="file" accept="application/json" onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFile(f); }} />
             <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '1rem' }}>
               <button onClick={onClose} className={styles.cancelButton}>Cancel</button>

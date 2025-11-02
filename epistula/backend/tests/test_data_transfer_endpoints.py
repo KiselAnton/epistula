@@ -39,6 +39,43 @@ def test_export_entities_success(client, monkeypatch):
         app_main.app.dependency_overrides.clear()
 
 
+def test_export_subject_students_success(client, monkeypatch):
+    import routers.data_transfer as dt_router
+
+    # Allow permissions and fix schema
+    monkeypatch.setattr(dt_router, "_ensure_can_manage", lambda db, user, unid: None)
+    monkeypatch.setattr(dt_router, "_get_schema_name", lambda db, uid, use_temp=False: "schema_x")
+
+    # Patch export utility
+    monkeypatch.setattr(dt_router, "export_entity", lambda db, schema, etype, ids: {
+        "entity_type": etype,
+        "source_schema": schema,
+        "count": 2,
+        "exported_at": _dt.datetime(2024,1,1).isoformat(),
+        "data": [{"id": 1, "subject_id": 9, "student_id": 101}, {"id": 2, "subject_id": 9, "student_id": 102}],
+        "columns": ["id", "subject_id", "student_id"],
+    })
+
+    class _Sess: pass
+    import utils.database as db_mod
+    import main as app_main
+    def _override_db():
+        yield _Sess()
+    app_main.app.dependency_overrides[db_mod.get_db] = _override_db
+
+    try:
+        r = client.post("/api/v1/data-transfer/1/export", json={
+            "entity_type": "subject_students",
+            "entity_ids": None
+        })
+        assert r.status_code == 200
+        body = r.json()
+        assert body["entity_type"] == "subject_students"
+        assert body["count"] == 2
+    finally:
+        app_main.app.dependency_overrides.clear()
+
+
 def test_export_entities_invalid_type_returns_400(client, monkeypatch):
     import routers.data_transfer as dt_router
     monkeypatch.setattr(dt_router, "_ensure_can_manage", lambda db, user, unid: None)
@@ -156,6 +193,37 @@ def test_import_entities_success(client, monkeypatch):
         assert r.status_code == 200
         body = r.json()
         assert body["entity_type"] == "subjects"
+        assert body["target_schema"] == "schema_y"
+        assert body["imported"] == 1
+    finally:
+        app_main.app.dependency_overrides.clear()
+
+
+def test_import_subject_students_success(client, monkeypatch):
+    import routers.data_transfer as dt_router
+    monkeypatch.setattr(dt_router, "_ensure_can_manage", lambda db, user, unid: None)
+    monkeypatch.setattr(dt_router, "_get_schema_name", lambda db, uid, use_temp=False: "schema_y")
+    monkeypatch.setattr(dt_router, "import_entity", lambda db, schema, etype, data, strategy='merge': {
+        "entity_type": etype, "target_schema": schema, "strategy": strategy,
+        "imported": len(data), "updated": 0, "skipped": 0, "errors": [], "total_processed": len(data)
+    })
+
+    class _Sess: pass
+    import utils.database as db_mod
+    import main as app_main
+    def _override_db():
+        yield _Sess()
+    app_main.app.dependency_overrides[db_mod.get_db] = _override_db
+
+    try:
+        r = client.post("/api/v1/data-transfer/2/import", json={
+            "entity_type": "subject_students",
+            "data": [{"id": 1, "subject_id": 9, "student_id": 101}],
+            "strategy": "merge"
+        })
+        assert r.status_code == 200
+        body = r.json()
+        assert body["entity_type"] == "subject_students"
         assert body["target_schema"] == "schema_y"
         assert body["imported"] == 1
     finally:

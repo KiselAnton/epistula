@@ -95,6 +95,10 @@ const ImportLectureMaterialsWizard: React.FC<ImportLectureMaterialsWizardProps> 
         {step === 1 && (
           <div>
             <p>Upload a JSON export of lecture_materials.</p>
+            <ul style={{ marginTop: 0 }}>
+              <li>{`{ entity_type: 'lecture_materials', data: [{ title, content, material_type?, order_number? }, ...] }`}</li>
+              <li>Single object fallback: {`{`}title: Slide 1, content: ellipsis{`}`}</li>
+            </ul>
             <input type="file" accept="application/json" onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFile(f); }} />
             <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '1rem' }}>
               <button onClick={onClose} className={styles.cancelButton}>Cancel</button>
