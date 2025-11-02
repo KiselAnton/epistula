@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+# Clean workspace before commit (does not touch large ISO cache)
+set -euo pipefail
+
+ROOT_DIR="$(git rev-parse --show-toplevel)"
+cd "$ROOT_DIR"
+
+# Prefer bash cleaner; fallback to PowerShell if available
+if [[ -x "scripts/clean_workspace.sh" ]]; then
+  echo "[pre-commit] Cleaning workspace via bash script..."
+  bash scripts/clean_workspace.sh --stash || true
+elif command -v pwsh >/dev/null 2>&1; then
+  echo "[pre-commit] Cleaning workspace via PowerShell..."
+  pwsh -File scripts/clean_workspace.ps1 -Stash || true
+elif command -v powershell >/dev/null 2>&1; then
+  echo "[pre-commit] Cleaning workspace via Windows PowerShell..."
+  powershell -File scripts/clean_workspace.ps1 -Stash || true
+else
+  echo "[pre-commit] No cleaner available; skipping."
+fi
+
+exit 0

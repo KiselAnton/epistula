@@ -1,0 +1,38 @@
+#!/usr/bin/env bash
+# Enforce Conventional Commits style
+
+MSG_FILE="$1"
+MSG="$(head -n1 "$MSG_FILE" | tr -d '\r')"
+
+# Allowed types
+TYPES='build|ci|docs|feat|fix|perf|refactor|revert|style|test|chore'
+
+if [[ -z "$MSG" ]]; then
+  echo "[commit-msg] Empty commit message is not allowed." >&2
+  exit 1
+fi
+
+# Regex: type(scope)?: short description
+if ! echo "$MSG" | grep -Eq "^($TYPES)(\([a-z0-9_-]+\))?: \S"; then
+  cat >&2 <<'EOF'
+[commit-msg] Invalid commit message format.
+
+Use Conventional Commits, e.g.:
+  feat(universities): add delete backups endpoint
+  fix(auth): handle missing token gracefully
+  docs: update USER_GUIDE with backups info
+
+Format: <type>(optional-scope): <short summary>
+Allowed types: build|ci|docs|feat|fix|perf|refactor|revert|style|test|chore
+EOF
+  exit 1
+fi
+
+# Enforce reasonable length of subject line
+SUBJ_LEN=${#MSG}
+if (( SUBJ_LEN > 100 )); then
+  echo "[commit-msg] Subject too long ($SUBJ_LEN > 100 chars). Please shorten." >&2
+  exit 1
+fi
+
+exit 0
