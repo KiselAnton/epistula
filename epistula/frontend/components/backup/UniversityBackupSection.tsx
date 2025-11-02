@@ -425,17 +425,17 @@ export default function UniversityBackupSection({
                                   style={{ padding: 6, border: '1px solid #ccc', borderRadius: 4 }}
                                 />
                                 <div style={{ display: 'flex', gap: 8 }}>
-                                  <button onClick={() => saveMeta(backup.name)} disabled={editingMeta[key].saving} className={styles.saveButton}>
+                                  <button onClick={() => saveMeta(backup.name)} disabled={editingMeta[key].saving} className={`${btn.btn} ${btn.btnSuccess}`}>
                                     {editingMeta[key].saving ? 'Saving...' : '💾 Save'}
                                   </button>
-                                  <button onClick={() => cancelEditMeta(backup.name)} className={styles.cancelButton}>
+                                  <button onClick={() => cancelEditMeta(backup.name)} className={`${btn.btn} ${btn.btnSecondary}`}>
                                     Cancel
                                   </button>
                                 </div>
                               </div>
                             ) : (
                               <div style={{ marginTop: 4 }}>
-                                <button onClick={() => startEditMeta(backup)} className={styles.editButton}>
+                                <button onClick={() => startEditMeta(backup)} className={`${btn.btn} ${btn.btnWarning}`}>
                                   ✏️ Edit details
                                 </button>
                               </div>
