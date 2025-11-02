@@ -1,5 +1,5 @@
 import { useRouter } from 'next/router';
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import Head from 'next/head';
 import MainLayout from '../../../components/layout/MainLayout';
 import Image from 'next/image';
@@ -8,6 +8,7 @@ import styles from '../../../styles/Faculties.module.css';
 import { exportFacultyFull } from '../../../utils/dataTransfer.api';
 import ImportFacultyWizard from '../../../components/faculty/ImportFacultyWizard';
 import buttons from '../../../styles/Buttons.module.css';
+import MarkdownEditor from '../../../components/common/MarkdownEditor';
 
 interface Faculty {
   id: number;
@@ -44,6 +45,10 @@ export default function FacultiesPage() {
   const [deleteConfirm, setDeleteConfirm] = useState<number | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
+  const [creating, setCreating] = useState(false);
+  const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [logoPreview, setLogoPreview] = useState<string | null>(null);
+  const logoInputRef = useRef<HTMLInputElement | null>(null);
 
   const [formData, setFormData] = useState({
     name: '',
@@ -136,7 +141,7 @@ export default function FacultiesPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+    setCreating(true);
     try {
       const token = localStorage.getItem('token');
       if (!token) {
@@ -151,8 +156,10 @@ export default function FacultiesPage() {
           'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({
-          ...formData,
-          code: formData.code.toUpperCase()
+          name: formData.name,
+          short_name: formData.short_name,
+          code: formData.code.toUpperCase(),
+          description: formData.description || null
         })
       });
 
@@ -167,11 +174,36 @@ export default function FacultiesPage() {
         throw new Error(errorData.detail || 'Failed to create faculty');
       }
 
+      const created: Faculty = await response.json();
+
+      if (logoFile) {
+        try {
+          const form = new FormData();
+          form.append('file', logoFile);
+          const up = await fetch(`${getBackendUrl()}/api/v1/faculties/${id}/${created.id}/logo`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}` },
+            body: form
+          });
+          if (!up.ok) {
+            const e = await up.json().catch(() => ({}));
+            alert(e?.detail || 'Logo upload failed');
+          }
+        } catch (e: any) {
+          alert(e?.message || 'Logo upload error');
+        }
+      }
+
       setShowCreateModal(false);
       setFormData({ name: '', short_name: '', code: '', description: '' });
+      setLogoFile(null);
+      setLogoPreview(null);
+      if (logoInputRef.current) logoInputRef.current.value = '';
       fetchFaculties();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
+    } finally {
+      setCreating(false);
     }
   };
 
@@ -427,21 +459,50 @@ export default function FacultiesPage() {
                 </div>
 
                 <div className={styles.formGroup}>
-                  <label>Description (optional)</label>
-                  <textarea
+                  <label>Description (Markdown, optional)</label>
+                  <MarkdownEditor
                     value={formData.description}
-                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                    rows={4}
-                    placeholder="Brief description of the faculty..."
+                    onChange={(v) => setFormData({ ...formData, description: v })}
+                    onSave={() => { if (!creating) handleSubmit(new Event('submit') as any); }}
+                    isSaving={creating}
+                    placeholder="Describe this faculty..."
                   />
+                </div>
+
+                <div className={styles.formGroup}>
+                  <label>Logo (optional)</label>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                    {logoPreview ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={logoPreview} alt="Selected logo preview" style={{ width: 60, height: 60, objectFit: 'contain', borderRadius: 8, background: '#f8f9fa', border: '1px solid #eee' }} />
+                    ) : (
+                      <div style={{ width: 60, height: 60, borderRadius: 8, border: '1px dashed #ccc', display: 'grid', placeItems: 'center', color: '#888' }}>No logo</div>
+                    )}
+                    <input
+                      ref={logoInputRef}
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => {
+                        const f = e.target.files?.[0] || null;
+                        setLogoFile(f);
+                        if (f) {
+                          const reader = new FileReader();
+                          reader.onload = () => setLogoPreview(reader.result as string);
+                          reader.readAsDataURL(f);
+                        } else {
+                          setLogoPreview(null);
+                        }
+                      }}
+                    />
+                  </div>
                 </div>
 
                 <div className={styles.modalActions}>
                   <button type="button" onClick={() => setShowCreateModal(false)}>
                     Cancel
                   </button>
-                  <button type="submit" className={styles.submitButton}>
-                    Create Faculty
+                  <button type="submit" className={styles.submitButton} disabled={creating}>
+                    {creating ? 'Creating…' : 'Create Faculty'}
                   </button>
                 </div>
               </form>

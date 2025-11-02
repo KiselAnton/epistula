@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
 import { Subject } from '../../types';
 import { getBackendUrl } from '../../lib/config';
-import MarkdownEditor from './MarkdownEditor';
+import MarkdownEditor from '../common/MarkdownEditor';
 import buttons from '../../styles/Buttons.module.css';
 import modalStyles from '../../styles/Modal.module.css';
 

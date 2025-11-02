@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import MarkdownEditor from '../common/MarkdownEditor';
 import styles from './CreateLectureModal.module.css';
 
 interface CreateLectureModalProps {
@@ -145,15 +146,14 @@ export default function CreateLectureModal({
 
           <div className={styles.formGroup}>
             <label htmlFor="description">
-              Description
+              Description (Markdown)
             </label>
-            <input
-              id="description"
-              type="text"
+            <MarkdownEditor
               value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="Brief description of the lecture"
-              disabled={isSubmitting}
+              onChange={setDescription}
+              onSave={() => { /* submit is handled by form, this is a convenience */ }}
+              isSaving={isSubmitting}
+              placeholder="Add a brief description of the lecture..."
             />
           </div>
 

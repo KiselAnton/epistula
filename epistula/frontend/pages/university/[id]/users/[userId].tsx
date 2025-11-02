@@ -5,7 +5,7 @@ import Head from 'next/head';
 import MainLayout from '../../../../components/layout/MainLayout';
 import { getBackendUrl } from '../../../../lib/config';
 import AssignToSubjectModal from '../../../../components/users/AssignToSubjectModal';
-import MarkdownEditor from '../../../../components/subject/MarkdownEditor';
+import MarkdownEditor from '../../../../components/common/MarkdownEditor';
 
 interface University {
   id: number;

@@ -1,0 +1,169 @@
+.editorContainer {
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #fff;
+  display: flex;
+  flex-direction: column;
+}
+
+.toolbar {
+  display: flex;
+  gap: 8px;
+  padding: 8px;
+  border-bottom: 1px solid #e5e7eb;
+  background: #f9fafb;
+}
+
+.toolbarGroup {
+  display: flex;
+  gap: 6px;
+}
+
+.toolButton {
+  padding: 6px 10px;
+  font-size: 12px;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.toolButton:hover {
+  background: #f3f4f6;
+}
+
+.toolButton.active {
+  background: #e5e7eb;
+}
+
+.editorArea {
+  display: flex;
+  min-height: 160px;
+}
+
+.textarea {
+  width: 100%;
+  min-height: 240px;
+  padding: 12px;
+  border: none;
+  resize: vertical;
+  outline: none;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-size: 14px;
+}
+
+.preview {
+  padding: 12px;
+  width: 100%;
+}
+
+.actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  border-top: 1px solid #e5e7eb;
+  background: #f9fafb;
+}
+
+.hint {
+  color: #6b7280;
+  font-size: 12px;
+}
+
+.actionButtons {
+  display: flex;
+  gap: 8px;
+}
+
+.cancelButton {
+  border: 1px solid #e5e7eb;
+  background: #fff;
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.saveButton {
+  border: 1px solid transparent;
+  background: #2563eb;
+  color: #fff;
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.viewMode {
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 12px;
+  background: #fff;
+  cursor: pointer;
+}
+
+.content :global(h1) {
+  font-size: 1.5rem;
+  margin: 0.5rem 0;
+}
+
+.content :global(h2) {
+  font-size: 1.25rem;
+  margin: 0.5rem 0;
+}
+
+.content :global(h3) {
+  font-size: 1.1rem;
+  margin: 0.5rem 0;
+}
+
+.content :global(p) {
+  margin: 0.25rem 0;
+}
+
+.content :global(a) {
+  color: #2563eb;
+  text-decoration: underline;
+}
+
+.content :global(code) {
+  background: #f3f4f6;
+  padding: 2px 4px;
+  border-radius: 4px;
+}
+
+.emptyState {
+  border: 1px dashed #cbd5e1;
+  border-radius: 8px;
+  padding: 16px;
+  text-align: center;
+  color: #64748b;
+}
+
+.emptyIcon {
+  font-size: 20px;
+}
+
+.emptyText {
+  font-size: 14px;
+  margin: 8px 0 2px;
+}
+
+.emptyHint {
+  font-size: 12px;
+  color: #94a3b8;
+}
+
+.editHint {
+  margin-top: 8px;
+  color: #94a3b8;
+  font-size: 12px;
+}
+
+.editToggle {
+  margin-top: 8px;
+  border: 1px solid #e5e7eb;
+  background: #fff;
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+}

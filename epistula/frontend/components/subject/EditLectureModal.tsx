@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Lecture } from '../../types';
 import { getBackendUrl } from '../../lib/config';
-import MarkdownEditor from './MarkdownEditor';
+import MarkdownEditor from '../common/MarkdownEditor';
 import buttons from '../../styles/Buttons.module.css';
 import modalStyles from '../../styles/Modal.module.css';
 

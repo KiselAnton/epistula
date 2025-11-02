@@ -1,7 +1,7 @@
 import React, { useRef, useState } from 'react';
 import Image from 'next/image';
 import { Faculty } from '../../types';
-import MarkdownEditor from '../subject/MarkdownEditor';
+import MarkdownEditor from '../common/MarkdownEditor';
 import { getBackendUrl } from '../../lib/config';
 
 interface Props {

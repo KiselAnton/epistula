@@ -1,9 +1,10 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
 import MainLayout from '../components/layout/MainLayout';
 import Image from 'next/image';
 import MarkdownDisplay from '../components/common/MarkdownDisplay';
+import MarkdownEditor from '../components/common/MarkdownEditor';
 import styles from '../styles/Universities.module.css';
 
 interface University {
@@ -24,6 +25,10 @@ export default function Universities() {
   const [error, setError] = useState('');
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState<number | null>(null);
+  const [creating, setCreating] = useState(false);
+  const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [logoPreview, setLogoPreview] = useState<string | null>(null);
+  const logoInputRef = useRef<HTMLInputElement | null>(null);
   
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -99,27 +104,58 @@ export default function Universities() {
     fetchUniversities();
   }, [fetchUniversities, router]);
 
-  const handleCreateUniversity = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
+  const handleCreateUniversity = async () => {
+    setError('');
+    setCreating(true);
     try {
       const token = localStorage.getItem('token');
+      if (!token) { router.push('/'); return; }
       const response = await fetch(`${getBackendUrl()}/api/v1/universities/`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify(formData)
+        body: JSON.stringify({
+          name: formData.name,
+          code: formData.code.toUpperCase(),
+          description: formData.description || null
+        })
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
+        const errorData = await response.json().catch(() => ({}));
         throw new Error(errorData.detail || 'Failed to create university');
+      }
+
+      const created: University = await response.json();
+
+      // Optional logo upload
+      if (logoFile) {
+        try {
+          const form = new FormData();
+          form.append('file', logoFile);
+          const up = await fetch(`${getBackendUrl()}/api/v1/universities/${created.id}/logo`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}` },
+            body: form
+          });
+          // Ignore non-OK but surface as alert
+          if (!up.ok) {
+            const e = await up.json().catch(() => ({}));
+            alert(e?.detail || 'Logo upload failed');
+          }
+        } catch (e: any) {
+          // Non-fatal
+          alert(e?.message || 'Logo upload error');
+        }
       }
 
       // Reset form and close modal
       setFormData({ name: '', code: '', description: '' });
+      setLogoFile(null);
+      setLogoPreview(null);
+      if (logoInputRef.current) logoInputRef.current.value = '';
       setShowCreateModal(false);
       setError('');
       
@@ -127,6 +163,8 @@ export default function Universities() {
       await fetchUniversities();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
+    } finally {
+      setCreating(false);
     }
   };
 
@@ -321,7 +359,7 @@ export default function Universities() {
                 </button>
               </div>
               
-              <form onSubmit={handleCreateUniversity}>
+              <form onSubmit={(e) => { e.preventDefault(); if (!creating) handleCreateUniversity(); }}>
                 <div className={styles.formGroup}>
                   <label htmlFor="name">University Name *</label>
                   <input
@@ -348,14 +386,42 @@ export default function Universities() {
                 </div>
 
                 <div className={styles.formGroup}>
-                  <label htmlFor="description">Description (optional)</label>
-                  <textarea
-                    id="description"
+                  <label htmlFor="description">Description (Markdown, optional)</label>
+                  <MarkdownEditor
                     value={formData.description}
-                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                    placeholder="Brief description of the university"
-                    rows={3}
+                    onChange={(v) => setFormData({ ...formData, description: v })}
+                    onSave={handleCreateUniversity}
+                    isSaving={creating}
+                    placeholder="Describe this university..."
                   />
+                </div>
+
+                <div className={styles.formGroup}>
+                  <label>Logo (optional)</label>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                    {logoPreview ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={logoPreview} alt="Selected logo preview" style={{ width: 60, height: 60, objectFit: 'contain', borderRadius: 8, background: '#f8f9fa', border: '1px solid #eee' }} />
+                    ) : (
+                      <div style={{ width: 60, height: 60, borderRadius: 8, border: '1px dashed #ccc', display: 'grid', placeItems: 'center', color: '#888' }}>No logo</div>
+                    )}
+                    <input
+                      ref={logoInputRef}
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => {
+                        const f = e.target.files?.[0] || null;
+                        setLogoFile(f);
+                        if (f) {
+                          const reader = new FileReader();
+                          reader.onload = () => setLogoPreview(reader.result as string);
+                          reader.readAsDataURL(f);
+                        } else {
+                          setLogoPreview(null);
+                        }
+                      }}
+                    />
+                  </div>
                 </div>
 
                 <div className={styles.modalActions}>
@@ -366,8 +432,8 @@ export default function Universities() {
                   >
                     Cancel
                   </button>
-                  <button type="submit" className={styles.submitButton}>
-                    Create University
+                  <button type="submit" className={styles.submitButton} disabled={creating}>
+                    {creating ? 'Creating…' : 'Create University'}
                   </button>
                 </div>
               </form>

@@ -1,6 +1,6 @@
 import React, { useRef, useState } from 'react';
 import Image from 'next/image';
-import MarkdownEditor from '../subject/MarkdownEditor';
+import MarkdownEditor from '../common/MarkdownEditor';
 import { getBackendUrl } from '../../lib/config';
 import buttons from '../../styles/Buttons.module.css';
 
