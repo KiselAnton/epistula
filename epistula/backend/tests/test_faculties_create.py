@@ -139,11 +139,13 @@ def test_create_faculty_rejects_whitespace_only_fields(client, set_user):
     # Root user; DB shouldn't be hit due to validation failure
     set_user(DummyUser(is_root=True))
     from utils.models import UniversityDB
+    UNI_ID = 1
+    SCHEMA = f"uni_{UNI_ID}"
     class _Q:
         def filter(self, *a, **k):
             return self
         def first(self):
-            return FakeUniversity(1, "U", "U", "uni_1", True)
+            return FakeUniversity(UNI_ID, "U", "U", SCHEMA, True)
     class _Sess:
         def query(self, model):
             if model is UniversityDB:
