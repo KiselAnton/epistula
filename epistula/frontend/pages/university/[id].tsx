@@ -6,6 +6,7 @@ import MainLayout from '../../components/layout/MainLayout';
 import MarkdownEditor from '../../components/subject/MarkdownEditor';
 import EditUniversityModal from '../../components/university/EditUniversityModal';
 import MarkdownDisplay from '../../components/common/MarkdownDisplay';
+import UniversityBackupSection from '../../components/backup/UniversityBackupSection';
 import { getBackendUrl } from '../../lib/config';
 
 interface University {
@@ -43,8 +44,8 @@ export default function UniversityPage() {
   const [deleting, setDeleting] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [canEdit, setCanEdit] = useState(false);
-  // Backups state
-  const [backups, setBackups] = useState<Array<{ name: string; size_bytes: number; created_at: string }>>([]);
+  // Backups state (initial list; full details are handled by shared component)
+  const [backups, setBackups] = useState<Array<any>>([]);
   const [backupsLoading, setBackupsLoading] = useState(false);
   const [restoring, setRestoring] = useState<string | null>(null);
   const [canRestore, setCanRestore] = useState(false);
@@ -245,7 +246,7 @@ export default function UniversityPage() {
     } catch {}
   }, [id]);
 
-  // Load backups list (for admins/root)
+  // Load backups list (for admins/root) - initial data for shared component
   useEffect(() => {
     if (!id || !canRestore) return;
     const loadBackups = async () => {
@@ -491,53 +492,18 @@ export default function UniversityPage() {
               </div>
             )}
 
-            {/* Backups & Restore (Root/Admin only) */}
+            {/* Backups & Restore (Root/Admin only) -- shared collapsible block */}
             {canRestore && (
               <div style={{ marginTop: '1.5rem' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
-                  <h2 style={{ margin: 0 }}>Backups</h2>
-                  <button
-                    onClick={handleCreateBackup}
-                    disabled={backupsLoading}
-                    style={{
-                      padding: '0.5rem 1rem',
-                      background: backupsLoading ? '#ccc' : '#28a745',
-                      color: 'white',
-                      border: 'none',
-                      borderRadius: '6px',
-                      cursor: backupsLoading ? 'not-allowed' : 'pointer',
-                      fontSize: '0.9rem',
-                      fontWeight: 600
-                    }}
-                  >
-                    💾 {backupsLoading ? 'Creating...' : 'Backup Now'}
-                  </button>
-                </div>
-                <div style={{ background: '#f8f9fa', border: '1px solid #e0e0e0', borderRadius: '8px', padding: '1rem' }}>
-                  {backupsLoading ? (
-                    <p>Loading backups…</p>
-                  ) : backups.length === 0 ? (
-                    <p style={{ color: '#666' }}>No backups found yet. Daily backups are automatic; check back later.</p>
-                  ) : (
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr auto auto', gap: '0.5rem', alignItems: 'center' }}>
-                      {backups.map((b) => (
-                        <>
-                          <div key={`${b.name}-n`} style={{ fontFamily: 'monospace', overflow: 'hidden', textOverflow: 'ellipsis' }}>{b.name}</div>
-                          <div key={`${b.name}-d`} style={{ color: '#666', fontSize: '0.9rem' }}>{new Date(b.created_at).toLocaleString()}</div>
-                          <div key={`${b.name}-a`} style={{ textAlign: 'right' }}>
-                            <button
-                              onClick={() => handleRestore(b.name)}
-                              disabled={restoring === b.name}
-                              style={{ padding: '0.4rem 0.8rem', background: '#dc3545', color: 'white', border: 'none', borderRadius: '6px', cursor: restoring === b.name ? 'not-allowed' : 'pointer' }}
-                            >
-                              {restoring === b.name ? 'Restoring…' : 'Restore to this backup'}
-                            </button>
-                          </div>
-                        </>
-                      ))}
-                    </div>
-                  )}
-                </div>
+                <UniversityBackupSection
+                  universityId={Number(id)}
+                  universityName={university.name}
+                  defaultCollapsed={true}
+                  initialBackups={backups}
+                  onChanged={() => {
+                    // Optionally refresh anything else on this page after operations
+                  }}
+                />
               </div>
             )}
 
