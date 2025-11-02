@@ -6,6 +6,8 @@ import Image from 'next/image';
 import MarkdownDisplay from '../../../components/common/MarkdownDisplay';
 import styles from '../../../styles/Faculties.module.css';
 import { exportFacultyFull } from '../../../utils/dataTransfer.api';
+import ImportFacultyWizard from '../../../components/faculty/ImportFacultyWizard';
+import buttons from '../../../styles/Buttons.module.css';
 
 interface Faculty {
   id: number;
@@ -38,6 +40,7 @@ export default function FacultiesPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showImportModal, setShowImportModal] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState<number | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
@@ -256,9 +259,14 @@ export default function FacultiesPage() {
         <div className={styles.container}>
           <div className={styles.header}>
             <h1>Faculties - {university.name}</h1>
-            <button onClick={() => setShowCreateModal(true)} className={styles.createButton}>
-              + Create New Faculty
-            </button>
+            <div style={{ display: 'flex', gap: '0.5rem' }}>
+              <button onClick={() => setShowCreateModal(true)} className={styles.createButton}>
+                + Create New Faculty
+              </button>
+              <button onClick={() => setShowImportModal(true)} className={`${buttons.btn} ${buttons.btnPrimary}`}>
+                ⬇️ Import Faculty
+              </button>
+            </div>
           </div>
 
           {error && <div className={styles.error}>{error}</div>}
@@ -467,6 +475,15 @@ export default function FacultiesPage() {
           </div>
         )}
       </MainLayout>
+      {showImportModal && (
+        <ImportFacultyWizard
+          isOpen={showImportModal}
+          onClose={() => setShowImportModal(false)}
+          universityId={id as string}
+          existingFaculties={faculties}
+          onImported={() => { setShowImportModal(false); fetchFaculties(); }}
+        />
+      )}
     </>
   );
 }
