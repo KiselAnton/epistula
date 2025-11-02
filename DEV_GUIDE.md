@@ -179,7 +179,9 @@ Linux/macOS:
 
 Hooks included:
 - `commit-msg`: Enforces Conventional Commits format and subject length
-- `pre-push`: Runs backend tests and blocks push if they fail
+- `pre-push`:
+   - Blocks push if backend code changed without corresponding changes in `epistula/backend/tests/`
+   - Rebuilds app (if Docker available), health-checks, runs backend tests, and blocks push if they fail
 
 **Note:** The automation scripts use `python -m pytest`. If tests fail with `ModuleNotFoundError`, ensure your Python environment has the backend dependencies installed.
 
@@ -207,6 +209,12 @@ Every change must:
 - Update relevant docs (README, backend/ARCHITECTURE.md, USER_GUIDE.md, or other docs)
 - Run the full test suite locally and ensure green
 - Rebuild and restart the app to validate end-to-end
+
+Continuous Integration (CI):
+
+- The GitHub Actions workflow enforces that if backend code changes, tests must change too (PRs and direct pushes)
+- Backend tests run under Python 3.14 with coverage; build fails if coverage drops below a minimum threshold (currently 70%)
+- Coverage is uploaded to Codecov if configured
 
 Helper scripts to enforce the flow:
 
