@@ -97,7 +97,7 @@ jobs:
       - name: Run tests with pytest
         run: |
           cd epistula/backend
-          pytest -q --tb=short --cov=. --cov-report=term-missing --cov-report=xml:../../coverage.xml --cov-fail-under=70
+          pytest -q --tb=short --cov=. --cov-report=term-missing --cov-report=xml:../../coverage.xml --cov-fail-under=100
       
       - name: Upload coverage reports
         if: always()

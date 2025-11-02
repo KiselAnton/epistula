@@ -213,7 +213,7 @@ Every change must:
 Continuous Integration (CI):
 
 - The GitHub Actions workflow enforces that if backend code changes, tests must change too (PRs and direct pushes)
-- Backend tests run under Python 3.14 with coverage; build fails if coverage drops below a minimum threshold (currently 70%)
+- Backend tests run under Python 3.14 with coverage; build fails if coverage drops below 100% (complete coverage required)
 - Coverage is uploaded to Codecov if configured
 
 Helper scripts to enforce the flow:
