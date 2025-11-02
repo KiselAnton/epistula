@@ -8,6 +8,8 @@ interface SubjectStudentsSectionProps {
   onAddStudent: () => void;
   onRemoveStudent: (studentId: number) => void;
   removingStudent: number | null;
+  onImportStudents?: () => void;
+  onExportStudents?: () => void;
 }
 
 export default function SubjectStudentsSection({
@@ -15,15 +17,23 @@ export default function SubjectStudentsSection({
   universityId,
   onAddStudent,
   onRemoveStudent,
-  removingStudent
+  removingStudent,
+  onImportStudents,
+  onExportStudents
 }: SubjectStudentsSectionProps) {
   return (
     <div style={{ marginTop: '2rem' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
         <h2>Enrolled Students ({students.length})</h2>
-        <Button variant="success" onClick={onAddStudent}>
-          + Enroll Student
-        </Button>
+        <div style={{ display: 'flex', gap: '0.5rem' }}>
+          {onExportStudents && (
+            <Button variant="secondary" onClick={onExportStudents}>⬇️ Export</Button>
+          )}
+          {onImportStudents && (
+            <Button variant="secondary" onClick={onImportStudents}>⬆️ Import</Button>
+          )}
+          <Button variant="success" onClick={onAddStudent}>+ Enroll Student</Button>
+        </div>
       </div>
 
       {students.length > 0 ? (

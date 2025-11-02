@@ -17,6 +17,8 @@ import { getBackendUrl } from '../../../../../../lib/config';
 import ImportLectureWizard from '../../../../../../components/subject/ImportLectureWizard';
 import ImportSubjectProfessorsWizard from '../../../../../../components/subject/ImportSubjectProfessorsWizard';
 import ImportLectureMaterialsWizard from '../../../../../../components/subject/ImportLectureMaterialsWizard';
+import ImportSubjectStudentsWizard from '../../../../../../components/subject/ImportSubjectStudentsWizard';
+import { exportSubjectProfessorsFiltered, exportSubjectStudentsLocal } from '../../../../../../utils/exportHelpers';
 
 export default function SubjectDetailPage() {
   const router = useRouter();
@@ -34,6 +36,7 @@ export default function SubjectDetailPage() {
   const [showImportLectures, setShowImportLectures] = useState(false);
   const [showImportProfessors, setShowImportProfessors] = useState(false);
   const [showImportMaterials, setShowImportMaterials] = useState<{ open: boolean; lectureId: number | null }>({ open: false, lectureId: null });
+  const [showImportStudents, setShowImportStudents] = useState(false);
 
   const {
     professors,
@@ -169,12 +172,33 @@ export default function SubjectDetailPage() {
             publishingLecture={publishingLecture}
             onImportMaterials={(lid) => setShowImportMaterials({ open: true, lectureId: lid })}
           />
-          <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1rem' }}>
+          <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1rem', flexWrap: 'wrap' }}>
             <button onClick={() => setShowImportLectures(true)} style={{ padding: '0.5rem 1rem', background: '#6c757d', color: 'white', border: 'none', borderRadius: 6, cursor: 'pointer' }}>⬆️ Import Lectures</button>
             <button onClick={() => setShowImportProfessors(true)} style={{ padding: '0.5rem 1rem', background: '#6c757d', color: 'white', border: 'none', borderRadius: 6, cursor: 'pointer' }}>⬆️ Import Professors</button>
+            <button onClick={async () => { try { await exportSubjectProfessorsFiltered(id as string, subjectId as string); } catch (e: any) { alert(e?.message || 'Export failed'); } }} style={{ padding: '0.5rem 1rem', background: '#5a6268', color: 'white', border: 'none', borderRadius: 6, cursor: 'pointer' }}>⬇️ Export Professors</button>
+            <button onClick={() => setShowImportStudents(true)} style={{ padding: '0.5rem 1rem', background: '#6c757d', color: 'white', border: 'none', borderRadius: 6, cursor: 'pointer' }}>⬆️ Import Students</button>
+            <button onClick={() => {
+              try {
+                const simple = students.map(s => ({ student_id: s.student_id, status: s.status }));
+                exportSubjectStudentsLocal(id as string, subjectId as string, simple);
+              } catch (e: any) { alert(e?.message || 'Export failed'); }
+            }} style={{ padding: '0.5rem 1rem', background: '#5a6268', color: 'white', border: 'none', borderRadius: 6, cursor: 'pointer' }}>⬇️ Export Students</button>
           </div>
           <SubjectProfessorsSection professors={professors} universityId={id as string} onAddProfessor={openAddProfessorModal} onRemoveProfessor={handleRemoveProfessor} removingProfessor={removingProfessor} />
-          <SubjectStudentsSection students={students} universityId={id as string} onAddStudent={openAddStudentModal} onRemoveStudent={handleRemoveStudent} removingStudent={removingStudent} />
+          <SubjectStudentsSection 
+            students={students} 
+            universityId={id as string} 
+            onAddStudent={openAddStudentModal} 
+            onRemoveStudent={handleRemoveStudent} 
+            removingStudent={removingStudent}
+            onImportStudents={() => setShowImportStudents(true)}
+            onExportStudents={() => {
+              try {
+                const simple = students.map(s => ({ student_id: s.student_id, status: s.status }));
+                exportSubjectStudentsLocal(id as string, subjectId as string, simple);
+              } catch (e: any) { alert(e?.message || 'Export failed'); }
+            }}
+          />
           <div style={{ marginTop: '2rem', display: 'flex', gap: '1rem' }}>
             <button onClick={() => router.push(`/university/${id}/faculty/${facultyId}/subjects`)} style={{ padding: '0.75rem 1.5rem', background: '#6c757d', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '1rem' }}>← Back to Subjects</button>
           </div>
@@ -221,6 +245,15 @@ export default function SubjectDetailPage() {
         universityId={id as string}
         lectureId={(showImportMaterials.lectureId ?? -1) as number}
         onImported={() => { setShowImportMaterials({ open: false, lectureId: null }); }}
+      />
+      <ImportSubjectStudentsWizard
+        isOpen={showImportStudents}
+        onClose={() => setShowImportStudents(false)}
+        universityId={id as string}
+        facultyId={facultyId as string}
+        subjectId={subjectId as string}
+        existingStudentIds={students.map(s => s.student_id)}
+        onImported={() => setShowImportStudents(false)}
       />
     </MainLayout></>;
 }

@@ -6,7 +6,7 @@ function ensureToken(token?: string | null): string {
   return t;
 }
 
-function downloadJson(filename: string, data: unknown) {
+export function saveJson(filename: string, data: unknown) {
   const json = JSON.stringify(data, null, 2);
   const blob = new Blob([json], { type: 'application/json;charset=utf-8' });
   const url = URL.createObjectURL(blob);
@@ -40,7 +40,7 @@ export async function exportFacultyFull(
   const data = await res.json();
   const ts = new Date().toISOString().replace(/[:.]/g, '-');
   const fname = opts?.filenameHint || `university-${universityId}${fromTemp ? '-temp' : ''}_faculty-${facultyId}_export_${ts}.json`;
-  downloadJson(fname, data);
+  saveJson(fname, data);
   return data;
 }
 
@@ -75,7 +75,7 @@ export async function exportEntities(
   const data = await res.json();
   const ts = new Date().toISOString().replace(/[:.]/g, '-');
   const fname = opts?.filenameHint || `university-${universityId}${opts?.fromTemp ? '-temp' : ''}_${entityType}_export_${ts}.json`;
-  downloadJson(fname, data);
+  saveJson(fname, data);
   return data;
 }
 
