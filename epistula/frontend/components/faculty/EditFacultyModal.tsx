@@ -1,5 +1,6 @@
 import React, { useRef, useState } from 'react';
 import Image from 'next/image';
+import SafeImage from '../common/SafeImage';
 import { Faculty } from '../../types';
 import MarkdownEditor from '../common/MarkdownEditor';
 import { getBackendUrl } from '../../lib/config';
@@ -98,7 +99,7 @@ const EditFacultyModal: React.FC<Props> = ({ isOpen, onClose, universityId, facu
           <h3 style={{ margin: '0 0 8px', fontSize: '1.05rem' }}>Logo</h3>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             {faculty.logo_url ? (
-              <Image src={`${getBackendUrl()}${faculty.logo_url}`} alt="Faculty logo" width={72} height={72} style={{ objectFit: 'contain', borderRadius: 8, background: '#f8f9fa', border: '1px solid #eee' }} />
+              <SafeImage src={`${getBackendUrl()}${faculty.logo_url}`} alt="Faculty logo" width={72} height={72} style={{ borderRadius: 8, background: '#f8f9fa', border: '1px solid #eee' }} />
             ) : (
               <div style={{ width: 72, height: 72, borderRadius: 8, border: '1px dashed #ccc', display: 'grid', placeItems: 'center', color: '#888' }}>No logo</div>
             )}

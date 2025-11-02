@@ -3,6 +3,7 @@ import { useRouter } from 'next/router';
 import Head from 'next/head';
 import MainLayout from '../components/layout/MainLayout';
 import Image from 'next/image';
+import SafeImage from '../components/common/SafeImage';
 import MarkdownDisplay from '../components/common/MarkdownDisplay';
 import MarkdownEditor from '../components/common/MarkdownEditor';
 import styles from '../styles/Universities.module.css';
@@ -249,12 +250,11 @@ export default function Universities() {
                       flexShrink: 0
                     }}>
                       {uni.logo_url ? (
-                        <Image
+                        <SafeImage
                           src={`${getBackendUrl()}${uni.logo_url}`}
                           alt={`${uni.name} logo`}
                           width={60}
                           height={60}
-                          style={{ objectFit: 'contain' }}
                         />
                       ) : (
                         <span style={{ fontSize: '1.8rem' }}>🏛️</span>

@@ -3,6 +3,7 @@ import { useEffect, useState, useCallback, useRef } from 'react';
 import Head from 'next/head';
 import MainLayout from '../../../components/layout/MainLayout';
 import Image from 'next/image';
+import SafeImage from '../../../components/common/SafeImage';
 import MarkdownDisplay from '../../../components/common/MarkdownDisplay';
 import styles from '../../../styles/Faculties.module.css';
 import { exportFacultyFull } from '../../../utils/dataTransfer.api';
@@ -330,12 +331,11 @@ export default function FacultiesPage() {
                         flexShrink: 0
                       }}>
                         {faculty.logo_url ? (
-                          <Image
+                          <SafeImage
                             src={`${getBackendUrl()}${faculty.logo_url}`}
                             alt={`${faculty.name} logo`}
                             width={60}
                             height={60}
-                            style={{ objectFit: 'contain' }}
                           />
                         ) : (
                           <span style={{ fontSize: '1.8rem' }}>🎓</span>

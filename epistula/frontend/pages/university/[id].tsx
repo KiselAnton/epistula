@@ -2,6 +2,7 @@ import { useRouter } from 'next/router';
 import { useEffect, useState, useCallback } from 'react';
 import Head from 'next/head';
 import Image from 'next/image';
+import SafeImage from '../../components/common/SafeImage';
 import MainLayout from '../../components/layout/MainLayout';
 import MarkdownEditor from '../../components/common/MarkdownEditor';
 import EditUniversityModal from '../../components/university/EditUniversityModal';
@@ -434,12 +435,11 @@ export default function UniversityPage() {
                   position: 'relative'
                 }}>
                   {university.logo_url ? (
-                    <Image
+                    <SafeImage
                       src={`${getBackendUrl()}${university.logo_url}`}
                       alt={`${university.name} logo`}
                       width={120}
                       height={120}
-                      style={{ objectFit: 'contain' }}
                     />
                   ) : (
                     <span style={{ fontSize: '3rem' }}>🏛️</span>
@@ -606,12 +606,11 @@ export default function UniversityPage() {
                           flexShrink: 0
                         }}>
                           {faculty.logo_url ? (
-                            <Image 
+                            <SafeImage 
                               src={`${getBackendUrl()}${faculty.logo_url}`} 
                               alt={`${faculty.name} logo`}
                               width={60}
                               height={60}
-                              style={{ objectFit: 'contain' }}
                             />
                           ) : (
                             <span style={{ fontSize: '2rem' }}>🎓</span>

@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
+import SafeImage from '../common/SafeImage';
 import { Subject } from '../../types';
 import { getBackendUrl } from '../../lib/config';
 import MarkdownEditor from '../common/MarkdownEditor';
@@ -156,7 +157,7 @@ const EditSubjectModal: React.FC<EditSubjectModalProps> = ({ isOpen, onClose, su
           <h3 style={{ margin: '0 0 0.5rem', fontSize: '1.05rem' }}>Logo</h3>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             {subject.logo_url ? (
-              <Image src={`${getBackendUrl()}${subject.logo_url}`} alt="Subject logo" width={64} height={64} style={{ objectFit: 'contain', borderRadius: 8, background: '#f8f9fa', border: '1px solid #eee' }} />
+              <SafeImage src={`${getBackendUrl()}${subject.logo_url}`} alt="Subject logo" width={64} height={64} style={{ borderRadius: 8, background: '#f8f9fa', border: '1px solid #eee' }} />
             ) : (
               <div style={{ width: 64, height: 64, borderRadius: 8, border: '1px dashed #ccc', display: 'grid', placeItems: 'center', color: '#888' }}>No logo</div>
             )}
