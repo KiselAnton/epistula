@@ -68,6 +68,8 @@ class BackupEntry:
     size_bytes: int
     created_at: datetime
     in_minio: bool = False
+    title: Optional[str] = None
+    description: Optional[str] = None
 
 
 def _ensure_minio_bucket():
@@ -190,6 +192,24 @@ def _ensure_uni_dir(university_id: int) -> Path:
 def list_backups(university_id: int) -> List[BackupEntry]:
     uni_dir = _ensure_uni_dir(university_id)
     entries: List[BackupEntry] = []
+    # Load metadata for this university's backups (title/description)
+    meta_map: dict[str, tuple[Optional[str], Optional[str]]] = {}
+    try:
+        with SessionLocal() as db:
+            rows = db.execute(
+                text(
+                    """
+                    SELECT filename, title, description
+                    FROM public.university_backups_meta
+                    WHERE university_id = :uid
+                    """
+                ),
+                {"uid": university_id},
+            ).fetchall()
+            for fn, title, desc in rows:
+                meta_map[str(fn)] = (title, desc)
+    except Exception as e:
+        logger.warning(f"[backups] Failed to fetch backup metadata for uni {university_id}: {e}")
     
     # Get MinIO backups list
     minio_backups = set()
@@ -209,13 +229,16 @@ def list_backups(university_id: int) -> List[BackupEntry]:
     for f in sorted(uni_dir.glob("*.sql.gz"), key=lambda p: p.stat().st_mtime, reverse=True):
         try:
             stat = f.stat()
+            title, desc = meta_map.get(f.name, (None, None))
             entries.append(
                 BackupEntry(
                     name=f.name,
                     path=f,
                     size_bytes=stat.st_size,
                     created_at=datetime.fromtimestamp(stat.st_mtime),
-                    in_minio=f.name in minio_backups
+                    in_minio=f.name in minio_backups,
+                    title=title,
+                    description=desc,
                 )
             )
         except FileNotFoundError:
@@ -285,6 +308,19 @@ def delete_backup_file(university_id: int, backup_name: str, *, delete_from_mini
     }
     if minio_error:
         result["minio_error"] = minio_error
+
+    # Best-effort delete metadata row
+    try:
+        with SessionLocal() as db:
+            db.execute(
+                text(
+                    "DELETE FROM public.university_backups_meta WHERE university_id = :uid AND filename = :fn"
+                ),
+                {"uid": university_id, "fn": backup_name},
+            )
+            db.commit()
+    except Exception as e:
+        logger.warning(f"[DELETE] Failed to delete metadata for {backup_name}: {e}")
     return result
 
 

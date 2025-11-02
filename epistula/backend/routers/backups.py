@@ -37,6 +37,8 @@ class BackupInfo(BaseModel):
     in_minio: bool
     university_id: int
     university_name: str
+    title: str | None = None
+    description: str | None = None
 
 
 class UniversityBackupList(BaseModel):
@@ -181,6 +183,8 @@ def get_university_backups(
                 "size_bytes": e.size_bytes,
                 "created_at": e.created_at.isoformat(),
                 "in_minio": e.in_minio,
+                "title": e.title,
+                "description": e.description,
             }
             for e in entries
         ],
@@ -254,6 +258,85 @@ def upload_backup_to_minio_endpoint(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to upload backup to MinIO"
         )
+
+
+# =============================
+# Backup metadata (title/notes)
+# =============================
+
+class BackupMetaPayload(BaseModel):
+    title: str | None = None
+    description: str | None = None
+
+
+@router.get("/{university_id}/{backup_name}/meta")
+def get_backup_meta(
+    university_id: int,
+    backup_name: str,
+    db: Session = Depends(get_db),
+    current_user: UserDB = Depends(get_current_user),
+):
+    """Get editable metadata for a backup (title/description)."""
+    _ensure_can_manage(db, current_user, university_id)
+
+    # Verify the file exists locally (to avoid orphaned metadata display)
+    from utils.backups import _ensure_uni_dir
+    backup_path = _ensure_uni_dir(university_id) / backup_name
+    if not backup_path.exists():
+        raise HTTPException(status_code=404, detail="Backup not found")
+
+    row = db.execute(
+        text(
+            "SELECT title, description FROM public.university_backups_meta WHERE university_id = :uid AND filename = :fn"
+        ),
+        {"uid": university_id, "fn": backup_name},
+    ).fetchone()
+    if not row:
+        return {"title": None, "description": None}
+    return {"title": row[0], "description": row[1]}
+
+
+@router.put("/{university_id}/{backup_name}/meta")
+def upsert_backup_meta(
+    university_id: int,
+    backup_name: str,
+    payload: BackupMetaPayload,
+    db: Session = Depends(get_db),
+    current_user: UserDB = Depends(get_current_user),
+):
+    """Create or update metadata for a backup (title/description)."""
+    _ensure_can_manage(db, current_user, university_id)
+
+    # Verify the backup exists (local file check)
+    from utils.backups import _ensure_uni_dir
+    backup_path = _ensure_uni_dir(university_id) / backup_name
+    if not backup_path.exists():
+        raise HTTPException(status_code=404, detail="Backup not found")
+
+    try:
+        # Upsert behavior
+        db.execute(
+            text(
+                """
+                INSERT INTO public.university_backups_meta (university_id, filename, title, description, created_by)
+                VALUES (:uid, :fn, :title, :desc, :created_by)
+                ON CONFLICT (university_id, filename)
+                DO UPDATE SET title = EXCLUDED.title, description = EXCLUDED.description, updated_at = now()
+                """
+            ),
+            {
+                "uid": university_id,
+                "fn": backup_name,
+                "title": payload.title,
+                "desc": payload.description,
+                "created_by": getattr(current_user, "id", None),
+            },
+        )
+        db.commit()
+        return {"message": "Backup metadata saved", "title": payload.title, "description": payload.description}
+    except Exception as e:
+        logger.error(f"[META] Failed to save metadata for {backup_name}: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Failed to save backup metadata")
 
 
 @router.post("/{university_id}/create")

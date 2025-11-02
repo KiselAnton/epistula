@@ -12,6 +12,8 @@ interface BackupInfo {
   in_minio: boolean;
   university_id: number;
   university_name: string;
+  title?: string | null;
+  description?: string | null;
 }
 
 interface UniversityBackups {
@@ -38,6 +40,7 @@ export default function Backups() {
   const [deletingTemp, setDeletingTemp] = useState<number | null>(null);
   const [deletingBackup, setDeletingBackup] = useState<string | null>(null);
   const [tempStatus, setTempStatus] = useState<Record<number, any>>({});
+  const [editingMeta, setEditingMeta] = useState<Record<string, {title: string; description: string; saving: boolean}>>({});
 
   // Helper function for consistent logging
   const log = (level: 'info' | 'warn' | 'error', message: string, data?: any) => {
@@ -387,6 +390,59 @@ export default function Backups() {
     }
   };
 
+  const startEditMeta = async (universityId: number, backup: BackupInfo) => {
+    const key = `${universityId}-${backup.name}`;
+    // Fetch latest meta to avoid stale data
+    try {
+      const token = localStorage.getItem('token');
+      const resp = await fetch(`http://localhost:8000/api/v1/backups/${universityId}/${backup.name}/meta`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      let title = backup.title ?? '';
+      let description = backup.description ?? '';
+      if (resp.ok) {
+        const data = await resp.json();
+        title = data.title ?? '';
+        description = data.description ?? '';
+      }
+      setEditingMeta(prev => ({...prev, [key]: { title, description, saving: false }}));
+    } catch (e) {
+      // fallback to current displayed
+      setEditingMeta(prev => ({...prev, [key]: { title: backup.title ?? '', description: backup.description ?? '', saving: false }}));
+    }
+  };
+
+  const cancelEditMeta = (universityId: number, backupName: string) => {
+    const key = `${universityId}-${backupName}`;
+    setEditingMeta(prev => { const cp = {...prev}; delete cp[key]; return cp; });
+  };
+
+  const saveMeta = async (universityId: number, backupName: string) => {
+    const key = `${universityId}-${backupName}`;
+    const meta = editingMeta[key];
+    if (!meta) return;
+    setEditingMeta(prev => ({...prev, [key]: {...meta, saving: true} }));
+    try {
+      const token = localStorage.getItem('token');
+      const resp = await fetch(`http://localhost:8000/api/v1/backups/${universityId}/${backupName}/meta`, {
+        method: 'PUT',
+        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: meta.title || null, description: meta.description || null })
+      });
+      if (!resp.ok) {
+        const data = await resp.json().catch(() => ({}));
+        throw new Error(data.detail || 'Failed to save');
+      }
+      alert('✅ Saved backup details');
+      // Refresh list so titles/descriptions update
+      fetchBackups();
+      cancelEditMeta(universityId, backupName);
+    } catch (e:any) {
+      alert(`❌ ${e?.message || 'Failed to save'}`);
+      setEditingMeta(prev => ({...prev, [key]: {...(prev[key]||{title:'',description:'',saving:false}), saving: false }}));
+    }
+  };
+
   if (loading) {
     return (
       <MainLayout breadcrumbs={['Backups']}>
@@ -499,7 +555,7 @@ export default function Backups() {
               <table>
                 <thead>
                   <tr>
-                    <th>Backup Name</th>
+                    <th>Backup</th>
                     <th>Created</th>
                     <th>Size</th>
                     <th>Storage</th>
@@ -516,7 +572,40 @@ export default function Backups() {
 
                     return (
                       <tr key={backup.name}>
-                        <td className={styles.backupName}>{backup.name}</td>
+                        <td className={styles.backupName}>
+                          <div style={{display:'flex', flexDirection:'column', gap:4}}>
+                            <div style={{fontWeight:600}}>{backup.title?.trim() ? backup.title : '(no title)'}</div>
+                            <div style={{fontSize:12, color:'#666'}} title={backup.name}>{backup.name}</div>
+                            {editingMeta[`${uni.university_id}-${backup.name}`] ? (
+                              <div style={{marginTop:6, display:'grid', gap:6}}>
+                                <input
+                                  type="text"
+                                  placeholder="Title"
+                                  value={editingMeta[`${uni.university_id}-${backup.name}`].title}
+                                  onChange={e => setEditingMeta(prev => ({...prev, [`${uni.university_id}-${backup.name}`]: {...prev[`${uni.university_id}-${backup.name}`], title: e.target.value}}))}
+                                  style={{padding:6, border:'1px solid #ccc', borderRadius:4}}
+                                />
+                                <textarea
+                                  placeholder="Description / notes"
+                                  value={editingMeta[`${uni.university_id}-${backup.name}`].description}
+                                  onChange={e => setEditingMeta(prev => ({...prev, [`${uni.university_id}-${backup.name}`]: {...prev[`${uni.university_id}-${backup.name}`], description: e.target.value}}))}
+                                  rows={2}
+                                  style={{padding:6, border:'1px solid #ccc', borderRadius:4}}
+                                />
+                                <div style={{display:'flex', gap:8}}>
+                                  <button onClick={() => saveMeta(uni.university_id, backup.name)} disabled={editingMeta[`${uni.university_id}-${backup.name}`].saving} className={styles.saveButton}>
+                                    {editingMeta[`${uni.university_id}-${backup.name}`].saving ? 'Saving...' : '💾 Save'}
+                                  </button>
+                                  <button onClick={() => cancelEditMeta(uni.university_id, backup.name)} className={styles.cancelButton}>Cancel</button>
+                                </div>
+                              </div>
+                            ) : (
+                              <div style={{marginTop:4}}>
+                                <button onClick={() => startEditMeta(uni.university_id, backup)} className={styles.editButton}>✏️ Edit details</button>
+                              </div>
+                            )}
+                          </div>
+                        </td>
                         <td>{formatDate(backup.created_at)}</td>
                         <td>{formatBytes(backup.size_bytes)}</td>
                         <td>

@@ -13,6 +13,8 @@ def test_get_university_backups_success(client, monkeypatch):
             self.size_bytes = size
             self.created_at = ts
             self.in_minio = in_minio
+            self.title = None
+            self.description = None
 
     entries = [
         _Entry("u1_2024-01-01.sql.gz", 1234, _dt.datetime(2024, 1, 1), False),
@@ -416,6 +418,8 @@ def test_get_all_backups_success_for_root(client, monkeypatch, set_user):
             self.size_bytes = 100
             self.created_at = _dt.datetime(2024, 1, 1)
             self.in_minio = False
+            self.title = None
+            self.description = None
 
     monkeypatch.setattr(backups_router, "list_backups", lambda uni_id: [_Entry(f"u{uni_id}.sql.gz")])
 
@@ -540,5 +544,85 @@ def test_delete_backup_invalid_name_returns_400(client, monkeypatch):
         r = client.delete("/api/v1/backups/50/not-a-backup.txt")
         assert r.status_code == 400
         assert r.json()["detail"].lower().startswith("invalid")
+    finally:
+        app_main.app.dependency_overrides.clear()
+
+
+def test_upsert_backup_meta_success(client, monkeypatch, tmp_path):
+    import routers.backups as backups_router
+
+    # Allow operation
+    monkeypatch.setattr(backups_router, "_ensure_can_manage", lambda db, user, unid: None)
+
+    # Create a file to represent the backup
+    uni_dir = tmp_path / "uni_60"
+    uni_dir.mkdir(parents=True, exist_ok=True)
+    (uni_dir / "meta.sql.gz").write_text("x")
+
+    import utils.backups as backups_utils
+    monkeypatch.setattr(backups_utils, "_ensure_uni_dir", lambda unid: uni_dir)
+
+    # Capture SQL params passed to DB upsert
+    class _Res:
+        def fetchone(self):
+            return None
+
+    class _Sess:
+        def __init__(self):
+            self.last_params = None
+        def execute(self, stmt, params=None):
+            self.last_params = params
+            return _Res()
+        def commit(self):
+            pass
+
+    import utils.database as db_mod
+    import main as app_main
+    def _override_db():
+        yield _Sess()
+    app_main.app.dependency_overrides[db_mod.get_db] = _override_db
+
+    try:
+        r = client.put("/api/v1/backups/60/meta.sql.gz/meta", json={"title": "Snapshot before upgrade", "description": "State prior to v2 migration"})
+        assert r.status_code == 200
+        body = r.json()
+        assert "saved" in body["message"].lower()
+    finally:
+        app_main.app.dependency_overrides.clear()
+
+
+def test_get_backup_meta_returns_nulls_when_absent(client, monkeypatch, tmp_path):
+    import routers.backups as backups_router
+
+    monkeypatch.setattr(backups_router, "_ensure_can_manage", lambda db, user, unid: None)
+
+    # File exists but no metadata row
+    uni_dir = tmp_path / "uni_61"
+    uni_dir.mkdir(parents=True, exist_ok=True)
+    (uni_dir / "m.sql.gz").write_text("x")
+
+    import utils.backups as backups_utils
+    monkeypatch.setattr(backups_utils, "_ensure_uni_dir", lambda unid: uni_dir)
+
+    class _Res:
+        def fetchone(self):
+            return None
+
+    class _Sess:
+        def execute(self, stmt, params=None):
+            return _Res()
+
+    import utils.database as db_mod
+    import main as app_main
+    def _override_db():
+        yield _Sess()
+    app_main.app.dependency_overrides[db_mod.get_db] = _override_db
+
+    try:
+        r = client.get("/api/v1/backups/61/m.sql.gz/meta")
+        assert r.status_code == 200
+        body = r.json()
+        assert body["title"] is None
+        assert body["description"] is None
     finally:
         app_main.app.dependency_overrides.clear()

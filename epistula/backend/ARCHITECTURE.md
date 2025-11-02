@@ -113,6 +113,8 @@ delete_file(object_name)
 │   ├── POST /{university_id}/create           # Create backup now
 │   ├── POST /{university_id}/{name}/restore   # Restore backup (to prod or temp via ?to_temp=true)
 │   ├── POST /{university_id}/{name}/upload-to-minio   # Upload local backup to MinIO
+│   ├── GET /{university_id}/{name}/meta       # Get editable metadata (title/description)
+│   └── PUT /{university_id}/{name}/meta       # Create/update metadata (root/uni_admin only)
 │   ├── POST /{university_id}/promote-temp     # Promote temp schema to production
 │   ├── DELETE /{university_id}/temp-schema    # Drop temp schema and cleanup
 │   ├── GET /{university_id}/temp-status       # Inspect temp schema state
