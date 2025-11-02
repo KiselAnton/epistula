@@ -69,5 +69,30 @@ try {
 }
 Pop-Location
 
+# Run Playwright E2E tests from frontend
+Write-Info "Running Playwright E2E tests..."
+Push-Location "$RepoRoot\epistula\frontend"
+try {
+    # Ensure Node deps installed (no-op if already installed)
+    npm ci | Out-Null
+} catch {
+    try { npm install | Out-Null } catch {}
+}
+
+try {
+    # Install Playwright browsers (chromium only for speed)
+    npx playwright install chromium | Out-Null
+} catch {}
+
+try {
+    $env:PORT = "3000"
+    npm run -s test:e2e
+} catch {
+    Pop-Location
+    Write-Err "Playwright tests failed."
+    exit 1
+}
+Pop-Location
+
 Write-Info "All good."
 exit 0

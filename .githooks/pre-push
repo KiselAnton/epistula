@@ -62,5 +62,18 @@ pushd "$ROOT_DIR/epistula/backend" >/dev/null
 python -m pytest -q --tb=short
 popd >/dev/null
 
+# Run Playwright E2E tests (always)
+echo "[pre-push] Running Playwright E2E tests..."
+pushd "$ROOT_DIR/epistula/frontend" >/dev/null
+# Ensure deps are installed (fast if already present)
+npm ci >/dev/null 2>&1 || npm install >/dev/null 2>&1 || true
+# Ensure browsers are installed (chromium is enough for CI/local)
+if command -v npx >/dev/null 2>&1; then
+  npx playwright install chromium >/dev/null 2>&1 || true
+fi
+# Use the existing frontend on port 3000; config reuses if running
+PORT=3000 npm run -s test:e2e
+popd >/dev/null
+
 echo "[pre-push] Tests passed. Proceeding with push."
 exit 0
