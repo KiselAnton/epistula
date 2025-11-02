@@ -10,6 +10,7 @@ interface LecturesSectionProps {
   deletingLecture: number | null;
   onTogglePublish?: (lectureId: number, publish: boolean) => void;
   publishingLecture?: number | null;
+  onImportMaterials?: (lectureId: number) => void;
 }
 
 export default function LecturesSection({
@@ -19,7 +20,8 @@ export default function LecturesSection({
   onDeleteLecture,
   deletingLecture,
   onTogglePublish,
-  publishingLecture
+  publishingLecture,
+  onImportMaterials
 }: LecturesSectionProps) {
   const formatDateTime = (dateString: string | null) => {
     if (!dateString) return 'Not scheduled';
@@ -130,6 +132,14 @@ export default function LecturesSection({
                   >
                     {deletingLecture === lecture.id ? 'Deleting...' : 'Delete'}
                   </button>
+                  {onImportMaterials && (
+                    <button
+                      onClick={() => onImportMaterials(lecture.id)}
+                      className={`${buttons.btn} ${buttons.btnSecondary}`}
+                    >
+                      Import Materials
+                    </button>
+                  )}
                 </div>
               </div>
             </div>

@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react';
 import styles from '../../styles/Faculties.module.css';
 import buttons from '../../styles/Buttons.module.css';
 import { importEntities } from '../../utils/dataTransfer.api';
+import { normalizeLower, normalizeUpper, isDuplicateBy } from '../../utils/duplicates';
 
 export interface SubjectLite {
   id?: number;
@@ -27,6 +28,7 @@ const ImportSubjectWizard: React.FC<ImportSubjectWizardProps> = ({ isOpen, onClo
   const [err, setErr] = useState<string>('');
   const [saving, setSaving] = useState(false);
 
+  const [items, setItems] = useState<SubjectLite[]>([]); // loaded subjects (>=1)
   const [form, setForm] = useState<SubjectLite>({ name: '', code: '', description: '', is_active: true });
   const [strategy, setStrategy] = useState<'merge' | 'replace' | 'skip_existing'>('merge');
 
@@ -49,13 +51,16 @@ const ImportSubjectWizard: React.FC<ImportSubjectWizardProps> = ({ isOpen, onClo
       // Accept exportEntities format
       if (json && json.entity_type === 'subjects' && Array.isArray(json.data) && json.data.length > 0) {
         setRawJson(json);
-        const s = json.data[0];
-        setForm({
+        const loaded = json.data.map((s: any) => ({
           name: s.name || '',
           code: (s.code || '').toUpperCase(),
           description: s.description ?? '',
           is_active: s.is_active !== false,
-        });
+        } as SubjectLite));
+        setItems(loaded);
+        if (loaded.length === 1) {
+          setForm(loaded[0]);
+        }
         setStep(2);
         return;
       }
@@ -63,12 +68,14 @@ const ImportSubjectWizard: React.FC<ImportSubjectWizardProps> = ({ isOpen, onClo
       // Single subject object fallback
       if (json && (json.name || json.code)) {
         setRawJson({ entity_type: 'subjects', data: [json] });
-        setForm({
+        const single: SubjectLite = {
           name: json.name || '',
           code: (json.code || '').toUpperCase(),
           description: json.description ?? '',
           is_active: json.is_active !== false,
-        });
+        };
+        setItems([single]);
+        setForm(single);
         setStep(2);
         return;
       }
@@ -80,26 +87,53 @@ const ImportSubjectWizard: React.FC<ImportSubjectWizardProps> = ({ isOpen, onClo
   };
 
   const canProceedToReview = useMemo(() => !!rawJson, [rawJson]);
+  const internalDupName = useMemo(() => {
+    if (items.length <= 1) return false;
+    const names = items.map((s) => normalizeLower(s.name));
+    return new Set(names).size !== names.length;
+  }, [items]);
+
+  const internalDupCode = useMemo(() => {
+    if (items.length <= 1) return false;
+    const codes = items.map((s) => normalizeUpper(s.code));
+    return new Set(codes).size !== codes.length;
+  }, [items]);
+
   const canImport = useMemo(() => {
-    const valid = (form.name || '').trim().length > 0 && (form.code || '').trim().length > 0;
-    return valid && !duplicateName && !duplicateCode && !saving;
-  }, [form, duplicateName, duplicateCode, saving]);
+    if (items.length <= 1) {
+      const valid = (form.name || '').trim().length > 0 && (form.code || '').trim().length > 0;
+      return valid && !duplicateName && !duplicateCode && !saving;
+    }
+    // For multiple, ensure all are valid and no internal duplicates
+    const allValid = items.every((s) => (s.name || '').trim() && (s.code || '').trim());
+    // Avoid conflicts with existing subjects by code
+    const conflicts = items.some((s) => isDuplicateBy(existingSubjects, s, (x) => (x as SubjectLite).code, normalizeUpper));
+    return allValid && !internalDupName && !internalDupCode && !conflicts && !saving;
+  }, [form, duplicateName, duplicateCode, saving, items, internalDupName, internalDupCode, existingSubjects]);
 
   const doImport = async () => {
     if (!rawJson) return;
     setSaving(true);
     setErr('');
     try {
-      // Build one subject payload targeting current faculty
-      const subject: any = {
-        ...(rawJson.data?.[0] || {}),
-        name: (form.name || '').trim(),
-        code: (form.code || '').trim().toUpperCase(),
-        description: ((form.description || '') as string).trim() || null,
-        faculty_id: Number(facultyId),
-      };
-      delete subject.id; // let DB assign
-      await importEntities(universityId, 'subjects', [subject], { strategy });
+      let payload: any[] = [];
+      if (items.length <= 1) {
+        const subject: any = {
+          name: (form.name || '').trim(),
+          code: (form.code || '').trim().toUpperCase(),
+          description: ((form.description || '') as string).trim() || null,
+          faculty_id: Number(facultyId),
+        };
+        payload = [subject];
+      } else {
+        payload = items.map((s) => ({
+          name: (s.name || '').trim(),
+          code: (s.code || '').trim().toUpperCase(),
+          description: ((s.description || '') as string).trim() || null,
+          faculty_id: Number(facultyId),
+        }));
+      }
+      await importEntities(universityId, 'subjects', payload, { strategy });
       onImported();
       onClose();
     } catch (e: any) {
@@ -115,7 +149,7 @@ const ImportSubjectWizard: React.FC<ImportSubjectWizardProps> = ({ isOpen, onClo
     <div className={styles.modalOverlay} onClick={onClose}>
       <div className={styles.modal} onClick={e => e.stopPropagation()}>
         <div className={styles.modalHeader}>
-          <h2>Import Subject</h2>
+          <h2>Import Subject{items.length > 1 ? 's' : ''}</h2>
           <button onClick={onClose} className={styles.closeButton} aria-label="Close">×</button>
         </div>
 
@@ -123,7 +157,7 @@ const ImportSubjectWizard: React.FC<ImportSubjectWizardProps> = ({ isOpen, onClo
 
         {step === 1 && (
           <div>
-            <p>Upload a JSON export of a subject.</p>
+            <p>Upload a JSON export of subject(s).</p>
             <input type="file" accept="application/json" onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFile(f); }} />
             <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '1rem' }}>
               <button onClick={onClose} className={styles.cancelButton}>Cancel</button>
@@ -132,7 +166,7 @@ const ImportSubjectWizard: React.FC<ImportSubjectWizardProps> = ({ isOpen, onClo
           </div>
         )}
 
-        {step === 2 && (
+        {step === 2 && items.length <= 1 && (
           <div>
             <div className={styles.formGroup}>
               <label>Name</label>
@@ -155,6 +189,39 @@ const ImportSubjectWizard: React.FC<ImportSubjectWizardProps> = ({ isOpen, onClo
           </div>
         )}
 
+        {step === 2 && items.length > 1 && (
+          <div>
+            {(internalDupName || internalDupCode) && (
+              <div className={styles.error} style={{ marginBottom: '0.5rem' }}>
+                Remove or edit duplicates within the imported list before continuing.
+              </div>
+            )}
+            <div style={{ maxHeight: '50vh', overflow: 'auto', border: '1px solid #eee', borderRadius: 8, padding: '0.5rem' }}>
+              {items.map((s, idx) => (
+                <div key={idx} style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 2fr auto', gap: '0.5rem', alignItems: 'center', marginBottom: '0.5rem' }}>
+                  <input placeholder="Name" value={s.name} onChange={(e) => {
+                    const next = [...items]; next[idx] = { ...s, name: e.target.value }; setItems(next);
+                  }} />
+                  <input placeholder="Code" value={s.code} onChange={(e) => {
+                    const next = [...items]; next[idx] = { ...s, code: e.target.value.toUpperCase() }; setItems(next);
+                  }} />
+                  <input placeholder="Description (optional)" value={s.description || ''} onChange={(e) => {
+                    const next = [...items]; next[idx] = { ...s, description: e.target.value }; setItems(next);
+                  }} />
+                  <button onClick={() => setItems(items.filter((_, i) => i !== idx))} className={`${buttons.btn} ${buttons.btnDanger}`}>Remove</button>
+                </div>
+              ))}
+            </div>
+            <div style={{ marginTop: '0.75rem', color: '#666', fontSize: '0.9rem' }}>
+              Total: {items.length}
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '1rem' }}>
+              <button onClick={() => setStep(1)} className={styles.cancelButton}>← Back</button>
+              <button onClick={() => setStep(3)} disabled={!canImport} className={styles.submitButton}>Review & Import →</button>
+            </div>
+          </div>
+        )}
+
         {step === 3 && (
           <div>
             <div className={styles.formGroup}>
@@ -167,7 +234,7 @@ const ImportSubjectWizard: React.FC<ImportSubjectWizardProps> = ({ isOpen, onClo
             </div>
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
               <button onClick={() => setStep(2)} className={styles.cancelButton}>← Back</button>
-              <button onClick={doImport} disabled={!canImport} className={`${buttons.btn} ${buttons.btnSuccess}`}>{saving ? 'Importing…' : 'Import Subject'}</button>
+              <button onClick={doImport} disabled={!canImport} className={`${buttons.btn} ${buttons.btnSuccess}`}>{saving ? 'Importing…' : `Import Subject${items.length > 1 ? 's' : ''}`}</button>
             </div>
           </div>
         )}
