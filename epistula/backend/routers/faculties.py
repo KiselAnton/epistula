@@ -5,6 +5,7 @@ Faculties are stored in each university's dedicated schema (uni_<id>).
 Only university admins and root users can create/manage faculties.
 """
 from typing import List, Optional
+from pydantic import ValidationError
 
 from fastapi import APIRouter, Depends, HTTPException, status, File, UploadFile
 from sqlalchemy import text, Table, MetaData
@@ -82,20 +83,40 @@ def list_faculties(
     """)
     
     result = db.execute(query)
-    faculties = []
-    
-    for row in result:
-        faculties.append(Faculty(
-            id=row[0],
-            university_id=row[1],
-            name=row[2],
-            short_name=row[3],
-            code=row[4],
-            description=row[5],
-            logo_url=row[6],
-            created_at=row[7],
-            is_active=row[8]
-        ))
+    faculties: List[Faculty] = []
+
+    # Support both real SQLAlchemy Result (iterable) and test doubles
+    rows = result.fetchall() if hasattr(result, "fetchall") else list(result)
+
+    for row in rows:
+        # Defensive normalization to tolerate legacy/dirty data
+        name = (row[2] or "").strip()
+        short_name = (row[3] or "").strip()
+        code = ((row[4] or "").strip()).upper()
+        description = None
+        if isinstance(row[5], str):
+            desc_str = row[5].strip()
+            description = desc_str if desc_str else None
+
+        # Skip records that don't satisfy minimal invariants
+        if not name or not short_name or not code:
+            continue
+
+        try:
+            faculties.append(Faculty(
+                id=row[0],
+                university_id=row[1],
+                name=name,
+                short_name=short_name,
+                code=code,
+                description=description,
+                logo_url=row[6],
+                created_at=row[7],
+                is_active=row[8]
+            ))
+        except ValidationError:
+            # If any row still violates the schema, skip it to avoid 500s
+            continue
     
     return faculties
 
