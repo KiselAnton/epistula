@@ -72,6 +72,11 @@ if command -v npx >/dev/null 2>&1; then
   npx playwright install chromium >/dev/null 2>&1 || true
 fi
 # Use the existing frontend on port 3000; config reuses if running
+# Enable optional UI tests and provide root creds for global setup
+export EPISTULA_E2E_ENABLE_UI_TESTS=1
+export NEXT_PUBLIC_ROOT_EMAIL="${NEXT_PUBLIC_ROOT_EMAIL:-root@localhost.localdomain}"
+export EPISTULA_ROOT_EMAIL="${EPISTULA_ROOT_EMAIL:-${NEXT_PUBLIC_ROOT_EMAIL}}"
+export EPISTULA_ROOT_PASSWORD="${EPISTULA_ROOT_PASSWORD:-changeme123}"
 PORT=3000 npm run -s test:e2e
 popd >/dev/null
 

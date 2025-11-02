@@ -86,6 +86,11 @@ try {
 
 try {
     $env:PORT = "3000"
+    # Enable optional UI tests and provide root creds for global setup
+    $env:EPISTULA_E2E_ENABLE_UI_TESTS = "1"
+    if (-not $env:NEXT_PUBLIC_ROOT_EMAIL) { $env:NEXT_PUBLIC_ROOT_EMAIL = "root@localhost.localdomain" }
+    if (-not $env:EPISTULA_ROOT_EMAIL) { $env:EPISTULA_ROOT_EMAIL = $env:NEXT_PUBLIC_ROOT_EMAIL }
+    if (-not $env:EPISTULA_ROOT_PASSWORD) { $env:EPISTULA_ROOT_PASSWORD = "changeme123" }
     npm run -s test:e2e
 } catch {
     Pop-Location

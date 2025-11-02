@@ -9,7 +9,11 @@ export default defineConfig({
   use: {
     baseURL: BASE_URL,
     trace: 'on-first-retry',
+    // Reuse authenticated state produced by global setup
+    storageState: 'tests-e2e/.auth/user.json',
   },
+  // Perform login and test data seeding once before the suite
+  globalSetup: './tests-e2e/global-setup.ts',
   webServer: {
     command: 'npm run dev',
     url: `http://localhost:${PORT}`,

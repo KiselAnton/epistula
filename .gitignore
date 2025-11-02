@@ -28,6 +28,9 @@ playwright-report/
 **/test-results/
 **/playwright-report/
 *.spec.ts-snapshots/
+# E2E auth/setup artifacts (contain tokens)
+tests-e2e/.auth/
+**/tests-e2e/.auth/
 
 # Python caches and virtual envs
 __pycache__/

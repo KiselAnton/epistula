@@ -74,4 +74,8 @@ jobs:
       - name: Run Playwright tests
         env:
           PORT: 3000
+          EPISTULA_E2E_ENABLE_UI_TESTS: "1"
+          NEXT_PUBLIC_ROOT_EMAIL: "root@localhost.localdomain"
+          EPISTULA_ROOT_EMAIL: "root@localhost.localdomain"
+          EPISTULA_ROOT_PASSWORD: "changeme123"
         run: npm run test:e2e

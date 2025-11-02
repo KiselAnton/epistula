@@ -69,6 +69,7 @@ const nextConfig = {
   env: {
     // Ensure a concrete string to satisfy Next.js config validation
     NEXT_PUBLIC_BACKEND_URL: process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_BACKEND_URL || process.env.BACKEND_URL || 'http://localhost:8000',
+    // Align with the root user email already created in the database
     NEXT_PUBLIC_ROOT_EMAIL: process.env.NEXT_PUBLIC_ROOT_EMAIL || process.env.EPISTULA_ROOT_EMAIL || 'root@localhost.localdomain',
   },
 
