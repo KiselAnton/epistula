@@ -149,3 +149,78 @@ class FakeS3Error(Exception):
 
     def __str__(self):
         return f"{self._code}: {self._message}"
+
+
+# ------ New helpers for DRY SQL execute stubs in tests ------
+
+class ExecRes:
+    """Generic execute() result helper with fetchone/scalar.
+
+    - row: tuple returned by fetchone()
+    - count: integer returned by scalar()
+    """
+    def __init__(self, row: Optional[tuple] = None, count: int = 0):
+        self._row = row
+        self._count = count
+
+    def fetchone(self):
+        return self._row
+
+    def fetchall(self):
+        return [] if self._row is None else [self._row]
+
+    def scalar(self):
+        return self._count
+
+
+def make_faculty_create_session(
+    *,
+    uni_id: int,
+    schema_name: str,
+    count_value: int = 0,
+    inserted_row_builder=None,
+):
+    """Build a fake Session that supports faculty CREATE flow quickly.
+
+    Args:
+        uni_id: University ID to return from UniversityDB query
+        schema_name: Schema used in SQL text checks (e.g., "uni_1")
+        count_value: Value to return for the COUNT(*) uniqueness check
+        inserted_row_builder: Callable(params: dict) -> tuple row for RETURNING
+
+    Returns:
+        An object mimicking the subset of Session used by the router.
+    """
+    from utils.models import UniversityDB  # lazy import to avoid top-level deps
+
+    class _Q:
+        def filter(self, *a, **k):
+            return self
+        def first(self):
+            return FakeUniversity(uni_id, "U", "U", schema_name, True)
+
+    class _Sess:
+        def __init__(self):
+            self._committed = False
+        def query(self, model):
+            if model is UniversityDB:
+                return _Q()
+            return _Q()
+        def execute(self, stmt, params=None):
+            sql = str(stmt)
+            # Uniqueness check
+            if "SELECT COUNT(*)" in sql and f"FROM {schema_name}.faculties" in sql:
+                return ExecRes(count=count_value)
+            # Insert path
+            if f"INSERT INTO {schema_name}.faculties" in sql and "RETURNING" in sql:
+                if inserted_row_builder is None:
+                    raise AssertionError("inserted_row_builder must be provided for insert path")
+                return ExecRes(row=inserted_row_builder(params))
+            return ExecRes()
+        def commit(self):
+            self._committed = True
+        def rollback(self):
+            pass
+
+    return _Sess()
+
