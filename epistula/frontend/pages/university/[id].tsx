@@ -500,20 +500,18 @@ export default function UniversityPage() {
               </div>
             )}
 
-            {/* Backups & Restore (Root/Admin only) -- shared collapsible block */}
-            {canRestore && (
-              <div style={{ marginTop: '1.5rem' }}>
-                <UniversityBackupSection
-                  universityId={Number(id)}
-                  universityName={university.name}
-                  defaultCollapsed={false}
-                  initialBackups={backups}
-                  onChanged={() => {
-                    // Optionally refresh anything else on this page after operations
-                  }}
-                />
-              </div>
-            )}
+            {/* Backups & Restore block */}
+            <div style={{ marginTop: '1.5rem' }}>
+              <UniversityBackupSection
+                universityId={Number(id)}
+                universityName={university.name}
+                defaultCollapsed={false}
+                initialBackups={backups}
+                onChanged={() => {
+                  // Optionally refresh anything else on this page after operations
+                }}
+              />
+            </div>
 
             <div style={{ marginTop: '2rem', padding: '1rem', background: '#f8f9fa', borderRadius: '8px' }}>
               <p style={{ margin: 0, color: '#666' }}>
