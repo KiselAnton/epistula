@@ -14,6 +14,7 @@ import { Subject, Faculty, University } from '../../../../../../types';
 import EditSubjectModal from '../../../../../../components/subject/EditSubjectModal';
 import MarkdownDisplay from '../../../../../../components/common/MarkdownDisplay';
 import { getBackendUrl } from '../../../../../../lib/config';
+import ImportLectureWizard from '../../../../../../components/subject/ImportLectureWizard';
 
 export default function SubjectDetailPage() {
   const router = useRouter();
@@ -28,6 +29,7 @@ export default function SubjectDetailPage() {
   const [selectedLectureId, setSelectedLectureId] = useState<number | null>(null);
   const [description, setDescription] = useState('');
   const [showEditModal, setShowEditModal] = useState(false);
+  const [showImportLectures, setShowImportLectures] = useState(false);
 
   const {
     professors,
@@ -162,6 +164,9 @@ export default function SubjectDetailPage() {
             onTogglePublish={togglePublishLecture}
             publishingLecture={publishingLecture}
           />
+          <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1rem' }}>
+            <button onClick={() => setShowImportLectures(true)} style={{ padding: '0.5rem 1rem', background: '#6c757d', color: 'white', border: 'none', borderRadius: 6, cursor: 'pointer' }}>⬆️ Import Lectures</button>
+          </div>
           <SubjectProfessorsSection professors={professors} universityId={id as string} onAddProfessor={openAddProfessorModal} onRemoveProfessor={handleRemoveProfessor} removingProfessor={removingProfessor} />
           <SubjectStudentsSection students={students} universityId={id as string} onAddStudent={openAddStudentModal} onRemoveStudent={handleRemoveStudent} removingStudent={removingStudent} />
           <div style={{ marginTop: '2rem', display: 'flex', gap: '1rem' }}>
@@ -188,6 +193,13 @@ export default function SubjectDetailPage() {
         universityId={id as string} 
         facultyId={facultyId as string}
         onUpdated={(updated) => { setSubject(updated); setDescription(updated.description || ''); }}
+      />
+      <ImportLectureWizard
+        isOpen={showImportLectures}
+        onClose={() => setShowImportLectures(false)}
+        universityId={id as string}
+        subjectId={subjectId as string}
+        onImported={refreshLectures}
       />
     </MainLayout></>;
 }

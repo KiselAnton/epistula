@@ -105,3 +105,38 @@ export async function importFacultyFull(
 
   return res.json();
 }
+
+export async function importEntities(
+  universityId: number | string,
+  entityType: string,
+  data: any[],
+  opts?: { strategy?: 'replace' | 'merge' | 'skip_existing'; toTemp?: boolean; token?: string | null }
+) {
+  const token = ensureToken(opts?.token ?? null);
+  const strategy = opts?.strategy ?? 'merge';
+  const toTemp = !!opts?.toTemp;
+  const url = `${getBackendUrl()}/api/v1/data-transfer/${universityId}/import`;
+
+  const body = {
+    entity_type: entityType,
+    data,
+    strategy,
+    to_temp: toTemp,
+  };
+
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(body),
+  });
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({} as any));
+    throw new Error(err?.detail || `Import failed (HTTP ${res.status})`);
+  }
+
+  return res.json();
+}

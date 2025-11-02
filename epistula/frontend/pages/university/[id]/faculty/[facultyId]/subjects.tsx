@@ -4,6 +4,8 @@ import Head from 'next/head';
 import MainLayout from '../../../../../components/layout/MainLayout';
 import MarkdownDisplay from '../../../../../components/common/MarkdownDisplay';
 import styles from '../../../../../styles/Faculties.module.css';
+import buttons from '../../../../../styles/Buttons.module.css';
+import ImportSubjectWizard from '../../../../../components/subject/ImportSubjectWizard';
 
 interface Subject {
   id: number;
@@ -37,6 +39,7 @@ export default function SubjectsPage() {
   const [error, setError] = useState('');
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState<number | null>(null);
+  const [showImport, setShowImport] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
@@ -246,6 +249,9 @@ export default function SubjectsPage() {
             <button onClick={() => setShowCreateModal(true)} className={styles.createButton}>
               + Create New Subject
             </button>
+            <button onClick={() => setShowImport(true)} className={`${buttons.btn} ${buttons.btnSecondary}`} style={{ marginLeft: '0.5rem' }}>
+              ⬆️ Import Subject
+            </button>
           </div>
 
           {error && <div className={styles.error}>{error}</div>}
@@ -421,6 +427,16 @@ export default function SubjectsPage() {
             </div>
           </div>
         )}
+
+        {/* Import Subject Wizard */}
+        <ImportSubjectWizard
+          isOpen={showImport}
+          onClose={() => setShowImport(false)}
+          universityId={id as string}
+          facultyId={facultyId as string}
+          existingSubjects={subjects as any}
+          onImported={fetchSubjects}
+        />
 
         {/* Delete Confirmation Modal */}
         {deleteConfirm !== null && (
