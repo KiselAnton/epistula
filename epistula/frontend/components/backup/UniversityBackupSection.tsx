@@ -300,8 +300,17 @@ export default function UniversityBackupSection({
         throw new Error(data.detail || 'Failed to save');
       }
       alert('✅ Saved backup details');
-      await fetchBackups();
+      // Optimistically update local list to reflect new title/description immediately,
+      // as the list endpoint may not include meta fields.
+      setBackups((prev) =>
+        prev.map((b) =>
+          b.name === backupName
+            ? { ...b, title: (meta.title || null), description: (meta.description || null) }
+            : b
+        )
+      );
       cancelEditMeta(backupName);
+      onChanged?.();
     } catch (e: any) {
       alert(`❌ ${e?.message || 'Failed to save'}`);
       setEditingMeta((prev) => ({ ...prev, [key]: { ...(prev[key] || { title: '', description: '', saving: false }), saving: false } }));
