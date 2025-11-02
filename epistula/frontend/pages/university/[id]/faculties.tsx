@@ -10,6 +10,7 @@ import { exportFacultyFull } from '../../../utils/dataTransfer.api';
 import ImportFacultyWizard from '../../../components/faculty/ImportFacultyWizard';
 import buttons from '../../../styles/Buttons.module.css';
 import MarkdownEditor from '../../../components/common/MarkdownEditor';
+import { getBackendUrl } from '../../../lib/config';
 
 interface Faculty {
   id: number;
@@ -58,9 +59,7 @@ export default function FacultiesPage() {
     description: ''
   });
 
-  const getBackendUrl = () => {
-    return 'http://localhost:8000';
-  };
+  // Use centralized backend URL resolver
 
   const fetchUniversity = useCallback(async () => {
     if (!id) return;

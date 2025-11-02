@@ -7,6 +7,7 @@ import SafeImage from '../components/common/SafeImage';
 import MarkdownDisplay from '../components/common/MarkdownDisplay';
 import MarkdownEditor from '../components/common/MarkdownEditor';
 import styles from '../styles/Universities.module.css';
+import { getBackendUrl } from '../lib/config';
 
 interface University {
   id: number;
@@ -42,9 +43,7 @@ export default function Universities() {
     description: ''
   });
 
-  const getBackendUrl = () => {
-    return 'http://localhost:8000';
-  };
+  // Use centralized backend URL resolver
 
   const fetchUniversities = useCallback(async () => {
     try {

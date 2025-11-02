@@ -7,6 +7,7 @@ import styles from '../../../../../styles/Faculties.module.css';
 import buttons from '../../../../../styles/Buttons.module.css';
 import ImportSubjectWizard from '../../../../../components/subject/ImportSubjectWizard';
 import MarkdownEditor from '../../../../../components/common/MarkdownEditor';
+import { getBackendUrl } from '../../../../../lib/config';
 
 interface Subject {
   id: number;
@@ -54,9 +55,7 @@ export default function SubjectsPage() {
     description: ''
   });
 
-  const getBackendUrl = () => {
-    return 'http://localhost:8000';
-  };
+  // Use centralized backend URL resolver
 
   const fetchSubjects = useCallback(async () => {
     if (!id || !facultyId) return;
