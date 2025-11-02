@@ -86,13 +86,26 @@ def create_university(
     if not current_user.is_root:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Only root can create universities")
 
+    # Normalize and validate inputs
+    trimmed_name = payload.name.strip()
+    trimmed_code = payload.code.strip()
+    if not trimmed_name:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Name cannot be empty")
+    if not trimmed_code:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Code cannot be empty")
+
+    normalized_code = trimmed_code.upper()
+    normalized_description = (
+        payload.description.strip() if isinstance(payload.description, str) else payload.description
+    )
+
     # Call DB function to insert and create schema
     res = db.execute(
         text("SELECT create_university(:name, :code, :description, :created_by) AS id"),
         {
-            "name": payload.name,
-            "code": payload.code,
-            "description": payload.description,
+            "name": trimmed_name,
+            "code": normalized_code,
+            "description": normalized_description,
             "created_by": current_user.id,
         },
     )
