@@ -18,7 +18,7 @@ import ImportLectureWizard from '../../../../../../components/subject/ImportLect
 import ImportSubjectProfessorsWizard from '../../../../../../components/subject/ImportSubjectProfessorsWizard';
 import ImportLectureMaterialsWizard from '../../../../../../components/subject/ImportLectureMaterialsWizard';
 import ImportSubjectStudentsWizard from '../../../../../../components/subject/ImportSubjectStudentsWizard';
-import { exportSubjectProfessorsFiltered, exportSubjectStudentsLocal, exportLecturesFiltered, exportLectureMaterialsFiltered } from '../../../../../../utils/exportHelpers';
+import { exportSubjectProfessorsFiltered, exportSubjectStudentsFiltered, exportLecturesFiltered, exportLectureMaterialsFiltered, exportSubjectStudentsLocal } from '../../../../../../utils/exportHelpers';
 
 export default function SubjectDetailPage() {
   const router = useRouter();
@@ -180,12 +180,13 @@ export default function SubjectDetailPage() {
             <button onClick={async () => { try { await exportSubjectProfessorsFiltered(id as string, subjectId as string); } catch (e: any) { alert(e?.message || 'Export failed'); } }} style={{ padding: '0.5rem 1rem', background: '#5a6268', color: 'white', border: 'none', borderRadius: 6, cursor: 'pointer' }}>⬇️ Export Professors</button>
             <button onClick={async () => { try { await exportLecturesFiltered(id as string, subjectId as string); } catch (e: any) { alert(e?.message || 'Export failed'); } }} style={{ padding: '0.5rem 1rem', background: '#5a6268', color: 'white', border: 'none', borderRadius: 6, cursor: 'pointer' }}>⬇️ Export Lectures</button>
             <button onClick={() => setShowImportStudents(true)} style={{ padding: '0.5rem 1rem', background: '#6c757d', color: 'white', border: 'none', borderRadius: 6, cursor: 'pointer' }}>⬆️ Import Students</button>
-            <button onClick={() => {
+            <button onClick={async () => { try { await exportSubjectStudentsFiltered(id as string, subjectId as string); } catch (e: any) { 
+              // Fallback to local export if backend export fails
               try {
                 const simple = students.map(s => ({ student_id: s.student_id, status: s.status }));
                 exportSubjectStudentsLocal(id as string, subjectId as string, simple);
-              } catch (e: any) { alert(e?.message || 'Export failed'); }
-            }} style={{ padding: '0.5rem 1rem', background: '#5a6268', color: 'white', border: 'none', borderRadius: 6, cursor: 'pointer' }}>⬇️ Export Students</button>
+              } catch {}
+              alert(e?.message || 'Export failed'); } }} style={{ padding: '0.5rem 1rem', background: '#5a6268', color: 'white', border: 'none', borderRadius: 6, cursor: 'pointer' }}>⬇️ Export Students</button>
           </div>
           <SubjectProfessorsSection professors={professors} universityId={id as string} onAddProfessor={openAddProfessorModal} onRemoveProfessor={handleRemoveProfessor} removingProfessor={removingProfessor} />
           <SubjectStudentsSection 
@@ -195,12 +196,13 @@ export default function SubjectDetailPage() {
             onRemoveStudent={handleRemoveStudent} 
             removingStudent={removingStudent}
             onImportStudents={() => setShowImportStudents(true)}
-            onExportStudents={() => {
+            onExportStudents={async () => { try { await exportSubjectStudentsFiltered(id as string, subjectId as string); } catch (e: any) {
               try {
                 const simple = students.map(s => ({ student_id: s.student_id, status: s.status }));
                 exportSubjectStudentsLocal(id as string, subjectId as string, simple);
-              } catch (e: any) { alert(e?.message || 'Export failed'); }
-            }}
+              } catch {}
+              alert(e?.message || 'Export failed');
+            }}}
           />
           <div style={{ marginTop: '2rem', display: 'flex', gap: '1rem' }}>
             <button onClick={() => router.push(`/university/${id}/faculty/${facultyId}/subjects`)} style={{ padding: '0.75rem 1.5rem', background: '#6c757d', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '1rem' }}>← Back to Subjects</button>

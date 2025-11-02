@@ -38,8 +38,25 @@ export async function exportSubjectStudentsFiltered(
   subjectId: number | string,
   opts?: { token?: string | null; filenameHint?: string }
 ) {
-  // Note: backend data-transfer may not support subject_students yet; caller can pass preloaded data instead.
-  throw new Error('Export via backend for subject_students is not supported. Use exportSubjectStudentsLocal instead.');
+  const token = ensureToken(opts?.token ?? null);
+  const url = `${getBackendUrl()}/api/v1/data-transfer/${universityId}/export`;
+  const body = { entity_type: 'subject_students', entity_ids: null, from_temp: false };
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({} as any));
+    throw new Error(err?.detail || `Export failed (HTTP ${res.status})`);
+  }
+  const data = await res.json();
+  const filtered = Array.isArray(data?.data) ? data.data.filter((r: any) => r.subject_id === Number(subjectId)) : [];
+  const wrapped = { ...data, data: filtered, count: filtered.length };
+  const ts = new Date().toISOString().replace(/[:.]/g, '-');
+  const fname = opts?.filenameHint || `university-${universityId}_subject-${subjectId}_subject_students_${ts}.json`;
+  saveJson(fname, wrapped);
+  return wrapped;
 }
 
 export function exportSubjectStudentsLocal(
