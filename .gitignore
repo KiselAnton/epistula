@@ -28,6 +28,9 @@ __pycache__/
 .mypy_cache/
 .venv/
 venv/
+.coverage
+coverage.xml
+htmlcov/
 
 # Environment files (contains secrets)
 .env
