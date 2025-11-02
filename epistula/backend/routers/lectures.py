@@ -203,8 +203,17 @@ def create_lecture(
         count_result = db.execute(count_query, {"subject_id": subject_id})
         lecture_num = count_result.scalar() or 1
 
-    # Title: use provided title or fallback
-    title = payload.title.strip() if payload.title else f"Lecture {lecture_num}"
+    # Title: trim and validate (reject whitespace-only)
+    raw_title = payload.title if payload and payload.title is not None else None
+    title = raw_title.strip() if isinstance(raw_title, str) else None
+    if not title:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Title cannot be empty"
+        )
+
+    # Normalize optional description
+    description = payload.description.strip() if isinstance(payload.description, str) else payload.description
 
     # Create lecture (schema fields)
     insert_query = text(f"""
@@ -216,7 +225,7 @@ def create_lecture(
     result = db.execute(insert_query, {
         "subject_id": subject_id,
         "title": title,
-        "description": payload.description,
+        "description": description,
         "order_number": lecture_num,
         "user_id": current_user.id
     })
@@ -245,7 +254,7 @@ def create_lecture(
         id=lecture_id,
         subject_id=subject_id,
         title=title,
-        description=payload.description,
+    description=description,
         scheduled_at=None,
         duration_minutes=None,
         created_at=created_at,

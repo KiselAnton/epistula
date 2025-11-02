@@ -134,15 +134,28 @@ def create_faculty(
     
     schema_name = uni.schema_name
     
+    # Normalize and validate inputs
+    name = payload.name.strip()
+    short_name = payload.short_name.strip()
+    code = payload.code.strip().upper()
+    description = payload.description.strip() if isinstance(payload.description, str) else payload.description
+
+    if not name:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Name cannot be empty")
+    if not short_name:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Short name cannot be empty")
+    if not code:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Code cannot be empty")
+
     # Check if code already exists
     check_query = text(f"""
         SELECT COUNT(*) FROM {schema_name}.faculties WHERE code = :code
     """)
-    result = db.execute(check_query, {"code": payload.code})
+    result = db.execute(check_query, {"code": code})
     if result.scalar() > 0:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Faculty with code '{payload.code}' already exists"
+            detail=f"Faculty with code '{code}' already exists"
         )
     
     # Insert faculty
@@ -156,10 +169,10 @@ def create_faculty(
     
     result = db.execute(insert_query, {
         "university_id": university_id,
-        "name": payload.name,
-        "short_name": payload.short_name,
-        "code": payload.code,
-        "description": payload.description
+        "name": name,
+        "short_name": short_name,
+        "code": code,
+        "description": description
     })
     
     db.commit()
