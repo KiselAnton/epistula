@@ -505,7 +505,7 @@ export default function UniversityPage() {
               <UniversityBackupSection
                 universityId={Number(id)}
                 universityName={university.name}
-                defaultCollapsed={false}
+                defaultCollapsed={true}
                 initialBackups={backups}
                 onChanged={() => {
                   // Optionally refresh anything else on this page after operations

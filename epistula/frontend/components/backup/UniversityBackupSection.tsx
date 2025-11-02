@@ -55,6 +55,34 @@ export default function UniversityBackupSection({
   const [editingMeta, setEditingMeta] = useState<Record<string, { title: string; description: string; saving: boolean }>>({});
 
   const backend = useMemo(() => getBackendUrl(), []);
+  // Persist collapsed/expanded per university id
+  const storageKey = useMemo(() => `ubs-collapsed:${universityId}`, [universityId]);
+
+  useEffect(() => {
+    try {
+      if (typeof window !== 'undefined') {
+        const saved = localStorage.getItem(storageKey);
+        if (saved !== null) {
+          setCollapsed(saved === '1');
+        } else {
+          // ensure state matches provided default if nothing saved yet
+          setCollapsed(defaultCollapsed);
+        }
+      }
+    } catch {}
+  }, [storageKey, defaultCollapsed]);
+
+  const toggleCollapsed = useCallback(() => {
+    setCollapsed((prev) => {
+      const next = !prev;
+      try {
+        if (typeof window !== 'undefined') {
+          localStorage.setItem(storageKey, next ? '1' : '0');
+        }
+      } catch {}
+      return next;
+    });
+  }, [storageKey]);
 
   const fetchBackups = useCallback(async () => {
     try {
@@ -66,6 +94,7 @@ export default function UniversityBackupSection({
       });
       if (!resp.ok) {
         const data = await resp.json().catch(() => ({} as any));
+        // Surface status code to help UI show meaningful message
         throw new Error(data.detail || `Failed to fetch backups (HTTP ${resp.status})`);
       }
       const data = await resp.json();
@@ -324,7 +353,7 @@ export default function UniversityBackupSection({
       <div className={styles.universityHeader}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flex: 1 }}>
           <button
-            onClick={() => setCollapsed((c) => !c)}
+            onClick={toggleCollapsed}
             className={styles.toggleButton}
             title={collapsed ? 'Expand section' : 'Collapse section'}
             aria-label={collapsed ? 'Expand' : 'Collapse'}
@@ -360,6 +389,20 @@ export default function UniversityBackupSection({
 
       {!collapsed && (
         <>
+          {error && (
+            <div style={{ padding: '0.75rem 1rem', border: '1px solid #f5c2c7', background: '#f8d7da', color: '#842029', borderRadius: 6, marginBottom: '0.75rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
+                <span>
+                  {error.includes('HTTP 401') || error.toLowerCase().includes('unauthorized')
+                    ? 'You are not authenticated. Please sign in again.'
+                    : error.includes('HTTP 403') || error.toLowerCase().includes('permission')
+                      ? 'You do not have permission to view backups for this university (root or uni_admin required).'
+                      : error}
+                </span>
+                <button onClick={fetchBackups} className={`${btn.btn} ${btn.btnSecondary}`}>Retry</button>
+              </div>
+            </div>
+          )}
           {hasTemp && tempStatus?.temp_info && (
             <div className={styles.tempInfo}>
               <strong>📋 Temporary Schema Info:</strong>{' '}
@@ -385,7 +428,10 @@ export default function UniversityBackupSection({
             {loading ? (
               <p style={{ padding: '1rem' }}>Loading backups…</p>
             ) : backups.length === 0 ? (
-              <p style={{ padding: '1rem', color: '#666' }}>No backups yet.</p>
+              <div style={{ padding: '1rem', color: '#666' }}>
+                <p style={{ margin: 0 }}>No backups yet.</p>
+                <p style={{ margin: '0.25rem 0 0 0', fontSize: 13 }}>Tip: Use &quot;Backup Now&quot; to create one, or check the Backups page for a global overview.</p>
+              </div>
             ) : (
               <table>
                 <thead>
