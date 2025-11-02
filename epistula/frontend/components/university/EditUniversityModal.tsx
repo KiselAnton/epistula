@@ -2,6 +2,7 @@ import React, { useRef, useState } from 'react';
 import Image from 'next/image';
 import MarkdownEditor from '../subject/MarkdownEditor';
 import { getBackendUrl } from '../../lib/config';
+import buttons from '../../styles/Buttons.module.css';
 
 export interface University {
   id: number;
@@ -122,16 +123,16 @@ const EditUniversityModal: React.FC<Props> = ({ isOpen, onClose, university, onU
               <div style={{ width: 72, height: 72, borderRadius: 8, border: '1px dashed #ccc', display: 'grid', placeItems: 'center', color: '#888' }}>No logo</div>
             )}
             <input ref={fileInputRef} type="file" accept="image/*" onChange={e => { const f = e.target.files?.[0]; if (f) uploadLogo(f); }} style={{ display: 'none' }} />
-            <button onClick={() => fileInputRef.current?.click()} disabled={uploading} style={{ padding: '0.5rem 0.9rem', background: '#007bff', color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer' }}>{uploading ? 'Uploading…' : (university.logo_url ? 'Change Logo' : 'Upload Logo')}</button>
+            <button onClick={() => fileInputRef.current?.click()} disabled={uploading} className={`${buttons.btn} ${buttons.btnPrimary}`}>{uploading ? 'Uploading…' : (university.logo_url ? 'Change Logo' : 'Upload Logo')}</button>
             {university.logo_url && (
-              <button onClick={deleteLogo} disabled={deletingLogo} style={{ padding: '0.5rem 0.9rem', background: '#dc3545', color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer' }}>{deletingLogo ? 'Removing…' : 'Remove'}</button>
+              <button onClick={deleteLogo} disabled={deletingLogo} className={`${buttons.btn} ${buttons.btnDanger}`}>{deletingLogo ? 'Removing…' : 'Remove'}</button>
             )}
           </div>
         </div>
 
         <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 16 }}>
-          <button onClick={onClose} style={{ padding: '0.6rem 1rem', background: '#6c757d', color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer' }}>Cancel</button>
-          <button onClick={saveFields} disabled={saving} style={{ padding: '0.6rem 1rem', background: '#28a745', color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer' }}>{saving ? 'Saving…' : 'Save changes'}</button>
+          <button onClick={onClose} className={`${buttons.btn} ${buttons.btnSecondary}`}>Cancel</button>
+          <button onClick={saveFields} disabled={saving} className={`${buttons.btn} ${buttons.btnSuccess}`}>{saving ? 'Saving…' : 'Save changes'}</button>
         </div>
       </div>
     </div>

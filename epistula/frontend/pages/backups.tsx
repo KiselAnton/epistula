@@ -4,6 +4,7 @@ import Head from 'next/head';
 import MainLayout from '../components/layout/MainLayout';
 import DataTransferPanel from '../components/backup/DataTransferPanel';
 import styles from '../styles/Backups.module.css';
+import btn from '../styles/Buttons.module.css';
 
 interface BackupInfo {
   name: string;
@@ -547,7 +548,7 @@ export default function Backups() {
                 <button
                   onClick={() => handleCreateBackup(uni.university_id, uni.university_name)}
                   disabled={creatingBackup === uni.university_id}
-                  className={styles.backupNowButton}
+                  className={`${btn.btn} ${btn.btnOutlineLight}`}
                   title="Create a new backup immediately"
                 >
                   {creatingBackup === uni.university_id ? '⏳ Creating...' : '💾 Backup Now'}

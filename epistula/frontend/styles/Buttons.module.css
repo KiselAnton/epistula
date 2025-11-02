@@ -1,0 +1,67 @@
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 600;
+  transition: all 0.15s ease-in-out;
+  text-decoration: none;
+}
+
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.btnPrimary {
+  background-color: #007bff;
+  color: #fff;
+}
+.btnPrimary:hover:not(:disabled) {
+  background-color: #0069d9;
+}
+
+.btnSuccess {
+  background-color: #28a745;
+  color: #fff;
+}
+.btnSuccess:hover:not(:disabled) {
+  background-color: #218838;
+}
+
+.btnDanger {
+  background-color: #dc3545;
+  color: #fff;
+}
+.btnDanger:hover:not(:disabled) {
+  background-color: #c82333;
+}
+
+.btnSecondary {
+  background-color: #6c757d;
+  color: #fff;
+}
+.btnSecondary:hover:not(:disabled) {
+  background-color: #5a6268;
+}
+
+/* For header gradients (white outline on colored header) */
+.btnOutlineLight {
+  padding: 0.75rem 1.5rem;
+  border: 2px solid rgba(255, 255, 255, 0.9);
+  border-radius: 6px;
+  background-color: rgba(255, 255, 255, 0.15);
+  color: #fff;
+  font-size: 1rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.btnOutlineLight:hover:not(:disabled) {
+  background-color: #ffffff;
+  color: #667eea; /* matches backups header gradient primary */
+}

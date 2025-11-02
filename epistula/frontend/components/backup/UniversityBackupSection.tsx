@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import DataTransferPanel from './DataTransferPanel';
 import styles from '../../styles/Backups.module.css';
+import btn from '../../styles/Buttons.module.css';
 import { getBackendUrl } from '../../lib/config';
 
 export interface BackupInfo {
@@ -342,7 +343,7 @@ export default function UniversityBackupSection({
               </button>
             </>
           )}
-          <button onClick={handleCreateBackup} disabled={creatingBackup} className={styles.backupNowButton} title="Create a new backup immediately">
+          <button onClick={handleCreateBackup} disabled={creatingBackup} className={`${btn.btn} ${btn.btnOutlineLight}`} title="Create a new backup immediately">
             {creatingBackup ? '⏳ Creating...' : '💾 Backup Now'}
           </button>
         </div>
