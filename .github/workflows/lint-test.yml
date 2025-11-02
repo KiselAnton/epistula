@@ -50,6 +50,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -61,19 +63,41 @@ jobs:
           python -m pip install --upgrade pip
           # Install testing dependencies
           pip install pytest pytest-cov
-          # Install project dependencies if requirements.txt exists
-          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
-          if [ -f requirements-dev.txt ]; then pip install -r requirements-dev.txt; fi
+          # Install backend dependencies
+          if [ -f epistula/backend/requirements.txt ]; then pip install -r epistula/backend/requirements.txt; fi
+          if [ -f epistula/backend/requirements-dev.txt ]; then pip install -r epistula/backend/requirements-dev.txt; fi
+
+      - name: Enforce: tests changed when backend code changes
+        run: |
+          set -e
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            BASE_SHA="${{ github.event.pull_request.base.sha }}"
+            HEAD_SHA="${{ github.sha }}"
+          else
+            # For push events, compare against previous commit if available
+            BASE_SHA=$(git rev-parse HEAD^ 2>/dev/null || echo "")
+            HEAD_SHA="${{ github.sha }}"
+          fi
+
+          if [ -z "$BASE_SHA" ]; then
+            echo "[ci] No base SHA; skipping test-change enforcement."
+            exit 0
+          fi
+
+          CHANGED=$(git diff --name-only "$BASE_SHA"..."$HEAD_SHA" || true)
+          BACKEND_CODE=$(echo "$CHANGED" | grep -E '^epistula/backend/' | grep -v -E '^epistula/backend/tests/' | grep -v -E 'venv-wsl|__pycache__|\\.pyc$' || true)
+          BACKEND_TESTS=$(echo "$CHANGED" | grep -E '^epistula/backend/tests/' || true)
+          if [ -n "$BACKEND_CODE" ] && [ -z "$BACKEND_TESTS" ]; then
+            echo "[ci] Backend code changed without corresponding tests:" >&2
+            echo "$BACKEND_CODE" >&2
+            echo "Please add/update tests under epistula/backend/tests/." >&2
+            exit 1
+          fi
       
       - name: Run tests with pytest
         run: |
-          # Run pytest if tests directory exists
-          if [ -d tests ]; then
-            pytest tests/ --verbose --cov=. --cov-report=term-missing
-          else
-            echo "No tests directory found, skipping tests"
-            exit 0
-          fi
+          cd epistula/backend
+          pytest -q --tb=short --cov=. --cov-report=term-missing --cov-report=xml:../../coverage.xml --cov-fail-under=70
       
       - name: Upload coverage reports
         if: always()

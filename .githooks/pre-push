@@ -33,6 +33,30 @@ if command -v curl >/dev/null 2>&1; then
   done
 fi
 
+# Enforce: if backend code changes, require backend tests to change as well
+echo "[pre-push] Checking that code changes include tests..."
+UPSTREAM_REF="$(git rev-parse --abbrev-ref --symbolic-full-name @{u} 2>/dev/null || true)"
+if [ -n "$UPSTREAM_REF" ]; then
+  BASE_COMMIT="$(git merge-base HEAD "$UPSTREAM_REF" 2>/dev/null || true)"
+else
+  BASE_COMMIT="$(git rev-parse HEAD~1 2>/dev/null || true)"
+fi
+
+if [ -z "${BASE_COMMIT}" ]; then
+  echo "[pre-push] Could not determine base commit; skipping test-change check."
+else
+  CHANGED_FILES="$(git diff --name-only "${BASE_COMMIT}"...HEAD || true)"
+  BACKEND_CODE_CHANGED="$(echo "$CHANGED_FILES" | grep -E '^epistula/backend/' | grep -v -E '^epistula/backend/tests/' | grep -v -E 'venv-wsl|__pycache__|\\.pyc$' || true)"
+  BACKEND_TESTS_CHANGED="$(echo "$CHANGED_FILES" | grep -E '^epistula/backend/tests/' || true)"
+  if [ -n "$BACKEND_CODE_CHANGED" ] && [ -z "$BACKEND_TESTS_CHANGED" ]; then
+    echo "[pre-push] ERROR: Backend code changed but no tests were modified." >&2
+    echo "Changed backend files:" >&2
+    echo "$BACKEND_CODE_CHANGED" >&2
+    echo "Please add or update tests under epistula/backend/tests/ before pushing." >&2
+    exit 1
+  fi
+fi
+
 echo "[pre-push] Running backend tests..."
 pushd "$ROOT_DIR/epistula/backend" >/dev/null
 python -m pytest -q --tb=short
