@@ -1,5 +1,6 @@
 import { Lecture } from '../../types';
 import MarkdownDisplay from '../common/MarkdownDisplay';
+import buttons from '../../styles/Buttons.module.css';
 
 interface LecturesSectionProps {
   lectures: Lecture[];
@@ -42,16 +43,7 @@ export default function LecturesSection({
         <h2>Lectures ({lectures.length})</h2>
         <button
           onClick={onCreateLecture}
-          style={{
-            padding: '0.5rem 1rem',
-            background: '#17a2b8',
-            color: 'white',
-            border: 'none',
-            borderRadius: '6px',
-            cursor: 'pointer',
-            fontSize: '0.9rem',
-            fontWeight: 600
-          }}
+          className={`${buttons.btn} ${buttons.btnPrimary}`}
         >
           + Create Lecture
         </button>
@@ -118,16 +110,7 @@ export default function LecturesSection({
                     <button
                       onClick={() => onTogglePublish(lecture.id, !lecture.is_active)}
                       disabled={publishingLecture === lecture.id}
-                      style={{
-                        padding: '0.5rem 1rem',
-                        background: lecture.is_active ? '#6c757d' : '#28a745',
-                        color: 'white',
-                        border: 'none',
-                        borderRadius: '4px',
-                        cursor: publishingLecture === lecture.id ? 'not-allowed' : 'pointer',
-                        fontSize: '0.85rem',
-                        opacity: publishingLecture === lecture.id ? 0.6 : 1
-                      }}
+                      className={`${buttons.btn} ${lecture.is_active ? buttons.btnSecondary : buttons.btnSuccess}`}
                     >
                       {publishingLecture === lecture.id
                         ? (lecture.is_active ? 'Hiding…' : 'Publishing…')
@@ -136,32 +119,14 @@ export default function LecturesSection({
                   )}
                   <button
                     onClick={() => onEditLecture(lecture.id)}
-                    style={{
-                      padding: '0.5rem 1rem',
-                      background: '#ffc107',
-                      color: '#000',
-                      border: 'none',
-                      borderRadius: '4px',
-                      cursor: 'pointer',
-                      fontSize: '0.85rem',
-                      fontWeight: 600
-                    }}
+                    className={`${buttons.btn} ${buttons.btnWarning}`}
                   >
                     Edit
                   </button>
                   <button
                     onClick={() => onDeleteLecture(lecture.id)}
                     disabled={deletingLecture === lecture.id}
-                    style={{
-                      padding: '0.5rem 1rem',
-                      background: '#dc3545',
-                      color: 'white',
-                      border: 'none',
-                      borderRadius: '4px',
-                      cursor: deletingLecture === lecture.id ? 'not-allowed' : 'pointer',
-                      fontSize: '0.85rem',
-                      opacity: deletingLecture === lecture.id ? 0.6 : 1
-                    }}
+                    className={`${buttons.btn} ${buttons.btnDanger}`}
                   >
                     {deletingLecture === lecture.id ? 'Deleting...' : 'Delete'}
                   </button>

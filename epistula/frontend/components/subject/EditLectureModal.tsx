@@ -2,6 +2,8 @@ import { useEffect, useMemo, useState } from 'react';
 import { Lecture } from '../../types';
 import { getBackendUrl } from '../../lib/config';
 import MarkdownEditor from './MarkdownEditor';
+import buttons from '../../styles/Buttons.module.css';
+import modalStyles from '../../styles/Modal.module.css';
 
 interface EditLectureModalProps {
   isOpen: boolean;
@@ -109,7 +111,7 @@ export default function EditLectureModal({ isOpen, lecture, universityId, facult
       <div style={{ width: 'min(900px, 92vw)', maxHeight: '90vh', overflow: 'auto', background: 'white', borderRadius: 12, padding: '1.25rem', boxShadow: '0 10px 30px rgba(0,0,0,0.2)' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
           <h2 style={{ margin: 0 }}>Edit Lecture</h2>
-          <button onClick={onClose} style={{ background: 'transparent', border: 'none', fontSize: '1.25rem', cursor: 'pointer' }}>✖</button>
+          <button onClick={onClose} className={modalStyles.closeButton}>✖</button>
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '1rem' }}>
@@ -168,8 +170,8 @@ export default function EditLectureModal({ isOpen, lecture, universityId, facult
         </div>
 
         <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end', marginTop: '1rem' }}>
-          <button onClick={onClose} style={{ padding: '0.6rem 1rem', background: '#6c757d', color: 'white', border: 'none', borderRadius: 8 }}>Cancel</button>
-          <button onClick={handleSave} disabled={!canSave || saving} style={{ padding: '0.6rem 1rem', background: '#007bff', color: 'white', border: 'none', borderRadius: 8, opacity: (!canSave || saving) ? 0.7 : 1 }}>
+          <button onClick={onClose} className={`${buttons.btn} ${buttons.btnSecondary}`}>Cancel</button>
+          <button onClick={handleSave} disabled={!canSave || saving} className={`${buttons.btn} ${buttons.btnPrimary}`}>
             {saving ? 'Saving…' : 'Save changes'}
           </button>
         </div>

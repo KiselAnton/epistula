@@ -3,6 +3,8 @@ import Image from 'next/image';
 import { Subject } from '../../types';
 import { getBackendUrl } from '../../lib/config';
 import MarkdownEditor from './MarkdownEditor';
+import buttons from '../../styles/Buttons.module.css';
+import modalStyles from '../../styles/Modal.module.css';
 
 interface EditSubjectModalProps {
   isOpen: boolean;
@@ -128,7 +130,7 @@ const EditSubjectModal: React.FC<EditSubjectModalProps> = ({ isOpen, onClose, su
       <div style={{ background: 'white', borderRadius: 12, width: 'min(680px, 92vw)', padding: '1.25rem 1.5rem', boxShadow: '0 10px 30px rgba(0,0,0,0.25)' }}>
         <div style={{ display: 'flex', alignItems: 'center', marginBottom: '1rem' }}>
           <h2 style={{ margin: 0, fontSize: '1.25rem' }}>Edit Subject</h2>
-          <button onClick={onClose} style={{ marginLeft: 'auto', background: 'transparent', border: 'none', fontSize: 20, cursor: 'pointer' }} aria-label="Close">×</button>
+          <button onClick={onClose} className={modalStyles.closeButton} aria-label="Close">×</button>
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '0.75rem' }}>
@@ -159,16 +161,16 @@ const EditSubjectModal: React.FC<EditSubjectModalProps> = ({ isOpen, onClose, su
               <div style={{ width: 64, height: 64, borderRadius: 8, border: '1px dashed #ccc', display: 'grid', placeItems: 'center', color: '#888' }}>No logo</div>
             )}
             <input ref={fileInputRef} type="file" accept="image/*" onChange={e => { const f = e.target.files?.[0]; if (f) handleUploadLogo(f); }} style={{ display: 'none' }} />
-            <button onClick={() => fileInputRef.current?.click()} disabled={uploading} style={{ padding: '0.5rem 0.9rem', background: '#007bff', color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer' }}>{uploading ? 'Uploading…' : (subject.logo_url ? 'Change Logo' : 'Upload Logo')}</button>
+            <button onClick={() => fileInputRef.current?.click()} disabled={uploading} className={`${buttons.btn} ${buttons.btnPrimary}`}>{uploading ? 'Uploading…' : (subject.logo_url ? 'Change Logo' : 'Upload Logo')}</button>
             {subject.logo_url && (
-              <button onClick={handleDeleteLogo} disabled={deletingLogo} style={{ padding: '0.5rem 0.9rem', background: '#dc3545', color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer' }}>{deletingLogo ? 'Removing…' : 'Remove'}</button>
+              <button onClick={handleDeleteLogo} disabled={deletingLogo} className={`${buttons.btn} ${buttons.btnDanger}`}>{deletingLogo ? 'Removing…' : 'Remove'}</button>
             )}
           </div>
         </div>
 
         <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 16 }}>
-          <button onClick={onClose} style={{ padding: '0.6rem 1rem', background: '#6c757d', color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer' }}>Cancel</button>
-          <button onClick={handleSave} disabled={saving} style={{ padding: '0.6rem 1rem', background: '#28a745', color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer' }}>{saving ? 'Saving…' : 'Save changes'}</button>
+          <button onClick={onClose} className={`${buttons.btn} ${buttons.btnSecondary}`}>Cancel</button>
+          <button onClick={handleSave} disabled={saving} className={`${buttons.btn} ${buttons.btnSuccess}`}>{saving ? 'Saving…' : 'Save changes'}</button>
         </div>
       </div>
     </div>

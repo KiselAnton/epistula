@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import buttons from '../../styles/Buttons.module.css';
+import modalStyles from '../../styles/Modal.module.css';
 
 interface CreateLectureModalProps {
   isOpen: boolean;
@@ -97,15 +99,9 @@ export default function CreateLectureModal({ isOpen, onClose, onCreate }: Create
           <button
             onClick={handleClose}
             disabled={creating}
-            style={{
-              background: 'none',
-              border: 'none',
-              fontSize: '1.5rem',
-              cursor: creating ? 'not-allowed' : 'pointer',
-              color: '#666',
-              padding: '0.25rem',
-              opacity: creating ? 0.5 : 1
-            }}
+            className={modalStyles.closeButton}
+            style={{ opacity: creating ? 0.5 : 1 }}
+            aria-label="Close"
           >
             ×
           </button>
@@ -219,34 +215,14 @@ export default function CreateLectureModal({ isOpen, onClose, onCreate }: Create
               type="button"
               onClick={handleClose}
               disabled={creating}
-              style={{
-                padding: '0.75rem 1.5rem',
-                background: '#6c757d',
-                color: 'white',
-                border: 'none',
-                borderRadius: '6px',
-                cursor: creating ? 'not-allowed' : 'pointer',
-                fontSize: '1rem',
-                fontWeight: 600,
-                opacity: creating ? 0.6 : 1
-              }}
+              className={`${buttons.btn} ${buttons.btnSecondary}`}
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={creating}
-              style={{
-                padding: '0.75rem 1.5rem',
-                background: '#17a2b8',
-                color: 'white',
-                border: 'none',
-                borderRadius: '6px',
-                cursor: creating ? 'not-allowed' : 'pointer',
-                fontSize: '1rem',
-                fontWeight: 600,
-                opacity: creating ? 0.6 : 1
-              }}
+              className={`${buttons.btn} ${buttons.btnPrimary}`}
             >
               {creating ? 'Creating...' : 'Create Lecture'}
             </button>

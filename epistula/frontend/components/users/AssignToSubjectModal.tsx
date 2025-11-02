@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { getBackendUrl } from '../../lib/config';
+import buttons from '../../styles/Buttons.module.css';
+import modalStyles from '../../styles/Modal.module.css';
 
 export interface Faculty { id: number; name: string; code: string; }
 export interface Subject { id: number; name: string; code: string; faculty_id: number; }
@@ -95,7 +97,7 @@ export default function AssignToSubjectModal({ isOpen, onClose, universityId, us
       <div style={{ width: 'min(640px, 92vw)', background: 'white', borderRadius: 12, padding: '1.25rem' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
           <h3 style={{ margin: 0 }}>{mode === 'professor' ? 'Assign Professor to Subject' : 'Enroll Student in Subject'}</h3>
-          <button onClick={onClose} style={{ background: 'transparent', border: 'none', fontSize: '1.1rem', cursor: 'pointer' }}>✖</button>
+          <button onClick={onClose} className={modalStyles.closeButton}>✖</button>
         </div>
 
         {error && <div style={{ color: '#dc3545', marginBottom: '0.5rem' }}>{error}</div>}
@@ -118,8 +120,8 @@ export default function AssignToSubjectModal({ isOpen, onClose, universityId, us
         </div>
 
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem', marginTop: '1rem' }}>
-          <button onClick={onClose} style={{ padding: '0.5rem 1rem', background: '#6c757d', color: '#fff', border: 'none', borderRadius: 6 }}>Cancel</button>
-          <button onClick={handleAssign} disabled={!canAssign || saving} style={{ padding: '0.5rem 1rem', background: '#007bff', color: '#fff', border: 'none', borderRadius: 6, opacity: (!canAssign || saving) ? 0.7 : 1 }}>{saving ? 'Assigning…' : (mode === 'professor' ? 'Assign' : 'Enroll')}</button>
+          <button onClick={onClose} className={`${buttons.btn} ${buttons.btnSecondary}`}>Cancel</button>
+          <button onClick={handleAssign} disabled={!canAssign || saving} className={`${buttons.btn} ${buttons.btnPrimary}`}>{saving ? 'Assigning…' : (mode === 'professor' ? 'Assign' : 'Enroll')}</button>
         </div>
       </div>
     </div>
