@@ -41,6 +41,7 @@ export default function Backups() {
   const [deletingBackup, setDeletingBackup] = useState<string | null>(null);
   const [tempStatus, setTempStatus] = useState<Record<number, any>>({});
   const [editingMeta, setEditingMeta] = useState<Record<string, {title: string; description: string; saving: boolean}>>({});
+  const [collapsedSections, setCollapsedSections] = useState<Record<number, boolean>>({});
 
   // Helper function for consistent logging
   const log = (level: 'info' | 'warn' | 'error', message: string, data?: any) => {
@@ -87,6 +88,13 @@ export default function Backups() {
         universities: data.universities.map(u => ({ id: u.university_id, name: u.university_name, count: u.backups.length }))
       });
       setBackupsData(data);
+      
+      // Initialize all sections as collapsed by default
+      const initialCollapsedState: Record<number, boolean> = {};
+      data.universities.forEach(uni => {
+        initialCollapsedState[uni.university_id] = true;
+      });
+      setCollapsedSections(initialCollapsedState);
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : 'Failed to load backups';
       log('error', `Error fetching backups: ${errorMsg}`, err);
@@ -417,6 +425,13 @@ export default function Backups() {
     setEditingMeta(prev => { const cp = {...prev}; delete cp[key]; return cp; });
   };
 
+  const toggleSection = (universityId: number) => {
+    setCollapsedSections(prev => ({
+      ...prev,
+      [universityId]: !prev[universityId]
+    }));
+  };
+
   const saveMeta = async (universityId: number, backupName: string) => {
     const key = `${universityId}-${backupName}`;
     const meta = editingMeta[key];
@@ -484,19 +499,30 @@ export default function Backups() {
         {backupsData?.universities.map((uni) => {
           const uniTempStatus = tempStatus[uni.university_id];
           const hasTemp = uniTempStatus?.has_temp_schema || false;
+          const isCollapsed = collapsedSections[uni.university_id] ?? true;
           
           return (
           <div key={uni.university_id} className={styles.universitySection}>
             <div className={styles.universityHeader}>
-              <h2 className={styles.universityName}>
-                {uni.university_name}
-                <span className={styles.backupCount}>({uni.backups.length} backups)</span>
-                {hasTemp && (
-                  <span className={styles.tempBadge} title="Has temporary restore ready for validation">
-                    🔍 Temp Schema Active
-                  </span>
-                )}
-              </h2>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flex: 1 }}>
+                <button
+                  onClick={() => toggleSection(uni.university_id)}
+                  className={styles.toggleButton}
+                  title={isCollapsed ? "Expand section" : "Collapse section"}
+                  aria-label={isCollapsed ? "Expand" : "Collapse"}
+                >
+                  {isCollapsed ? '▶' : '▼'}
+                </button>
+                <h2 className={styles.universityName}>
+                  {uni.university_name}
+                  <span className={styles.backupCount}>({uni.backups.length} backups)</span>
+                  {hasTemp && (
+                    <span className={styles.tempBadge} title="Has temporary restore ready for validation">
+                      🔍 Temp Schema Active
+                    </span>
+                  )}
+                </h2>
+              </div>
               <div style={{ display: 'flex', gap: '0.5rem' }}>
                 {hasTemp && (
                   <>
@@ -529,29 +555,31 @@ export default function Backups() {
               </div>
             </div>
 
-            {hasTemp && uniTempStatus?.temp_info && (
-              <div className={styles.tempInfo}>
-                <strong>📋 Temporary Schema Info:</strong> 
-                {' '}Faculties: {uniTempStatus.temp_info.faculty_count || 0}
-                {', '}Users: {uniTempStatus.temp_info.user_count || 0}
-                {' '}(Ready for validation)
-              </div>
-            )}
+            {!isCollapsed && (
+              <>
+                {hasTemp && uniTempStatus?.temp_info && (
+                  <div className={styles.tempInfo}>
+                    <strong>📋 Temporary Schema Info:</strong> 
+                    {' '}Faculties: {uniTempStatus.temp_info.faculty_count || 0}
+                    {', '}Users: {uniTempStatus.temp_info.user_count || 0}
+                    {' '}(Ready for validation)
+                  </div>
+                )}
 
-            {/* Data Transfer Panel - Only shown when temp schema exists */}
-            {hasTemp && (
-              <DataTransferPanel
-                universityId={uni.university_id}
-                universityName={uni.university_name}
-                hasTempSchema={hasTemp}
-                onTransferComplete={() => {
-                  fetchBackups();
-                  checkTempStatus(uni.university_id);
-                }}
-              />
-            )}
+                {/* Data Transfer Panel - Only shown when temp schema exists */}
+                {hasTemp && (
+                  <DataTransferPanel
+                    universityId={uni.university_id}
+                    universityName={uni.university_name}
+                    hasTempSchema={hasTemp}
+                    onTransferComplete={() => {
+                      fetchBackups();
+                      checkTempStatus(uni.university_id);
+                    }}
+                  />
+                )}
 
-            <div className={styles.backupsTable}>
+                <div className={styles.backupsTable}>
               <table>
                 <thead>
                   <tr>
@@ -661,6 +689,8 @@ export default function Backups() {
                 </tbody>
               </table>
             </div>
+              </>
+            )}
           </div>
         )})}
       </div>
