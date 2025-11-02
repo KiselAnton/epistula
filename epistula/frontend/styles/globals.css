@@ -19,7 +19,9 @@ html, body, #__next {
   height: 100%;
 }
 
-a {
+/* Scope anchor reset to navigation/breadcrumbs only to prevent breaking UserLink */
+nav a,
+.breadcrumb a {
   color: inherit;
   text-decoration: none;
 }

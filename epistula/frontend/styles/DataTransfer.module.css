@@ -1,0 +1,207 @@
+.container {
+  margin: 1.5rem 0;
+}
+
+.toggleButton {
+  width: 100%;
+  padding: 1rem;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.2s;
+}
+
+.toggleButton:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.panel {
+  background: white;
+  border: 2px solid #667eea;
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin-top: 0.5rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.header {
+  margin-bottom: 1.5rem;
+}
+
+.header h3 {
+  margin: 0 0 0.5rem 0;
+  color: #333;
+}
+
+.header p {
+  margin: 0;
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.error {
+  background-color: #fee;
+  border: 1px solid #fcc;
+  border-radius: 4px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  color: #c33;
+}
+
+.entitiesTable {
+  overflow-x: auto;
+}
+
+.entitiesTable table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.entitiesTable th {
+  background-color: #f8f9fa;
+  padding: 0.75rem;
+  text-align: left;
+  font-weight: 600;
+  color: #555;
+  border-bottom: 2px solid #dee2e6;
+}
+
+.entitiesTable td {
+  padding: 0.75rem;
+  border-bottom: 1px solid #eee;
+  vertical-align: middle;
+}
+
+.entitiesTable tbody tr:hover {
+  background-color: #f8f9fa;
+}
+
+.entityIcon {
+  font-size: 1.2rem;
+  margin-right: 0.5rem;
+}
+
+.count {
+  font-family: 'Courier New', monospace;
+  font-weight: 600;
+  color: #667eea;
+  text-align: center;
+}
+
+.actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.actionGroup {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.actionLabel {
+  font-size: 0.8rem;
+  color: #666;
+  font-weight: 600;
+  min-width: 80px;
+}
+
+.exportButton,
+.importButton {
+  padding: 0.4rem 0.8rem;
+  border: none;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.exportButton {
+  background-color: #2196f3;
+  color: white;
+}
+
+.exportButton:hover:not(:disabled) {
+  background-color: #1976d2;
+}
+
+.exportButton:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.importButton {
+  background-color: #4caf50;
+  color: white;
+}
+
+.importButton:hover:not(:disabled) {
+  background-color: #45a049;
+}
+
+.importButton:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.exportedInfo {
+  background-color: #fff9e6;
+  border: 2px solid #ffc107;
+  border-radius: 6px;
+  padding: 1rem;
+  margin-top: 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.9rem;
+}
+
+.clearButton {
+  padding: 0.4rem 0.8rem;
+  background-color: #f44336;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.clearButton:hover {
+  background-color: #d32f2f;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .actionGroup {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .actionLabel {
+    min-width: auto;
+  }
+
+  .entitiesTable {
+    font-size: 0.8rem;
+  }
+
+  .exportButton,
+  .importButton {
+    font-size: 0.75rem;
+    padding: 0.3rem 0.6rem;
+  }
+}

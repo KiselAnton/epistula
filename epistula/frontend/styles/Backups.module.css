@@ -1,0 +1,310 @@
+.container {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+.header {
+  margin-bottom: 2rem;
+}
+
+.header h1 {
+  color: #333;
+  margin-bottom: 0.5rem;
+}
+
+.subtitle {
+  color: #666;
+  font-size: 1rem;
+}
+
+.error {
+  background-color: #fee;
+  border: 1px solid #fcc;
+  border-radius: 4px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  color: #c33;
+}
+
+.empty {
+  text-align: center;
+  padding: 3rem;
+  color: #666;
+  background-color: #f9f9f9;
+  border-radius: 8px;
+}
+
+.universitySection {
+  margin-bottom: 3rem;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
+.universityHeader {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 1rem 1.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+}
+
+.universityName {
+  color: white;
+  margin: 0;
+  font-size: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.backupCount {
+  font-size: 0.9rem;
+  opacity: 0.9;
+  font-weight: normal;
+}
+
+.backupNowButton {
+  padding: 0.75rem 1.5rem;
+  border: 2px solid white;
+  border-radius: 6px;
+  background-color: rgba(255, 255, 255, 0.2);
+  color: white;
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: 600;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.backupNowButton:hover:not(:disabled) {
+  background-color: white;
+  color: #667eea;
+}
+
+.backupNowButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.tempBadge {
+  background-color: rgba(255, 193, 7, 0.9);
+  color: #333;
+  padding: 0.25rem 0.75rem;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  margin-left: 0.5rem;
+}
+
+.promoteButton,
+.deleteButton {
+  padding: 0.75rem 1.5rem;
+  border: 2px solid white;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: 600;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.promoteButton {
+  background-color: rgba(76, 175, 80, 0.9);
+  color: white;
+}
+
+.promoteButton:hover:not(:disabled) {
+  background-color: #4caf50;
+  transform: translateY(-1px);
+}
+
+.deleteButton {
+  background-color: rgba(244, 67, 54, 0.8);
+  color: white;
+}
+
+.deleteButton:hover:not(:disabled) {
+  background-color: #f44336;
+  transform: translateY(-1px);
+}
+
+.promoteButton:disabled,
+.deleteButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.tempInfo {
+  background-color: #fff9e6;
+  border-left: 4px solid #ffc107;
+  padding: 0.75rem 1.5rem;
+  margin: 0;
+  font-size: 0.9rem;
+  color: #666;
+}
+
+.backupsTable {
+  overflow-x: auto;
+}
+
+.backupsTable table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.backupsTable thead {
+  background-color: #f8f9fa;
+}
+
+.backupsTable th {
+  text-align: left;
+  padding: 1rem 1.5rem;
+  font-weight: 600;
+  color: #555;
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.backupsTable td {
+  padding: 1rem 1.5rem;
+  border-top: 1px solid #eee;
+}
+
+.backupsTable tbody tr:hover {
+  background-color: #f8f9fa;
+}
+
+.backupName {
+  font-family: 'Courier New', monospace;
+  font-size: 0.9rem;
+  color: #444;
+}
+
+.storageIndicators {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.storageLocal,
+.storageMinio {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.25rem 0.75rem;
+  border-radius: 12px;
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.storageLocal {
+  background-color: #e3f2fd;
+  color: #1976d2;
+}
+
+.storageMinio {
+  background-color: #f3e5f5;
+  color: #7b1fa2;
+}
+
+.actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.restoreButton,
+.restoreToTempButton,
+.uploadButton {
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 500;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.restoreToTempButton {
+  background-color: #ff9800;
+  color: white;
+}
+
+.restoreToTempButton:hover:not(:disabled) {
+  background-color: #f57c00;
+}
+
+.restoreToTempButton:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+}
+
+.restoreButton {
+  background-color: #f44336;
+  color: white;
+}
+
+.restoreButton:hover:not(:disabled) {
+  background-color: #d32f2f;
+}
+
+.restoreButton:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+}
+
+.uploadButton {
+  background-color: #2196f3;
+  color: white;
+}
+
+.uploadButton:hover:not(:disabled) {
+  background-color: #1976d2;
+}
+
+.uploadButton:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+}
+
+@media (max-width: 768px) {
+  .container {
+    padding: 1rem;
+  }
+
+  .universityHeader {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .universityName {
+    font-size: 1.25rem;
+  }
+
+  .backupNowButton {
+    width: 100%;
+  }
+
+  .backupsTable {
+    font-size: 0.85rem;
+  }
+
+  .backupsTable th,
+  .backupsTable td {
+    padding: 0.75rem;
+  }
+
+  .actions {
+    flex-direction: column;
+  }
+
+  .restoreButton,
+  .uploadButton {
+    width: 100%;
+  }
+}

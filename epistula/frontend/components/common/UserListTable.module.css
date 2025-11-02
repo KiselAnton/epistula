@@ -1,0 +1,53 @@
+.wrapper {
+  background: white;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.headRow {
+  background: #f8f9fa;
+  border-bottom: 2px solid #dee2e6;
+}
+
+.th {
+  padding: 1rem;
+  text-align: left;
+  font-weight: 600;
+}
+
+.row {
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.cell {
+  padding: 1rem;
+}
+
+.nameCell {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.avatar {
+  font-size: 1.5rem;
+}
+
+.email {
+  color: #666;
+}
+
+.date {
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.actions {
+  text-align: center;
+}

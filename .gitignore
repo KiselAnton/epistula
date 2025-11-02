@@ -4,9 +4,12 @@
 # Build outputs
 isos/
 work/
+temp/
 
 # Generated files
 md5sum.txt
+**/boot.catalog
+**/check_*.sql
 
 # Logs
 epistula/backend/backend.log
@@ -30,6 +33,17 @@ venv/
 .env
 *.env
 !.env.example
+
+# Database backups (sensitive data)
+backups/
+
+# Temporary/debug files
+*.html
+!epistula/frontend/**/*.html
+
+# Prevent accidental root-level JavaScript artifacts (debug dumps, chunk files)
+# This pattern only matches files at the repo root.
+/*.js
 
 # Editor settings
 .vscode/

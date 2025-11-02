@@ -8,9 +8,9 @@ This script:
 
 import os
 from sqlalchemy.orm import Session
-from database import SessionLocal
-from models import UserDB
-from auth_utils import hash_password
+from utils.database import SessionLocal
+from utils.models import UserDB
+from middleware.auth import hash_password
 
 
 def init_root_user() -> None:
@@ -28,6 +28,7 @@ def init_root_user() -> None:
     """
     root_email = os.getenv("ROOT_EMAIL")
     root_password = os.getenv("ROOT_PASSWORD")
+    reset_on_start = os.getenv("RESET_ROOT_PASSWORD_ON_START", "0") in ("1", "true", "True", "YES", "yes")
     
     if not root_email or not root_password:
         print("WARNING: ROOT_EMAIL or ROOT_PASSWORD not set. Skipping root user initialization.")
@@ -40,7 +41,18 @@ def init_root_user() -> None:
         existing_root = db.query(UserDB).filter(UserDB.is_root == True).first()
         
         if existing_root:
-            print(f"Root user already exists: {existing_root.email}")
+            # Optionally update the root password when explicitly requested
+            if reset_on_start and root_password:
+                try:
+                    existing_root.password_hash = hash_password(root_password)
+                    db.add(existing_root)
+                    db.commit()
+                    print("✓ Root password updated from environment (RESET_ROOT_PASSWORD_ON_START=1)")
+                except Exception as e:
+                    db.rollback()
+                    print(f"WARNING: Failed to update root password: {e}")
+            else:
+                print(f"Root user already exists: {existing_root.email}")
             return
         
         # Check if a user with the root email exists

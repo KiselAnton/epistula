@@ -11,8 +11,45 @@
  */
 
 import type { AppProps } from 'next/app';
+import Head from 'next/head';
+import { useRouter } from 'next/router';
+import { useEffect } from 'react';
 import '../styles/globals.css';
+import { SkeletonStyles } from '../components/Skeleton';
 
 export default function App({ Component, pageProps }: AppProps) {
-  return <Component {...pageProps} />;
+  const router = useRouter();
+
+  // Prefetch important routes on mount
+  useEffect(() => {
+    // Prefetch dashboard for faster navigation
+    router.prefetch('/dashboard');
+  }, [router]);
+
+  return (
+    <>
+      <Head>
+        {/* Favicon */}
+        <link rel="icon" href="/favicon.ico" />
+        {/* Explicit SVG favicon path to bypass any proxy caches */}
+        <link rel="icon" type="image/svg+xml" href="/api/favicon" />
+        {/* Apple touch icon fallback */}
+        <link rel="apple-touch-icon" href="/icon-192.svg" />
+        
+        {/* Viewport meta tag for responsive design */}
+        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5" />
+        
+        {/* Theme color */}
+        <meta name="theme-color" content="#007bff" />
+        
+        {/* Performance hints */}
+        <meta httpEquiv="x-dns-prefetch-control" content="on" />
+      </Head>
+      
+      {/* Global skeleton animation styles */}
+      <SkeletonStyles />
+      
+      <Component {...pageProps} />
+    </>
+  );
 }

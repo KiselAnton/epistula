@@ -1,6 +1,6 @@
 -- ============================================================================
 -- Epistula Database Initialization
--- Part 3: University Schema Creation Function
+-- Part 3: University Schema Creation Function (UPDATED WITH FACULTY_PROFESSORS)
 -- ============================================================================
 
 -- Function to create a new university schema with all required tables
@@ -16,12 +16,15 @@ BEGIN
     EXECUTE format('
         CREATE TABLE %I.faculties (
             id SERIAL PRIMARY KEY,
+            university_id INTEGER NOT NULL,
             name VARCHAR(255) NOT NULL,
+            short_name VARCHAR(50) NOT NULL,
             code VARCHAR(50) NOT NULL,
             description TEXT,
-            created_at TIMESTAMP DEFAULT NOW(),
+            logo_url VARCHAR(500),
+            created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
             created_by INTEGER REFERENCES public.users(id),
-            updated_at TIMESTAMP DEFAULT NOW(),
+            updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
             is_active BOOLEAN DEFAULT TRUE,
             
             CONSTRAINT %I_faculties_code_unique UNIQUE(code),
@@ -39,6 +42,46 @@ BEGIN
         BEFORE UPDATE ON %I.faculties
         FOR EACH ROW
         EXECUTE FUNCTION update_updated_at_column()', p_schema_name, p_schema_name);
+    
+    -- ========================================================================
+    -- Faculty Professors (faculty assignments for professors)
+    -- ========================================================================
+    EXECUTE format('
+        CREATE TABLE %I.faculty_professors (
+            id SERIAL PRIMARY KEY,
+            faculty_id INTEGER NOT NULL REFERENCES %I.faculties(id) ON DELETE CASCADE,
+            professor_id INTEGER NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
+            assigned_at TIMESTAMP DEFAULT NOW(),
+            assigned_by INTEGER REFERENCES public.users(id),
+            is_active BOOLEAN DEFAULT TRUE,
+            
+            CONSTRAINT %I_faculty_profs_unique UNIQUE(faculty_id, professor_id)
+        )', p_schema_name, p_schema_name, p_schema_name);
+    
+    EXECUTE format('CREATE INDEX idx_%I_faculty_profs_faculty ON %I.faculty_professors(faculty_id)', 
+        p_schema_name, p_schema_name);
+    EXECUTE format('CREATE INDEX idx_%I_faculty_profs_prof ON %I.faculty_professors(professor_id)', 
+        p_schema_name, p_schema_name);
+    
+    -- ========================================================================
+    -- Faculty Students (faculty assignments for students)
+    -- ========================================================================
+    EXECUTE format('
+        CREATE TABLE %I.faculty_students (
+            id SERIAL PRIMARY KEY,
+            faculty_id INTEGER NOT NULL REFERENCES %I.faculties(id) ON DELETE CASCADE,
+            student_id INTEGER NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
+            assigned_at TIMESTAMP DEFAULT NOW(),
+            assigned_by INTEGER REFERENCES public.users(id),
+            is_active BOOLEAN DEFAULT TRUE,
+            
+            CONSTRAINT %I_faculty_students_unique UNIQUE(faculty_id, student_id)
+        )', p_schema_name, p_schema_name, p_schema_name);
+    
+    EXECUTE format('CREATE INDEX idx_%I_faculty_students_faculty ON %I.faculty_students(faculty_id)', 
+        p_schema_name, p_schema_name);
+    EXECUTE format('CREATE INDEX idx_%I_faculty_students_student ON %I.faculty_students(student_id)', 
+        p_schema_name, p_schema_name);
     
     -- ========================================================================
     -- Subjects table
@@ -198,4 +241,4 @@ END;
 $$ LANGUAGE plpgsql;
 
 COMMENT ON FUNCTION drop_university_schema(VARCHAR) IS 
-    'Safely deletes a university schema and all its data (CASCADE)';
+    'Safely drops a university schema and all its objects';

@@ -32,6 +32,7 @@ CREATE TABLE public.universities (
     code VARCHAR(50) UNIQUE NOT NULL,
     schema_name VARCHAR(63) NOT NULL UNIQUE,
     description TEXT,
+    logo_url VARCHAR(500),
     created_at TIMESTAMP DEFAULT NOW(),
     created_by INTEGER REFERENCES public.users(id),
     is_active BOOLEAN DEFAULT TRUE,

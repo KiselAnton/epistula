@@ -1,105 +1,298 @@
-# Epistula – ISO App (Docs for current state)
+# Epistula – Educational Management Platform
 
-This repository contains a minimal, containerized Epistula build intended for turnkey classroom/lab installs and local demos. It provides a small FastAPI backend and a Next.js frontend, both packaged with helper scripts for build/run/update.
+A modern, containerized educational management system designed for universities, faculties, and course management. Built with FastAPI (Python), Next.js 14 (TypeScript), PostgreSQL, and MinIO for scalable file storage.
 
-If you're looking for how to use the app (login, dashboard, etc.), see the updated [USER_GUIDE.md](USER_GUIDE.md). For a 2‑minute setup, see [QUICKSTART.md](QUICKSTART.md).
+## 🔒 **IMPORTANT: Data Safety & Backups**
 
-## What’s in this build
+Your data is stored in Docker named volumes. **Always backup before risky operations!**
 
-- Backend: FastAPI with in‑memory users and a bootstrapped Root account
-- Frontend: Next.js 14 (TypeScript) with a simple login and dashboard
-- ISO helper tooling: optional scripts to assemble an ISO that auto‑starts containers
-- Docker scripts: one‑command start/stop/restart/update
+📦 **Quick Backup:**
+```powershell
+# Windows
+.\backup_database.ps1
 
-This build intentionally avoids external dependencies (no DB, no Keycloak). It’s perfect for offline or constrained environments.
+# Linux/Mac
+./backup_database.sh
+```
 
-## Repository layout
+⚠️ **Never run these without backing up first:**
+- `docker compose down -v` ← **DELETES ALL DATA!**
+- `docker volume rm epistula_db_data`
+- `docker volume prune`
+
+📖 **See [DATA_SAFETY.md](DATA_SAFETY.md) for complete backup/restore procedures.**
+
+---
+
+## 🎯 Features
+
+- **Multi-tenant University Management** - Isolated database schemas per university
+- **Hierarchical Structure** - Universities → Faculties → Subjects → Lectures
+- **File Storage** - S3-compatible MinIO for logos and attachments
+- **Role-Based Access** - Root users and university-specific permissions
+- **Modern UI** - Responsive Next.js frontend with breadcrumb navigation
+- **Containerized** - Docker Compose for easy deployment
+- **Type-Safe** - Full TypeScript frontend with shared type definitions
+
+## 📁 Project Structure
 
 ```
 epistula/
-├─ backend/            # FastAPI app (auth, health, version)
-├─ frontend/           # Next.js app (login + dashboard)
-├─ isos/               # Place Ubuntu ISOs here (optional)
-└─ …
+├── backend/              # FastAPI application
+│   ├── main.py          # App initialization
+│   ├── auth.py          # Authentication
+│   ├── universities.py  # Universities API
+│   ├── faculties.py     # Faculties API
+│   ├── subjects.py      # Subjects API
+│   ├── models.py        # Data models
+│   ├── minio_client.py  # File storage
+│   └── ARCHITECTURE.md  # Backend docs
+├── frontend/            # Next.js application
+│   ├── components/      # Reusable components
+│   │   ├── common/      # Shared UI components
+│   │   └── layout/      # Layout components
+│   ├── pages/           # Next.js pages
+│   ├── hooks/           # Custom React hooks
+│   ├── utils/           # API utilities
+│   ├── types/           # TypeScript definitions
+│   └── ARCHITECTURE.md  # Frontend docs
+├── database/            # PostgreSQL initialization
+│   ├── init/            # Schema and functions
+│   └── migrations/      # Database migrations
+├── docker-compose.yml   # Container orchestration
+└── start_epistula.sh    # Management script
 ```
 
-Top‑level scripts:
+## 🚀 Quick Start
 
-- `start_epistula.sh` – build and run containers (also stop/restart/status/logs)
-- `update_epistula.sh` – pull latest code and rebuild/restart containers
-- `setup_epistula_iso.sh` – optional ISO tooling
+### Prerequisites
 
-## Requirements
+- Docker & Docker Compose
+- Bash shell (WSL on Windows)
 
-- Docker (Docker Desktop on Windows; dockerd on Linux)
-- Bash shell (on Windows, use WSL Ubuntu)
+### Installation
 
-Windows tip: run the scripts from WSL in the repo directory (e.g., `/mnt/d/epistula/epistula`) and ensure Docker Desktop is running.
-
-## Quick start
-
-See the full quick guide in [QUICKSTART.md](QUICKSTART.md). The short version:
-
+1. **Clone the repository:**
 ```bash
 cd /path/to/epistula
-sudo ./start_epistula.sh            # first run builds & starts containers
-# or
-sudo ./update_epistula.sh --force   # pull, rebuild, restart
 ```
 
-Open the app at:
-
-- Frontend: http://localhost:3000
-- Backend:  http://localhost:8000
-
-## Authentication model (current)
-
-- A Root user is created on startup with:
-  - email: `root@localhost.localdomain` (UI allows typing just `root`)
-  - password: provided at first start (or auto‑generated) via `start_epistula.sh`
-  - local‑only login: Root can log in only from allowed IPs (`127.0.0.1`, `::1`, `172.17.0.1` by default)
-- Users are stored in memory for this minimal build (no persistent DB).
-
-Environment variables the backend honors (forwarded by `start_epistula.sh`):
-
-- `EPISTULA_ROOT_EMAIL` (default: `root@localhost.localdomain`)
-- `EPISTULA_ROOT_NAME` (default: `root`)
-- `EPISTULA_ROOT_PASSWORD` (prompted/generated if empty)
-- `EPISTULA_ROOT_ALLOWED_IPS` (comma‑separated list)
-- `EPISTULA_CORS_ORIGINS` (comma‑separated list of allowed origins; default `*` for local use. In production, set explicit origins.)
-
-## Frontend behavior
-
-- Health probe on page load to avoid slow login timeouts
-- Login form validation; accepts `root` alias and standard emails
-- On success: token saved in `localStorage`, redirect to `/dashboard`
-- Cross‑tab sync: login/logout is synchronized across browser tabs
-- Auto‑redirect from login if already authenticated
-- Dashboard auto‑logout after 1 hour of inactivity
-
-Backend CORS is open (`allow_origins=["*"]` and no cookies) so the browser can call the API from a different port/host during local use.
-
-## Update flow
-
-Run the updater from the repo root:
-
+2. **Start the application:**
 ```bash
-sudo ./update_epistula.sh --force           # optional: --branch <name>
+./start_epistula.sh
 ```
 
-It will pull the branch, rebuild images, and restart both containers. This also fixes issues caused by stale frontend builds (Next.js embeds code at build time).
+3. **Access the application:**
+- Frontend: http://localhost:3000
+- Backend API: http://localhost:8000
+- Backend Docs: http://localhost:8000/docs
+- MinIO Console: http://localhost:9001
 
-## Troubleshooting
+4. **Default Login:**
+- Email: `root@localhost.localdomain`
+- Password: `root` ⚠️ **Change in production!**
 
-- Windows: If PowerShell says Docker isn’t running, try the same command from WSL; Docker Desktop exposes a Linux engine accessible from WSL.
-- “No such file or directory” when running scripts: ensure you’re in the repo root and use `./update_epistula.sh` (note the underscore). Grant exec permission with `chmod +x *.sh` if needed.
-- Login shows 422 on bad email: the UI will show a validation message. Wrong credentials return “Incorrect email or password”.
-- Frontend calls the wrong endpoint after an update: rebuild using the updater; Next.js requires a new build to pick up code changes.
+## 🔧 Development Workflow
 
-## License
+### Quick Commands:
+```bash
+# Start everything
+./start_epistula.sh
 
-MIT – see [LICENSE](LICENSE).
+# Rebuild frontend after UI changes
+./start_epistula.sh --rebuild-frontend
 
-## Contributing
+# Rebuild backend after API changes
+./start_epistula.sh --rebuild-backend
 
-Lightweight contributions are welcome. Please follow [CODESTYLE.md](CODESTYLE.md). For now, keep changes small and focused on this minimal build.
+# View logs
+./start_epistula.sh --logs
+
+# Check status
+./start_epistula.sh --status
+
+# Stop containers
+./start_epistula.sh --stop
+
+# Full rebuild
+./start_epistula.sh --build
+```
+
+See [DEV_GUIDE.md](DEV_GUIDE.md) for detailed workflows.
+
+## 📚 Documentation
+
+- **[QUICKSTART.md](QUICKSTART.md)** - 2-minute setup guide
+- **[USER_GUIDE.md](USER_GUIDE.md)** - User documentation
+- **[DEV_GUIDE.md](DEV_GUIDE.md)** - Developer quick reference
+- **[CODESTYLE.md](CODESTYLE.md)** - Coding standards
+- **[frontend/ARCHITECTURE.md](frontend/ARCHITECTURE.md)** - Frontend architecture
+- **[backend/ARCHITECTURE.md](backend/ARCHITECTURE.md)** - Backend architecture
+
+## 🏗️ Architecture Overview
+
+### Backend (FastAPI)
+- **RESTful API** design with OpenAPI docs
+- **Dynamic schemas** - Each university gets isolated `uni_<id>` schema
+- **JWT authentication** with role-based access
+- **MinIO storage** for S3-compatible file uploads
+- **Cascade deletion** for referential integrity
+
+### Frontend (Next.js)
+- **Modular components** - Reusable Modal, Card, Dialog, etc.
+- **Custom hooks** - `useUniversities()`, `useFaculties()`, etc.
+- **Type-safe API layer** - Centralized API functions
+- **Smart navigation** - Breadcrumb trails through hierarchy
+
+### Database (PostgreSQL 16)
+- **Public schema** - Users, Universities registry
+- **Per-university schemas** - `uni_<id>` contains:
+  - Faculties
+  - Subjects
+  - Lectures
+  - Enrollments
+  - Content
+- **Database functions** - Automated schema creation/deletion
+- **Foreign key cascades** - Automatic cleanup
+
+## 🎓 Entity Hierarchy
+
+```
+Universities (🏛️)
+  └─ Faculties (🎓)
+      └─ Subjects (📚)
+          └─ Lectures (📖)
+              ├─ Content (Markdown, HTML, etc.)
+              └─ Assignments (Coming soon)
+```
+
+## 📡 API Endpoints
+
+```
+/api/v1/
+├── auth/
+│   ├── POST /login              # Authenticate user
+│   └── POST /register           # Register new user
+├── universities/
+│   ├── GET /                    # List all universities
+│   ├── POST /                   # Create university (root only)
+│   ├── DELETE /{id}             # Delete university + schema
+│   └── POST /{id}/logo          # Upload logo
+├── faculties/
+│   ├── GET /{university_id}     # List faculties
+│   ├── POST /{university_id}    # Create faculty
+│   ├── DELETE /{university_id}/{faculty_id}
+│   └── POST /{university_id}/{faculty_id}/logo
+├── subjects/
+│   ├── GET /{university_id}/{faculty_id}
+│   ├── POST /{university_id}/{faculty_id}
+│   └── DELETE /{university_id}/{faculty_id}/{subject_id}
+└── storage/
+    └── GET /{file_path}         # Serve files from MinIO
+```
+
+Full API docs: http://localhost:8000/docs
+
+## 🔐 Security Features
+
+- ✅ JWT-based authentication
+- ✅ Role-based access control (Root, Admin, User)
+- ✅ SQL injection prevention (parameterized queries)
+- ✅ File upload validation (type, size)
+- ✅ CORS configuration
+- ✅ Environment-based secrets
+
+## 🛠️ Technology Stack
+
+**Backend:**
+- FastAPI 0.104.1
+- Python 3.14
+- PostgreSQL 16
+- SQLAlchemy 2.0
+- MinIO (S3-compatible)
+- Uvicorn (ASGI server)
+
+**Frontend:**
+- Next.js 14
+- TypeScript 5
+- React 18
+- CSS Modules
+
+**Infrastructure:**
+- Docker & Docker Compose
+- Ubuntu Server (for ISO builds)
+
+## 🚨 Production Checklist
+
+Before deploying to production:
+
+- [ ] Change root password (env: `EPISTULA_ROOT_PASSWORD`)
+- [ ] Configure CORS origins (env: `EPISTULA_CORS_ORIGINS`)
+- [ ] Set up HTTPS/TLS
+- [ ] Configure MinIO access keys
+- [ ] Enable database backups
+- [ ] Set up monitoring/logging
+- [ ] Review security settings
+- [ ] Use strong JWT secret
+
+## 🐛 Troubleshooting
+
+**Frontend not updating after code changes?**
+```bash
+./start_epistula.sh --rebuild-frontend
+```
+
+**Backend not loading new endpoints?**
+```bash
+./start_epistula.sh --rebuild-backend
+```
+
+**Database connection errors?**
+```bash
+./start_epistula.sh --status
+# Check if epistula_db is healthy
+```
+
+**Can't login?**
+- Default: `root@localhost.localdomain` / `root`
+- Check backend logs: `./start_epistula.sh --logs`
+
+**MinIO not working?**
+- Check: http://localhost:9001
+- Default credentials in docker-compose.yml
+
+## 📈 Roadmap
+
+- [x] University management
+- [x] Faculty management
+- [x] Subject management
+- [x] File storage (MinIO)
+- [x] Cascade deletion
+- [ ] Lecture content management
+- [ ] Student enrollment
+- [ ] Professor assignments
+- [ ] Attendance tracking
+- [ ] Grading system
+- [ ] AI-powered features
+
+## 🤝 Contributing
+
+Contributions are welcome! Please:
+
+1. Read [CODESTYLE.md](CODESTYLE.md)
+2. Follow the architecture patterns
+3. Add tests for new features
+4. Update documentation
+5. Submit PR with clear description
+
+## 📄 License
+
+MIT License - see [LICENSE](LICENSE)
+
+## 👥 Authors
+
+Epistula Development Team
+
+---
+
+**Need help?** Check [USER_GUIDE.md](USER_GUIDE.md) or [DEV_GUIDE.md](DEV_GUIDE.md)

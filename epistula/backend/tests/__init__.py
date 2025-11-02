@@ -1,0 +1,1 @@
+# Make tests a package so relative imports in tests (e.g., from .conftest) work during collection.

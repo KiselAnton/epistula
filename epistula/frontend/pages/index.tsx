@@ -71,6 +71,17 @@ export default function Login() {
     if (typeof window !== 'undefined') {
       const token = localStorage.getItem('token');
       if (token) {
+        // Prefer redirecting to user's primary university if available
+        const raw = localStorage.getItem('user');
+        if (raw) {
+          try {
+            const u = JSON.parse(raw);
+            if (u?.primary_university_id) {
+              window.location.href = `/university/${u.primary_university_id}`;
+              return;
+            }
+          } catch {}
+        }
         window.location.href = '/dashboard';
         return;
       }
@@ -134,11 +145,21 @@ export default function Login() {
         // Store user for greeting page
         if (data.user) {
           localStorage.setItem('user', JSON.stringify(data.user));
+          
+          // Redirect based on user role and university
+          // If user has a primary university (admin, professor, student), go to their university
+          if (data.user.primary_university_id) {
+            window.location.href = `/university/${data.user.primary_university_id}`;
+          } else {
+            // Otherwise go to dashboard (root users)
+            window.location.href = '/dashboard';
+          }
+        } else {
+          // Fallback to dashboard
+          window.location.href = '/dashboard';
         }
         // Trigger storage event for other tabs
         window.dispatchEvent(new Event('storage'));
-        // Redirect to dashboard
-        window.location.href = '/dashboard';
       } else {
         setError(data.detail || 'Login failed. Please check your credentials.');
       }
@@ -156,7 +177,7 @@ export default function Login() {
   return (
     <>
       <Head>
-        <title>Epistula - Login</title>
+        <title>Epistula -- Login</title>
         <meta name="description" content="Epistula Login Page" />
       </Head>
       <div className={styles.container}>

@@ -1,0 +1,40 @@
+.badge {
+  display: inline-block;
+  color: white;
+  padding: 0.25rem 0.75rem;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-transform: capitalize;
+  white-space: nowrap;
+}
+
+/* Status variants */
+.active {
+  background: #28a745;
+}
+
+.inactive {
+  background: #6c757d;
+}
+
+.completed {
+  background: #007bff;
+}
+
+.withdrawn {
+  background: #dc3545;
+}
+
+/* Role variants */
+.administrator {
+  background: #dc3545;
+}
+
+.professor {
+  background: #007bff;
+}
+
+.student {
+  background: #28a745;
+}

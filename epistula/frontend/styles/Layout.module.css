@@ -11,6 +11,11 @@
   color: #e5e7eb;
 }
 
+/* When sidebar is collapsed, shrink the grid's first column as well */
+.appShellCollapsed {
+  grid-template-columns: 64px 1fr;
+}
+
 .sidebar {
   grid-area: sidebar;
   display: flex;
@@ -57,17 +62,35 @@
 }
 
 .navItem {
-  text-align: left;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  text-decoration: none;
   padding: 10px 12px;
   border-radius: 6px;
   border: 1px solid transparent;
   background: transparent;
   color: #cbd5e1;
-  cursor: not-allowed; /* placeholder */
+  cursor: pointer;
+  transition: all 0.2s;
 }
 
 .navItem:hover {
-  background: rgba(255,255,255,0.04);
+  background: rgba(255,255,255,0.08);
+  color: #e5e7eb;
+}
+
+.navItemActive {
+  background: rgba(102, 126, 234, 0.15);
+  border-color: rgba(102, 126, 234, 0.3);
+  color: #a5b4fc;
+}
+
+.navIcon {
+  font-size: 1.2rem;
+  line-height: 1;
+  min-width: 20px;
+  text-align: center;
 }
 
 .sidebarBottom {
@@ -121,6 +144,13 @@
 
 .crumb {
   color: #cbd5e1;
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.crumb:hover {
+  color: #e5e7eb;
+  text-decoration: underline;
 }
 
 .crumbSep {
@@ -132,12 +162,20 @@
   padding: 16px;
 }
 
-/* Responsive: collapse sidebar on very small widths */
-@media (max-width: 640px) {
+/* Responsive: collapse sidebar on small widths as a fallback */
+@media (max-width: 1024px) {
   .appShell {
     grid-template-columns: 64px 1fr;
   }
   .sidebar {
     width: 64px;
   }
+}
+
+@media (max-width: 768px) {
+  .content { padding: 12px; }
+}
+
+@media (max-width: 480px) {
+  .content { padding: 8px; }
 }

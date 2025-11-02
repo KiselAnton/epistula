@@ -1,4 +1,26 @@
-version: '3.8'
+# ============================================================================
+# ⚠️  DATA PERSISTENCE WARNING ⚠️
+# 
+# This docker-compose.yml uses NAMED VOLUMES for data persistence:
+#   - epistula_db_data: PostgreSQL database (ALL your universities, users, etc.)
+#   - epistula_minio_data: MinIO storage (uploaded files, logos, documents)
+# 
+# 🔒 SAFE OPERATIONS (data persists):
+#   docker compose down                  ✅ Volumes preserved
+#   docker compose up --build            ✅ Volumes preserved
+#   docker compose restart               ✅ Volumes preserved
+# 
+# ⚠️  DANGEROUS OPERATIONS (data DELETED):
+#   docker compose down -v               ❌ DELETES ALL VOLUMES!
+#   docker volume rm epistula_db_data    ❌ DELETES DATABASE!
+#   docker volume prune                  ❌ May delete if orphaned!
+# 
+# 📦 ALWAYS BACKUP BEFORE RISKY OPERATIONS:
+#   .\backup_database.ps1                (Windows)
+#   ./backup_database.sh                 (Linux/Mac)
+# 
+# See DATA_SAFETY.md for complete backup and recovery procedures.
+# ============================================================================
 
 services:
   # PostgreSQL Database - PERSISTENT, DO NOT REBUILD
@@ -22,9 +44,33 @@ services:
       - epistula_network
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U epistula_user -d epistula"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+      interval: 2s
+      timeout: 3s
+      retries: 30
+      start_period: 5s
+
+  # MinIO Object Storage - S3-compatible storage for files
+  minio:
+    image: minio/minio:latest
+    container_name: epistula_minio
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin_change_me}
+    volumes:
+      - epistula_minio_data:/data
+    ports:
+      - "${MINIO_PORT:-9000}:9000"
+      - "${MINIO_CONSOLE_PORT:-9001}:9001"
+    networks:
+      - epistula_network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+      start_period: 5s
 
   # Backend API - Can be rebuilt without affecting database
   backend:
@@ -36,6 +82,9 @@ services:
     depends_on:
       database:
         condition: service_healthy
+      # Start when MinIO container has started; backend will retry bucket init if MinIO isn't ready yet
+      minio:
+        condition: service_started
     environment:
       # Database connection
       DB_HOST: database
@@ -43,6 +92,13 @@ services:
       DB_NAME: epistula
       DB_USER: epistula_user
       DB_PASSWORD: ${DB_PASSWORD:-change_me_in_production}
+      
+      # MinIO connection
+      MINIO_ENDPOINT: minio:9000
+      MINIO_ACCESS_KEY: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD:-minioadmin_change_me}
+      MINIO_BUCKET: epistula
+      MINIO_USE_SSL: "false"
       
       # Application settings
       EPISTULA_ENV: ${EPISTULA_ENV:-development}
@@ -56,6 +112,11 @@ services:
       # Root user (for initial setup)
       ROOT_EMAIL: ${ROOT_EMAIL:-root@localhost}
       ROOT_PASSWORD: ${ROOT_PASSWORD:-root_password_change_me}
+      # Optionally reset root password on each start (use only once when changing)
+      RESET_ROOT_PASSWORD_ON_START: ${RESET_ROOT_PASSWORD_ON_START:-0}
+      # Backups
+      BACKUPS_DIR: /backups/database
+      BACKUPS_RETENTION_DAYS: 30
     ports:
       - "${BACKEND_PORT:-8000}:8000"
     networks:
@@ -63,6 +124,8 @@ services:
     volumes:
       # Mount backend code for development (remove in production)
       - ./epistula/backend:/app:ro
+      # Host backups directory (writeable)
+      - ./backups:/backups
     command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
 
   # Frontend - Can be rebuilt without affecting database
@@ -73,18 +136,16 @@ services:
     container_name: epistula_frontend
     restart: unless-stopped
     depends_on:
-      - backend
+      backend:
+        condition: service_started
     environment:
       NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8000}
     ports:
       - "${FRONTEND_PORT:-3000}:3000"
     networks:
       - epistula_network
-    volumes:
-      # Mount frontend code for development (remove in production)
-      - ./epistula/frontend:/app:ro
-      - /app/node_modules
-      - /app/.next
+    # In production, run from the built image to ensure fresh assets on each build
+    # (If you need live-editing in development, use an override compose file to mount sources.)
 
 networks:
   epistula_network:
@@ -96,3 +157,8 @@ volumes:
   epistula_db_data:
     driver: local
     name: epistula_db_data
+  
+  # MinIO persistent storage for uploaded files
+  epistula_minio_data:
+    driver: local
+    name: epistula_minio_data

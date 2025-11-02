@@ -1,0 +1,78 @@
+/* Button base styles */
+.button {
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s ease, opacity 0.2s ease;
+  white-space: nowrap;
+}
+
+.button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+/* Size variants */
+.small {
+  padding: 0.25rem 0.75rem;
+  font-size: 0.85rem;
+}
+
+.medium {
+  padding: 0.5rem 1rem;
+  font-size: 0.9rem;
+}
+
+.large {
+  padding: 0.75rem 1.5rem;
+  font-size: 1rem;
+}
+
+/* Color variants */
+.primary {
+  background: #007bff;
+  color: white;
+}
+
+.primary:hover:not(:disabled) {
+  background: #0056b3;
+}
+
+.success {
+  background: #28a745;
+  color: white;
+}
+
+.success:hover:not(:disabled) {
+  background: #1e7e34;
+}
+
+.danger {
+  background: #dc3545;
+  color: white;
+}
+
+.danger:hover:not(:disabled) {
+  background: #c82333;
+}
+
+.warning {
+  background: #ffc107;
+  color: #000;
+}
+
+.warning:hover:not(:disabled) {
+  background: #e0a800;
+}
+
+.secondary {
+  background: #6c757d;
+  color: white;
+}
+
+.secondary:hover:not(:disabled) {
+  background: #5a6268;
+}

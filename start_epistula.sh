@@ -25,7 +25,8 @@ readonly NC='\033[0m' # No Color
 
 # Script directory
 readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-readonly EPISTULA_DIR="${SCRIPT_DIR}/epistula"
+readonly COMPOSE_DIR="${SCRIPT_DIR}"  # docker-compose.yml is in root
+readonly EPISTULA_DIR="${SCRIPT_DIR}/epistula"  # Source code is in epistula/
 
 # Container configuration
 readonly BACKEND_IMAGE="epistula-backend"
@@ -72,21 +73,38 @@ ensure_root_env() {
     export EPISTULA_ROOT_NAME="${EPISTULA_ROOT_NAME:-$ROOT_NAME_DEFAULT}"
     export EPISTULA_ROOT_ALLOWED_IPS="${EPISTULA_ROOT_ALLOWED_IPS:-$ROOT_ALLOWED_IPS_DEFAULT}"
 
+    local PROMPTED_PASSWORD=0
     if [ -z "${EPISTULA_ROOT_PASSWORD:-}" ]; then
         if [ "${FORCE_INSTALL:-0}" -eq 1 ]; then
             EPISTULA_ROOT_PASSWORD="$(random_password)"
             log_warning "No EPISTULA_ROOT_PASSWORD provided. Generated temporary password."
+            PROMPTED_PASSWORD=1
         else
             read -p "Set root password (blank to auto-generate): " -r ROOT_PW_INPUT
             if [ -z "$ROOT_PW_INPUT" ]; then
                 EPISTULA_ROOT_PASSWORD="$(random_password)"
                 log_warning "Generated temporary root password."
+                PROMPTED_PASSWORD=1
             else
                 EPISTULA_ROOT_PASSWORD="$ROOT_PW_INPUT"
+                PROMPTED_PASSWORD=1
             fi
         fi
         export EPISTULA_ROOT_PASSWORD
         log_info "root email: $EPISTULA_ROOT_EMAIL | Allowed IPs: $EPISTULA_ROOT_ALLOWED_IPS"
+    fi
+
+    # Map to backend-expected env var names so docker-compose picks them up
+    # Backend reads ROOT_EMAIL and ROOT_PASSWORD (see backend/init_root_user.py)
+    export ROOT_EMAIL="$EPISTULA_ROOT_EMAIL"
+    export ROOT_PASSWORD="$EPISTULA_ROOT_PASSWORD"
+
+    # If we just prompted/generated a password in this session, request a one-time
+    # password reset in the backend on startup so DB matches what the user set.
+    # Users who provide env externally can also set RESET_ROOT_PASSWORD_ON_START=1 themselves.
+    if [ "$PROMPTED_PASSWORD" -eq 1 ]; then
+        export RESET_ROOT_PASSWORD_ON_START="1"
+        log_warning "Root password will be updated on backend start (one-time)."
     fi
 }
 
@@ -165,15 +183,22 @@ OPTIONS:
     --start         Start all containers
     --stop          Stop all containers
     --restart       Restart all containers
+    --build         Rebuild and start all containers (full rebuild)
+    --rebuild-frontend  Rebuild only frontend (faster for UI changes)
+    --rebuild-backend   Rebuild only backend (faster for API changes)
     --status        Show container status
     --logs          Show container logs
     --clean         Stop and remove all containers and images
     --help          Show this help message
 
 EXAMPLES:
-    $(basename "$0")              # Start containers
-    $(basename "$0") --stop       # Stop containers
-    $(basename "$0") --logs       # View logs
+    $(basename "$0")                    # Start containers (fast, uses cache)
+    $(basename "$0") --build            # Full rebuild (slow, for major updates)
+    $(basename "$0") --rebuild-frontend # Rebuild frontend only (for UI changes)
+    $(basename "$0") --rebuild-backend  # Rebuild backend only (for API changes)
+    $(basename "$0") --restart          # Quick restart (fast)
+    $(basename "$0") --stop             # Stop containers
+    $(basename "$0") --logs             # View logs
 
 EOF
 }
@@ -184,12 +209,38 @@ EOF
 
 start_with_compose() {
     log_info "Starting containers using Docker Compose..."
-    cd "$EPISTULA_DIR"
+    cd "$COMPOSE_DIR"
+    
+    # Ensure environment variables are set for root user
+    ensure_root_env
+    
+    # Check if images exist
+    local need_build=0
+    if ! docker images | grep -q "epistula_backend"; then
+        need_build=1
+    fi
+    if ! docker images | grep -q "epistula_frontend"; then
+        need_build=1
+    fi
     
     if docker compose version >/dev/null 2>&1; then
-        docker compose up -d --build
+        if [ "$need_build" -eq 1 ]; then
+            log_info "Building images in parallel (first time)..."
+            docker compose build --parallel
+            docker compose up -d
+        else
+            log_info "Using existing images (fast startup)..."
+            docker compose up -d
+        fi
     elif command -v docker-compose >/dev/null 2>&1; then
-        docker-compose up -d --build
+        if [ "$need_build" -eq 1 ]; then
+            log_info "Building images in parallel (first time)..."
+            docker-compose build --parallel
+            docker-compose up -d
+        else
+            log_info "Using existing images (fast startup)..."
+            docker-compose up -d
+        fi
     else
         return 1
     fi
@@ -212,10 +263,14 @@ start_backend() {
         docker run -d \
             --name "$BACKEND_CONTAINER" \
             --restart unless-stopped \
+            # Pass both legacy (EPISTULA_*) and backend-expected (ROOT_*) vars
             -e EPISTULA_ROOT_EMAIL="$EPISTULA_ROOT_EMAIL" \
             -e EPISTULA_ROOT_NAME="$EPISTULA_ROOT_NAME" \
             -e EPISTULA_ROOT_PASSWORD="$EPISTULA_ROOT_PASSWORD" \
             -e EPISTULA_ROOT_ALLOWED_IPS="$EPISTULA_ROOT_ALLOWED_IPS" \
+            -e ROOT_EMAIL="$ROOT_EMAIL" \
+            -e ROOT_PASSWORD="$ROOT_PASSWORD" \
+            -e RESET_ROOT_PASSWORD_ON_START="${RESET_ROOT_PASSWORD_ON_START:-0}" \
             -p "$BACKEND_PORT:8000" \
             "$BACKEND_IMAGE"
         
@@ -257,9 +312,9 @@ start_containers() {
     log_info "Starting Epistula containers..."
     
     # Try Docker Compose first
-    if [ -f "$EPISTULA_DIR/docker-compose.yml" ] || \
-       [ -f "$EPISTULA_DIR/compose.yml" ] || \
-       [ -f "$EPISTULA_DIR/compose.yaml" ]; then
+    if [ -f "$COMPOSE_DIR/docker-compose.yml" ] || \
+       [ -f "$COMPOSE_DIR/compose.yml" ] || \
+       [ -f "$COMPOSE_DIR/compose.yaml" ]; then
         if start_with_compose; then
             log_success "All containers started successfully with Docker Compose"
             show_status
@@ -281,23 +336,28 @@ start_containers() {
 stop_containers() {
     log_info "Stopping Epistula containers..."
     
-    # Try Docker Compose first
-    if [ -f "$EPISTULA_DIR/docker-compose.yml" ] || \
-       [ -f "$EPISTULA_DIR/compose.yml" ] || \
-       [ -f "$EPISTULA_DIR/compose.yaml" ]; then
-        cd "$EPISTULA_DIR"
+    # Stop ALL containers with 'epistula' in the name (including manually created ones)
+    EPISTULA_CONTAINERS=$(docker ps -a --filter "name=epistula" --format "{{.Names}}" 2>/dev/null || true)
+    
+    if [ -n "$EPISTULA_CONTAINERS" ]; then
+        log_info "Found containers: $(echo $EPISTULA_CONTAINERS | tr '\n' ' ')"
+        echo "$EPISTULA_CONTAINERS" | xargs -r docker stop 2>/dev/null || true
+        echo "$EPISTULA_CONTAINERS" | xargs -r docker rm 2>/dev/null || true
+    fi
+    
+    # Try Docker Compose cleanup as well
+    if [ -f "$COMPOSE_DIR/docker-compose.yml" ] || \
+       [ -f "$COMPOSE_DIR/compose.yml" ] || \
+       [ -f "$COMPOSE_DIR/compose.yaml" ]; then
+        cd "$COMPOSE_DIR"
         if docker compose version >/dev/null 2>&1; then
-            docker compose down
+            docker compose down 2>/dev/null || true
         elif command -v docker-compose >/dev/null 2>&1; then
-            docker-compose down
+            docker-compose down 2>/dev/null || true
         fi
     fi
     
-    # Stop individual containers
-    docker stop "$BACKEND_CONTAINER" 2>/dev/null || true
-    docker stop "$FRONTEND_CONTAINER" 2>/dev/null || true
-    
-    log_success "All containers stopped"
+    log_success "All containers stopped and removed"
 }
 
 restart_containers() {
@@ -474,7 +534,8 @@ check_and_install_requirements() {
 }
 
 main() {
-    # Check and install requirements
+    # Parse for --force flag first
+    local FORCE_BUILD=0
     if [[ "${1:-}" == "--force" ]]; then
         check_and_install_requirements --force
         shift
@@ -495,6 +556,59 @@ main() {
             ;;
         --restart|restart)
             restart_containers
+            ;;
+        --build|build)
+            log_info "Forcing rebuild of all containers..."
+            stop_containers
+            sleep 2
+            # Set flag to force rebuild
+            FORCE_BUILD=1
+            if [ -f "$COMPOSE_DIR/docker-compose.yml" ]; then
+                cd "$COMPOSE_DIR"
+                ensure_root_env
+                if docker compose version >/dev/null 2>&1; then
+                    docker compose build --parallel --no-cache
+                    docker compose up -d
+                elif command -v docker-compose >/dev/null 2>&1; then
+                    docker-compose build --parallel --no-cache
+                    docker-compose up -d
+                fi
+                log_success "All containers rebuilt and started"
+                show_status
+            else
+                log_error "docker-compose.yml not found"
+                exit 1
+            fi
+            ;;
+        --rebuild-frontend|rebuild-frontend)
+            log_info "Rebuilding frontend container..."
+            cd "$COMPOSE_DIR"
+            if docker compose version >/dev/null 2>&1; then
+                docker compose build frontend
+                docker compose up -d frontend
+            elif command -v docker-compose >/dev/null 2>&1; then
+                docker-compose build frontend
+                docker-compose up -d frontend
+            else
+                log_error "Docker Compose not found"
+                exit 1
+            fi
+            log_success "Frontend rebuilt and restarted"
+            ;;
+        --rebuild-backend|rebuild-backend)
+            log_info "Rebuilding backend container..."
+            cd "$COMPOSE_DIR"
+            if docker compose version >/dev/null 2>&1; then
+                docker compose build backend
+                docker compose up -d backend
+            elif command -v docker-compose >/dev/null 2>&1; then
+                docker-compose build backend
+                docker-compose up -d backend
+            else
+                log_error "Docker Compose not found"
+                exit 1
+            fi
+            log_success "Backend rebuilt and restarted"
             ;;
         --status|status)
             show_status
