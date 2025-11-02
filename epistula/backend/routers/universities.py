@@ -13,6 +13,7 @@ from sqlalchemy.orm import Session
 
 from utils.database import get_db
 from utils.models import University, UniversityCreate, UniversityDB, UserUniversityRoleDB
+from pydantic import Field
 from middleware.auth import get_current_user
 from utils.models import UserDB
 from utils.minio_client import upload_file, delete_file
@@ -117,8 +118,9 @@ class UniversityUpdatePayload(UniversityCreate):
     """Update payload for university fields.
     Inherit fields (name, code, description) and allow partial updates.
     """
-    name: Optional[str] = None
-    code: Optional[str] = None
+    # Enforce that if provided, name/code are non-empty strings
+    name: Optional[str] = Field(default=None, min_length=1, max_length=255)
+    code: Optional[str] = Field(default=None, min_length=1, max_length=50)
     description: Optional[Optional[str]] = None
 
 
@@ -155,11 +157,17 @@ def update_university(
 
     changed = False
     if payload.name is not None:
-        uni.name = payload.name
+        trimmed_name = payload.name.strip()
+        if not trimmed_name:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Name cannot be empty")
+        uni.name = trimmed_name
         changed = True
     if payload.code is not None:
-        # optional: enforce uppercase code
-        uni.code = payload.code.upper()
+        trimmed_code = payload.code.strip()
+        if not trimmed_code:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Code cannot be empty")
+        # enforce uppercase code
+        uni.code = trimmed_code.upper()
         changed = True
     if payload.description is not None:
         uni.description = payload.description

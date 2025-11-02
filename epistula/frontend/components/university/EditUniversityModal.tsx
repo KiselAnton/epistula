@@ -35,12 +35,18 @@ const EditUniversityModal: React.FC<Props> = ({ isOpen, onClose, university, onU
   const saveFields = async () => {
     setSaving(true);
     try {
+      const trimmedName = (name || '').trim();
+      const trimmedCode = (code || '').trim();
+      if (!trimmedName || !trimmedCode) {
+        alert('Name and Code cannot be empty');
+        return;
+      }
       const token = localStorage.getItem('token');
       if (!token) return;
       const res = await fetch(`${getBackendUrl()}/api/v1/universities/${university.id}`, {
         method: 'PATCH',
         headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, code, description: desc || null })
+        body: JSON.stringify({ name: trimmedName, code: trimmedCode.toUpperCase(), description: desc || null })
       });
       if (res.status === 401) { localStorage.removeItem('token'); window.location.href = '/'; return; }
       if (!res.ok) { const err = await res.json().catch(() => ({} as any)); alert(err?.detail || 'Failed to save'); return; }
