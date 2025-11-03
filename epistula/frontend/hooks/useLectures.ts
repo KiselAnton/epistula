@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import { Lecture } from '../types';
-import { getBackendUrl } from '../lib/config';
 
 export function useLectures(
   universityId: string,
@@ -32,7 +31,7 @@ export function useLectures(
 
     try {
       const response = await fetch(
-        `${getBackendUrl()}/api/v1/subjects/${universityId}/${facultyId}/${subjectId}/lectures`,
+        `/api/v1/subjects/${universityId}/${facultyId}/${subjectId}/lectures`,
         { headers: { 'Authorization': `Bearer ${token}` } }
       );
 
@@ -71,7 +70,7 @@ export function useLectures(
     setDeletingLecture(lectureId);
     try {
       const response = await fetch(
-        `${getBackendUrl()}/api/v1/subjects/${universityId}/${facultyId}/${subjectId}/lectures/${lectureId}`,
+        `/api/v1/subjects/${universityId}/${facultyId}/${subjectId}/lectures/${lectureId}`,
         {
           method: 'DELETE',
           headers: { 'Authorization': `Bearer ${token}` }
@@ -99,7 +98,7 @@ export function useLectures(
     setPublishingLecture(lectureId);
     try {
       const response = await fetch(
-        `${getBackendUrl()}/api/v1/subjects/${universityId}/${facultyId}/${subjectId}/lectures/${lectureId}`,
+        `/api/v1/subjects/${universityId}/${facultyId}/${subjectId}/lectures/${lectureId}`,
         {
           method: 'PATCH',
           headers: {
@@ -129,7 +128,7 @@ export function useLectures(
 
     try {
       const response = await fetch(
-        `${getBackendUrl()}/api/v1/subjects/${universityId}/${facultyId}/${subjectId}/lectures`,
+        `/api/v1/subjects/${universityId}/${facultyId}/${subjectId}/lectures`,
         {
           method: 'POST',
           headers: {
