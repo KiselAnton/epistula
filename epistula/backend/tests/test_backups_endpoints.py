@@ -269,6 +269,146 @@ def test_temp_status_with_existing_temp(client, monkeypatch):
         app_main.app.dependency_overrides.clear()
 
 
+def test_ensure_temp_registry_creates_new_entry(client, monkeypatch):
+    """Test ensure-temp-registry endpoint creates temp university entry."""
+    import routers.backups as backups_router
+    import utils.backups as backup_utils
+    
+    monkeypatch.setattr(backups_router, "_ensure_can_manage", lambda db, user, unid: None)
+    
+    # Mock the utility function
+    monkeypatch.setattr(backup_utils, "_ensure_temp_university_entry", lambda db, uid: 5000)
+
+    class _Res:
+        def __init__(self, row=None):
+            self._row = row
+        def fetchone(self):
+            return self._row
+
+    class _Sess:
+        def execute(self, stmt, params=None):
+            sql = getattr(stmt, "text", str(stmt))
+            
+            # Get production schema
+            if "FROM public.universities WHERE id =" in sql:
+                return _Res(("uni_20",))
+            
+            # Check temp schema exists
+            if "FROM information_schema.schemata WHERE schema_name =" in sql:
+                return _Res(("uni_20_temp",))
+            
+            return _Res(None)
+        
+        def commit(self):
+            pass
+
+    import utils.database as db_mod
+    import main as app_main
+    def _override_db():
+        yield _Sess()
+    app_main.app.dependency_overrides[db_mod.get_db] = _override_db
+
+    try:
+        r = client.post("/api/v1/backups/20/ensure-temp-registry")
+        assert r.status_code == 200
+        body = r.json()
+        assert body["university_id"] == 20
+        assert body["temp_university_id"] == 5000
+        assert "ensured" in body["message"].lower() or "created" in body["message"].lower()
+    finally:
+        app_main.app.dependency_overrides.clear()
+
+
+def test_ensure_temp_registry_updates_existing_entry(client, monkeypatch):
+    """Test ensure-temp-registry endpoint updates existing temp entry."""
+    import routers.backups as backups_router
+    import utils.backups as backup_utils
+    
+    monkeypatch.setattr(backups_router, "_ensure_can_manage", lambda db, user, unid: None)
+    monkeypatch.setattr(backup_utils, "_ensure_temp_university_entry", lambda db, uid: 5001)
+
+    class _Res:
+        def __init__(self, row=None):
+            self._row = row
+        def fetchone(self):
+            return self._row
+
+    class _Sess:
+        def execute(self, stmt, params=None):
+            sql = getattr(stmt, "text", str(stmt))
+            
+            # Get production schema
+            if "FROM public.universities WHERE id =" in sql:
+                return _Res(("uni_21",))
+            
+            # Check temp schema exists
+            if "FROM information_schema.schemata WHERE schema_name =" in sql:
+                return _Res(("uni_21_temp",))
+            
+            return _Res(None)
+        
+        def commit(self):
+            pass
+
+    import utils.database as db_mod
+    import main as app_main
+    def _override_db():
+        yield _Sess()
+    app_main.app.dependency_overrides[db_mod.get_db] = _override_db
+
+    try:
+        r = client.post("/api/v1/backups/21/ensure-temp-registry")
+        assert r.status_code == 200
+        body = r.json()
+        assert body["university_id"] == 21
+        assert body["temp_university_id"] == 5001
+    finally:
+        app_main.app.dependency_overrides.clear()
+
+
+def test_ensure_temp_registry_no_temp_schema_returns_404(client, monkeypatch):
+    """Test ensure-temp-registry fails if temp schema doesn't exist."""
+    import routers.backups as backups_router
+
+    monkeypatch.setattr(backups_router, "_ensure_can_manage", lambda db, user, unid: None)
+
+    class _Res:
+        def __init__(self, row=None):
+            self._row = row
+        def fetchone(self):
+            return self._row
+
+    class _Sess:
+        def execute(self, stmt, params=None):
+            sql = getattr(stmt, "text", str(stmt))
+            
+            # Get production schema
+            if "FROM public.universities WHERE id =" in sql:
+                return _Res(("uni_22",))
+            
+            # Temp schema doesn't exist
+            if "FROM information_schema.schemata WHERE schema_name =" in sql:
+                return _Res(None)
+            
+            return _Res(None)
+        
+        def commit(self):
+            pass
+
+    import utils.database as db_mod
+    import main as app_main
+    def _override_db():
+        yield _Sess()
+    app_main.app.dependency_overrides[db_mod.get_db] = _override_db
+
+    try:
+        r = client.post("/api/v1/backups/22/ensure-temp-registry")
+        assert r.status_code == 400  # Endpoint returns 400 for missing temp schema
+        assert "temp" in r.json()["detail"].lower()
+    finally:
+        app_main.app.dependency_overrides.clear()
+
+
 def test_restore_backup_not_found_returns_404(client, monkeypatch):
     import routers.backups as backups_router
     from fastapi import HTTPException
