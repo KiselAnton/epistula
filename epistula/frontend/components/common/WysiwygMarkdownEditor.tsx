@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react';
+import { useEffect } from 'react';
 import '@blocknote/core/fonts/inter.css';
 import '@blocknote/react/style.css';
 import { BlockNoteView } from '@blocknote/react';
