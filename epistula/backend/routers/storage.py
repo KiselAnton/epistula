@@ -85,6 +85,7 @@ async def upload_to_storage(
     allowed_types = {
         # images
         "image/jpeg": "jpg",
+        "image/jpg": "jpg",  # Some browsers send image/jpg instead of image/jpeg
         "image/png": "png",
         "image/svg+xml": "svg",
         "image/webp": "webp",
@@ -100,7 +101,10 @@ async def upload_to_storage(
     }
     ext = allowed_types.get(file.content_type)
     if not ext:
-        raise HTTPException(status_code=400, detail="Unsupported file type")
+        raise HTTPException(
+            status_code=400, 
+            detail=f"Unsupported file type: {file.content_type}. Allowed types: {', '.join(allowed_types.keys())}"
+        )
 
     # Normalize folder (prevent traversal)
     safe_folder = "/".join(p for p in folder.split("/") if p and p not in ("..", ".")) or "uploads"

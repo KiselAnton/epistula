@@ -36,7 +36,7 @@ test.describe('Faculties create modal UI (optional)', () => {
     // Just verify we reached the create form successfully
 
     const fileInputs = page.locator('input[type="file"][accept*="image"]');
-    await expect(fileInputs).toHaveCount(1);
+    await expect(fileInputs).toHaveCount(2); // 1 for logo, 1 for markdown editor
 
     await expect(page.getByRole('button', { name: /Create Faculty/i })).toBeVisible();
   });

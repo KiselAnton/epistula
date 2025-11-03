@@ -140,6 +140,9 @@ services:
         condition: service_started
     environment:
       NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8000}
+      # Internal backend URL for server-side requests (rewrites, SSR, etc.)
+      # Uses Docker network service name instead of localhost
+      INTERNAL_BACKEND_URL: http://backend:8000
     ports:
       - "${FRONTEND_PORT:-3000}:3000"
     networks:

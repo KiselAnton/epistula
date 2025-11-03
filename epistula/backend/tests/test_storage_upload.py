@@ -15,7 +15,8 @@ def test_upload_unsupported_type(client):
     files = {"file": ("file.xyz", io.BytesIO(data), "application/x-unknown")}
     resp = client.post("/storage/upload", files=files)
     assert resp.status_code == 400
-    assert resp.json()["detail"] == "Unsupported file type"
+    assert "Unsupported file type" in resp.json()["detail"]
+    assert "application/x-unknown" in resp.json()["detail"]
 
 
 def test_upload_success_image(client, monkeypatch):
@@ -38,6 +39,29 @@ def test_upload_success_image(client, monkeypatch):
     assert body["filename"] == "pic.png"
     assert body["content_type"] == "image/png"
     assert body["size"] == 3
+
+
+def test_upload_image_jpg_content_type(client, monkeypatch):
+    # Test that image/jpg (not just image/jpeg) is also accepted
+    import routers.storage as storage_router
+
+    def fake_upload_file(file_data, object_name, content_type):
+        assert file_data == b"jpeg"
+        assert content_type == "image/jpg"
+        assert object_name.startswith("uploads/")
+        assert object_name.endswith(".jpg")
+        return f"/storage/{object_name}"
+
+    monkeypatch.setattr(storage_router, "upload_file", fake_upload_file)
+
+    files = {"file": ("photo.jpg", io.BytesIO(b"jpeg"), "image/jpg")}
+    resp = client.post("/storage/upload", files=files)
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["url"].startswith("/storage/uploads/")
+    assert body["filename"] == "photo.jpg"
+    assert body["content_type"] == "image/jpg"
+    assert body["size"] == 4
 
 
 def test_upload_storage_error(client, monkeypatch):

@@ -74,11 +74,19 @@ const nextConfig = {
   },
 
   // Map /favicon.ico to a generated API response so browsers don't 404
+  // Proxy /storage/* to backend for file serving
   async rewrites() {
+    // For server-side rewrites (running in Docker), use internal network address
+    // Falls back to localhost for local development
+    const internalBackendUrl = process.env.INTERNAL_BACKEND_URL || process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000';
     return [
       {
         source: '/favicon.ico',
         destination: '/api/favicon',
+      },
+      {
+        source: '/storage/:path*',
+        destination: `${internalBackendUrl}/storage/:path*`,
       },
     ];
   },

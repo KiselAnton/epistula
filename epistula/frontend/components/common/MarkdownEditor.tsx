@@ -19,33 +19,59 @@ export default function MarkdownEditor({ value, onChange, onSave, isSaving, plac
   const fileInputRef = useRef<HTMLInputElement>(null);
   const colorPickerRef = useRef<HTMLDivElement>(null);
   const converterRef = useRef(new Showdown.Converter());
+  
+  // Configure Showdown to allow raw HTML (for <u>, <span style>, etc.)
+  useEffect(() => {
+    converterRef.current.setFlavor('github');
+    converterRef.current.setOption('simpleLineBreaks', true);
+    converterRef.current.setOption('strikethrough', true);
+    converterRef.current.setOption('tables', true);
+    converterRef.current.setOption('tasklists', true);
+    converterRef.current.setOption('openLinksInNewWindow', true);
+    converterRef.current.setOption('parseImgDimensions', true);
+    converterRef.current.setOption('encodeEmails', false);
+  }, []);
 
   // Insert markdown at cursor position
   const insertAtCursor = (insertText: string) => {
     const textarea = document.querySelector(`.${styles.textarea}`) as HTMLTextAreaElement;
     if (!textarea) {
+      // If textarea not found, append to end
       onChange(value + insertText);
       return;
     }
-    const start = textarea.selectionStart;
-    const end = textarea.selectionEnd;
+    const start = textarea.selectionStart || 0;
+    const end = textarea.selectionEnd || 0;
     const before = value.slice(0, start);
     const after = value.slice(end);
-    onChange(before + insertText + after);
+    const newValue = before + insertText + after;
+    onChange(newValue);
+    
+    // Set cursor position after inserted text
     setTimeout(() => {
-      textarea.focus();
-      textarea.selectionStart = textarea.selectionEnd = start + insertText.length;
+      if (textarea) {
+        textarea.focus();
+        const newPos = start + insertText.length;
+        textarea.setSelectionRange(newPos, newPos);
+      }
     }, 0);
   };
 
   // Upload handler
   const handleUpload = async (file: File, isImage: boolean) => {
-    const res = await uploadToStorage(file);
-    if (!res?.url) throw new Error('Upload failed');
-    if (isImage) {
-      insertAtCursor(`![${file.name}](${res.url})`);
-    } else {
-      insertAtCursor(`[${file.name}](${res.url})`);
+    try {
+      const res = await uploadToStorage(file);
+      if (!res?.url) throw new Error('Upload failed: no URL returned');
+      
+      const markdownSyntax = isImage 
+        ? `![${file.name}](${res.url})` 
+        : `[${file.name}](${res.url})`;
+      
+      console.log(`Inserted markdown: ${markdownSyntax}`);
+      insertAtCursor(markdownSyntax);
+    } catch (error) {
+      console.error('Upload error:', error);
+      throw error;
     }
   };
 
@@ -99,18 +125,44 @@ export default function MarkdownEditor({ value, onChange, onSave, isSaving, plac
   return (
     <div className={styles.editorContainer} onDrop={onDrop} onPaste={onPaste} onDragOver={(e) => e.preventDefault()}>
       {/* Hidden inputs for uploads */}
-      <input ref={imageInputRef} type="file" style={{ display: 'none' }} onChange={async (e) => {
-        const f = e.target.files?.[0];
-        if (!f) return;
-        try { await handleUpload(f, true); } catch (err) { alert((err as Error).message || 'Upload failed'); }
-        e.currentTarget.value = '';
-      }} />
-      <input ref={fileInputRef} type="file" style={{ display: 'none' }} onChange={async (e) => {
-        const f = e.target.files?.[0];
-        if (!f) return;
-        try { await handleUpload(f, false); } catch (err) { alert((err as Error).message || 'Upload failed'); }
-        e.currentTarget.value = '';
-      }} />
+      <input 
+        ref={imageInputRef} 
+        type="file" 
+        accept="image/png,image/jpeg,image/jpg,image/gif,image/webp,image/svg+xml"
+        style={{ display: 'none' }} 
+        onChange={async (e) => {
+          const f = e.target.files?.[0];
+          if (!f) return;
+          try { 
+            await handleUpload(f, true); 
+          } catch (err) { 
+            alert((err as Error).message || 'Upload failed'); 
+          }
+          // Reset file input to allow re-uploading the same file
+          if (e.currentTarget) {
+            e.currentTarget.value = '';
+          }
+        }} 
+      />
+      <input 
+        ref={fileInputRef} 
+        type="file" 
+        accept=".pdf,.txt,.md,.docx,.xlsx,.pptx,.csv"
+        style={{ display: 'none' }} 
+        onChange={async (e) => {
+          const f = e.target.files?.[0];
+          if (!f) return;
+          try { 
+            await handleUpload(f, false); 
+          } catch (err) { 
+            alert((err as Error).message || 'Upload failed'); 
+          }
+          // Reset file input to allow re-uploading the same file
+          if (e.currentTarget) {
+            e.currentTarget.value = '';
+          }
+        }} 
+      />
 
       {/* Toolbar */}
       <div className={styles.toolbar}>
