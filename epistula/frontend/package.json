@@ -8,6 +8,8 @@
     "start": "next start",
     "lint": "eslint .",
     "lint:fix": "eslint --fix .",
+    "test": "jest --watch",
+    "test:ci": "jest --ci --coverage",
     "test:e2e": "playwright test"
   },
   "dependencies": {
@@ -34,6 +36,8 @@
     "eslint": "^9.15.0",
     "eslint-config-next": "^15.0.0",
     "eslint-plugin-unused-imports": "^4.0.0",
+    "jest": "^30.0.0",
+    "jest-environment-jsdom": "^30.0.0",
     "typescript": "^5.0.0"
   }
 }

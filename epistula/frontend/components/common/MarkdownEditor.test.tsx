@@ -71,7 +71,7 @@ describe('MarkdownEditor', () => {
     expect(screen.getByTitle('Italic')).toBeInTheDocument();
     expect(screen.getByTitle('Underline')).toBeInTheDocument();
     expect(screen.getByTitle('Strikethrough')).toBeInTheDocument();
-    expect(screen.getByTitle('Color')).toBeInTheDocument();
+    expect(screen.getByTitle('Text Color')).toBeInTheDocument();
     expect(screen.getByTitle('Bullet List')).toBeInTheDocument();
     expect(screen.getByTitle('Numbered List')).toBeInTheDocument();
     expect(screen.getByTitle('Checkbox')).toBeInTheDocument();
