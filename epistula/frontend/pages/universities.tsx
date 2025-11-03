@@ -2,7 +2,6 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
 import MainLayout from '../components/layout/MainLayout';
-import Image from 'next/image';
 import SafeImage from '../components/common/SafeImage';
 import MarkdownDisplay from '../components/common/MarkdownDisplay';
 import MarkdownEditor from '../components/common/MarkdownEditor';
