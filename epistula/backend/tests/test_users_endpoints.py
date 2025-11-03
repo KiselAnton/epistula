@@ -20,6 +20,7 @@ def test_create_user_happy_path(client, monkeypatch, set_user):
     # Mock hash_password
     monkeypatch.setattr(users_router, "hash_password", lambda pwd: "hashed_password")
     
+    from datetime import datetime
     class _Res:
         def __init__(self, row=None):
             self._row = row
@@ -41,9 +42,9 @@ def test_create_user_happy_path(client, monkeypatch, set_user):
             if "INSERT INTO public.users" in sql_text and "RETURNING id" in sql_text:
                 return _Res((100,))  # New user ID
             
-            # Insert role
+            # Insert role (RETURNING id, created_at)
             if "INSERT INTO public.user_university_roles" in sql_text:
-                return _Res(None)
+                return _Res((1, datetime(2024, 1, 1, 0, 0, 0)))
             
             # CREATE TABLE for users (from _ensure_user_table_exists)
             if "CREATE TABLE IF NOT EXISTS" in sql_text:
@@ -225,7 +226,7 @@ def test_create_user_faculty_not_found_returns_404(client, monkeypatch, set_user
 
 
 def test_list_users_with_pagination(client, monkeypatch, set_user):
-    """Test listing users with pagination."""
+    """Test listing users (no pagination in API, ensure list/total work)."""
     import routers.users as users_router
     
     root = DummyUser(id=1, email="root@test.com", is_root=True)
@@ -234,6 +235,7 @@ def test_list_users_with_pagination(client, monkeypatch, set_user):
     monkeypatch.setattr(users_router, "validate_university_access", lambda user, uid, db: True)
     monkeypatch.setattr(users_router, "get_university_schema", lambda uid, db: "uni_1")
     
+    from datetime import datetime
     class _Res:
         def __init__(self, rows=None, scalar_val=None):
             self._rows = rows or []
@@ -247,15 +249,11 @@ def test_list_users_with_pagination(client, monkeypatch, set_user):
         def execute(self, stmt, params=None):
             sql_text = getattr(stmt, "text", str(stmt))
             
-            # Count query
-            if "SELECT COUNT(*)" in sql_text:
-                return _Res(scalar_val=25)
-            
-            # List users
-            if "SELECT u.id, u.email, u.name" in sql_text:
+            # List users query: expect columns per router implementation
+            if "FROM public.users u\n            JOIN public.user_university_roles uur" in sql_text or "JOIN public.user_university_roles uur" in sql_text:
                 return _Res(rows=[
-                    (10, "user1@test.com", "User One", "professor", None, True, "2024-01-01T00:00:00"),
-                    (11, "user2@test.com", "User Two", "student", 5, True, "2024-01-02T00:00:00"),
+                    (10, "user1@test.com", "User One", True, "professor", None, datetime(2024,1,1,0,0,0), True),
+                    (11, "user2@test.com", "User Two", True, "student", 5, datetime(2024,1,2,0,0,0), True),
                 ])
             
             return _Res()
@@ -267,10 +265,10 @@ def test_list_users_with_pagination(client, monkeypatch, set_user):
     app_main.app.dependency_overrides[db_mod.get_db] = _override_db
     
     try:
-        response = client.get("/api/v1/universities/1/users?page=1&page_size=2")
+        response = client.get("/api/v1/universities/1/users")
         assert response.status_code == 200
         body = response.json()
-        assert body["total"] == 25
+        assert body["total"] == 2
         assert len(body["users"]) == 2
         assert body["users"][0]["email"] == "user1@test.com"
         assert body["users"][1]["role"] == "student"
@@ -288,6 +286,7 @@ def test_list_users_with_role_filter(client, monkeypatch, set_user):
     monkeypatch.setattr(users_router, "validate_university_access", lambda user, uid, db: True)
     monkeypatch.setattr(users_router, "get_university_schema", lambda uid, db: "uni_1")
     
+    from datetime import datetime
     class _Res:
         def __init__(self, rows=None, scalar_val=None):
             self._rows = rows or []
@@ -302,15 +301,12 @@ def test_list_users_with_role_filter(client, monkeypatch, set_user):
             sql_text = getattr(stmt, "text", str(stmt))
             
             # Verify role filter is applied
-            if "AND r.role = :role" in sql_text:
+            if "AND uur.role = :role" in sql_text:
                 assert params.get("role") == "professor"
             
-            if "SELECT COUNT(*)" in sql_text:
-                return _Res(scalar_val=5)
-            
-            if "SELECT u.id, u.email, u.name" in sql_text:
+            if "FROM public.users u" in sql_text and "JOIN public.user_university_roles uur" in sql_text:
                 return _Res(rows=[
-                    (10, "prof@test.com", "Professor", "professor", None, True, "2024-01-01T00:00:00"),
+                    (10, "prof@test.com", "Professor", True, "professor", None, datetime(2024,1,1,0,0,0), True),
                 ])
             
             return _Res()
@@ -325,7 +321,7 @@ def test_list_users_with_role_filter(client, monkeypatch, set_user):
         response = client.get("/api/v1/universities/1/users?role=professor")
         assert response.status_code == 200
         body = response.json()
-        assert body["total"] == 5
+        assert body["total"] == 1
         assert all(u["role"] == "professor" for u in body["users"])
     finally:
         app_main.app.dependency_overrides.clear()
@@ -341,6 +337,7 @@ def test_list_users_with_search(client, monkeypatch, set_user):
     monkeypatch.setattr(users_router, "validate_university_access", lambda user, uid, db: True)
     monkeypatch.setattr(users_router, "get_university_schema", lambda uid, db: "uni_1")
     
+    from datetime import datetime
     class _Res:
         def __init__(self, rows=None, scalar_val=None):
             self._rows = rows or []
@@ -354,16 +351,14 @@ def test_list_users_with_search(client, monkeypatch, set_user):
         def execute(self, stmt, params=None):
             sql_text = getattr(stmt, "text", str(stmt))
             
-            # Verify search pattern
-            if "AND (u.name ILIKE :search OR u.email ILIKE :search)" in sql_text:
-                assert params.get("search") == "%john%"
+            # Verify search pattern uses :pattern and param q
+            if "AND (u.name ILIKE :pattern OR u.email ILIKE :pattern)" in sql_text:
+                assert params.get("pattern") == "%john%"
             
-            if "SELECT COUNT(*)" in sql_text:
-                return _Res(scalar_val=2)
-            
-            if "SELECT u.id, u.email, u.name" in sql_text:
+            if "FROM public.users u" in sql_text and "JOIN public.user_university_roles uur" in sql_text:
                 return _Res(rows=[
-                    (10, "john@test.com", "John Doe", "professor", None, True, "2024-01-01T00:00:00"),
+                    (10, "john@test.com", "John Doe", True, "professor", None, datetime(2024,1,1,0,0,0), True),
+                    (12, "johnny@test.com", "Johnny", True, "student", None, datetime(2024,1,3,0,0,0), True),
                 ])
             
             return _Res()
@@ -375,7 +370,7 @@ def test_list_users_with_search(client, monkeypatch, set_user):
     app_main.app.dependency_overrides[db_mod.get_db] = _override_db
     
     try:
-        response = client.get("/api/v1/universities/1/users?search=john")
+        response = client.get("/api/v1/universities/1/users?q=john")
         assert response.status_code == 200
         body = response.json()
         assert body["total"] == 2
@@ -394,6 +389,7 @@ def test_update_user_success(client, monkeypatch, set_user):
     monkeypatch.setattr(users_router, "get_university_schema", lambda uid, db: "uni_1")
     monkeypatch.setattr(users_router, "hash_password", lambda pwd: "new_hashed_password")
     
+    from datetime import datetime
     class _Res:
         def __init__(self, row=None):
             self._row = row
@@ -404,17 +400,16 @@ def test_update_user_success(client, monkeypatch, set_user):
         def execute(self, stmt, params=None):
             sql_text = getattr(stmt, "text", str(stmt))
             
-            # Check user exists in university
-            if "SELECT 1 FROM public.user_university_roles" in sql_text:
-                return _Res((1,))  # User exists in university
+            # Check user exists in university with join row
+            if "FROM public.users u" in sql_text and "JOIN public.user_university_roles uur" in sql_text and "WHERE u.id = :user_id" in sql_text:
+                # Return email, name, role, faculty_id, created_at, is_active
+                return _Res(("user@test.com", "Old Name", "professor", None, datetime(2024,1,1,0,0,0), True))
             
             # Update user
             if "UPDATE public.users SET" in sql_text:
                 return _Res(None)
             
-            # Get updated user
-            if "SELECT u.id, u.email, u.name" in sql_text:
-                return _Res((50, "user@test.com", "Updated Name", "professor", None, True, "2024-01-01T00:00:00"))
+            # No further select needed; function constructs response from previous values
             
             return _Res(None)
         
