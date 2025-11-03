@@ -2,8 +2,8 @@
 const nextConfig = {
   reactStrictMode: true,
   
-  // Allow CSS imports from node_modules for WYSIWYG editor
-  transpilePackages: ['@uiw/react-md-editor', '@uiw/react-markdown-preview'],
+  // Allow CSS imports from node_modules for BlockNote and markdown preview
+  transpilePackages: ['@blocknote/core', '@blocknote/react', '@uiw/react-markdown-preview'],
   
   // Performance optimizations (swcMinify and optimizeFonts removed - deprecated in Next.js 15)
   
