@@ -9,8 +9,8 @@ test.describe('User Management', () => {
   test.beforeEach(async ({ page }) => {
     // Login as root
     await page.goto('http://localhost:3000/');
-    await page.fill('input[type="email"]', 'root@epistula.test');
-    await page.fill('input[type="password"]', 'root_password_123');
+    await page.fill('input[type="email"]', 'root@localhost.localdomain');
+    await page.fill('input[type="password"]', 'changeme123');
     await page.click('button[type="submit"]');
     
     // Wait for navigation to dashboard

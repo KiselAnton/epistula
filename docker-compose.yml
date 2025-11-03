@@ -114,8 +114,9 @@ services:
       JWT_EXPIRATION_MINUTES: ${JWT_EXPIRATION_MINUTES:-60}
       
       # Root user (for initial setup)
-      ROOT_EMAIL: ${ROOT_EMAIL:-root@localhost}
-      ROOT_PASSWORD: ${ROOT_PASSWORD:-root_password_change_me}
+      # Default to changeme123 to match .env and E2E tests
+      ROOT_EMAIL: ${ROOT_EMAIL:-root@localhost.localdomain}
+      ROOT_PASSWORD: ${ROOT_PASSWORD:-changeme123}
       # Reset root password on each start to sync with .env (safe, idempotent)
       RESET_ROOT_PASSWORD_ON_START: ${RESET_ROOT_PASSWORD_ON_START:-1}
       # Backups

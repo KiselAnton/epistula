@@ -6,9 +6,9 @@ set -euo pipefail
 ROOT_DIR="$(git rev-parse --show-toplevel)"
 
 echo "[pre-push] Rebuilding and restarting containers..."
-# Ensure backend uses test-friendly root credentials matching UI tests
-export ROOT_EMAIL="${ROOT_EMAIL:-root@epistula.test}"
-export ROOT_PASSWORD="${ROOT_PASSWORD:-root_password_123}"
+# Ensure backend uses test-friendly root credentials matching .env defaults
+export ROOT_EMAIL="${ROOT_EMAIL:-root@localhost.localdomain}"
+export ROOT_PASSWORD="${ROOT_PASSWORD:-changeme123}"
 # Ensure root login policy permits Docker bridge subnet and proxy headers
 export EPISTULA_ROOT_LOCAL_ONLY="${EPISTULA_ROOT_LOCAL_ONLY:-true}"
 export EPISTULA_TRUST_PROXY="${EPISTULA_TRUST_PROXY:-true}"
@@ -86,6 +86,8 @@ npm ci >/dev/null 2>&1 || npm install >/dev/null 2>&1 || true
 if command -v npx >/dev/null 2>&1; then
   npx playwright install chromium >/dev/null 2>&1 || true
 fi
+# Clean any pre-existing auth state to ensure tests start fresh
+rm -rf tests-e2e/.auth >/dev/null 2>&1 || true
 # Use the existing frontend on port 3000; config reuses if running.
 # Provide root creds matching backend and disable global setup so UI tests can perform login flows.
 export EPISTULA_E2E_ENABLE_UI_TESTS=1

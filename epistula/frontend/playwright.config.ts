@@ -9,10 +9,10 @@ export default defineConfig({
   use: {
     baseURL: BASE_URL,
     trace: 'on-first-retry',
-    // Reuse authenticated state produced by global setup
-    storageState: 'tests-e2e/.auth/user.json',
+    // Use authenticated state only when global setup is enabled
+    storageState: process.env.EPISTULA_E2E_DISABLE_GLOBAL_SETUP === '1' ? undefined : 'tests-e2e/.auth/user.json',
   },
-  // Perform login and test data seeding once before the suite
+  // Perform login and test data seeding once before the suite (can be disabled via env)
   globalSetup: './tests-e2e/global-setup.ts',
   webServer: {
     command: 'npm run dev',
