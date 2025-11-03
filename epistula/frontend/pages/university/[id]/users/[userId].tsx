@@ -58,7 +58,7 @@ export default function UserDetailPage() {
   const [profileSaving, setProfileSaving] = useState(false);
   const [avatarUploading, setAvatarUploading] = useState(false);
   const [showAssignModal, setShowAssignModal] = useState(false);
-  const [refreshingSubjects, setRefreshingSubjects] = useState(false);
+  const [_refreshingSubjects, setRefreshingSubjects] = useState(false);
 
   // backend URL comes from lib/config (env or derived from window.location)
 

@@ -93,7 +93,7 @@ export function useOptimisticUpdate<T>() {
       optimisticUpdate: (data: T) => T
     ): Promise<T> => {
       // Apply optimistic update immediately
-      const optimisticData = optimisticUpdate(currentData);
+      const _optimisticData = optimisticUpdate(currentData);
 
       try {
         // Perform actual update

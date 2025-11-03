@@ -18,7 +18,7 @@ import path from 'path';
 
 test.describe('Backup Restore to Temp Workflow', () => {
   let universityId: number;
-  let universityName: string;
+  let _universityName: string;
 
   test.beforeAll(async () => {
     // Read seeded university ID from global setup
@@ -53,7 +53,7 @@ test.describe('Backup Restore to Temp Workflow', () => {
     
     const firstUniversity = universities[0];
     universityId = firstUniversity.id;
-    universityName = firstUniversity.name;
+    _universityName = firstUniversity.name;
 
     // Create a backup via API to ensure we have something to restore
     const createBackupResp = await request.post(`${backendUrl}/api/v1/backups/${universityId}/create`, {

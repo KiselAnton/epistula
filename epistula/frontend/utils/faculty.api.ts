@@ -1,5 +1,5 @@
 import { getBackendUrl } from './api';
-import { FacultyProfessor, FacultyStudent, User } from '../types';
+import { FacultyProfessor, FacultyStudent } from '../types';
 
 /**
  * Faculty Professors API

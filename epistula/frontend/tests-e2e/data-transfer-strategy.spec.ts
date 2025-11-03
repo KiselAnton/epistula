@@ -1,6 +1,4 @@
 import { test, expect } from '@playwright/test';
-import path from 'path';
-import fs from 'fs';
 
 /**
  * Verifies per-row strategy selection is applied to import requests.
@@ -14,10 +12,10 @@ import fs from 'fs';
 test.describe('Data Transfer per-row strategy selector', () => {
   // Test is self-contained; no dynamic university id needed
 
-  test('row strategy select influences import payload', async ({ page, request }) => {
+  test('row strategy select influences import payload', async ({ page, request: _request }) => {
     // Ensure origin before accessing localStorage
     await page.goto('/dashboard');
-    const token = await page.evaluate(() => localStorage.getItem('token'));
+    const _token = await page.evaluate(() => localStorage.getItem('token'));
 
   const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
   const universityId = 1;

@@ -1,10 +1,10 @@
 import { test, expect } from '@playwright/test';
 
 test.describe('Data Transfer strategy persistence and apply-to-all', () => {
-  test('persists per-row selection and applies to all rows', async ({ page, request }) => {
+  test('persists per-row selection and applies to all rows', async ({ page, request: _request }) => {
     await page.goto('/dashboard');
-    const token = await page.evaluate(() => localStorage.getItem('token'));
-    const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+    const _token = await page.evaluate(() => localStorage.getItem('token'));
+    const _backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
     // Mock temp-status and entities to ensure panel is visible and counts > 0
     await page.route(/\/api\/v1\/backups\/\d+\/temp-status$/, async (route) => {
@@ -82,7 +82,7 @@ test.describe('Data Transfer strategy persistence and apply-to-all', () => {
     await page.getByRole('button', { name: 'Apply to all' }).click();
 
     // Verify all row selects now show replace
-    const rowSelects = page.locator('tbody tr select').first();
+    const _rowSelects = page.locator('tbody tr select').first();
     // Check first few rows (we don't know exact number, but at least first two exist in mock counts)
     const allRowSelects = page.locator('tbody tr select');
     const total = await allRowSelects.count();

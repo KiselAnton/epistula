@@ -9,7 +9,7 @@ function ensureDir(dir: string) {
   }
 }
 
-async function globalSetup(config: FullConfig) {
+async function globalSetup(_config: FullConfig) {
   const port = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
   const frontendBase = process.env.EPISTULA_E2E_BASE_URL || `http://localhost:${port}`;
   const backendBase = process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_BACKEND_URL || process.env.BACKEND_URL || 'http://localhost:8000';
@@ -113,7 +113,7 @@ async function globalSetup(config: FullConfig) {
     }
   } catch (e) {
     // Leave ids as zeros if seeding fails; optional tests may skip or handle gracefully
-    // eslint-disable-next-line no-console
+     
     console.warn('[global-setup] Seeding failed or partial:', e);
   } finally {
     fs.writeFileSync(idsPath, JSON.stringify(seeded, null, 2));

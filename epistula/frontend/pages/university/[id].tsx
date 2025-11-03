@@ -39,24 +39,24 @@ export default function UniversityPage() {
   const [faculties, setFaculties] = useState<Faculty[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [uploading, setUploading] = useState(false);
-  const [uploadError, setUploadError] = useState('');
-  const [deleting, setDeleting] = useState(false);
+  const [_uploading, setUploading] = useState(false);
+  const [_uploadError, setUploadError] = useState('');
+  const [_deleting, setDeleting] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [canEdit, setCanEdit] = useState(false);
   // Backups state (initial list; full details are handled by shared component)
   const [backups, setBackups] = useState<Array<any>>([]);
-  const [backupsLoading, setBackupsLoading] = useState(false);
-  const [restoring, setRestoring] = useState<string | null>(null);
+  const [_backupsLoading, setBackupsLoading] = useState(false);
+  const [_restoring, setRestoring] = useState<string | null>(null);
   const [canRestore, setCanRestore] = useState(false);
 
-  const [descDraft, setDescDraft] = useState<string>('');
-  const [savingDesc, setSavingDesc] = useState(false);
+  const [_descDraft, setDescDraft] = useState<string>('');
+  const [_savingDesc, _setSavingDesc] = useState(false);
   
   // Breadcrumb policy: root users can access the Universities list; admins cannot
   const [isRoot, setIsRoot] = useState(false);
 
-  const handleLogoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const _handleLogoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
@@ -114,7 +114,7 @@ export default function UniversityPage() {
     }
   };
 
-  const handleLogoDelete = async () => {
+  const _handleLogoDelete = async () => {
     if (!confirm('Are you sure you want to remove the university logo?')) {
       return;
     }
@@ -280,7 +280,7 @@ export default function UniversityPage() {
     loadBackups();
   }, [id, canRestore, router]);
 
-  const handleRestore = async (backupName: string) => {
+  const _handleRestore = async (backupName: string) => {
     if (!id) return;
     const proceed = confirm('This will restore the university data to the selected backup. A pre-restore backup will be created automatically. Continue?');
     if (!proceed) return;
@@ -305,14 +305,14 @@ export default function UniversityPage() {
           setBackups(Array.isArray(data.backups) ? data.backups : []);
         }
       }
-    } catch (e) {
+    } catch (_e) {
       alert('Restore failed');
     } finally {
       setRestoring(null);
     }
   };
 
-  const handleCreateBackup = async () => {
+  const _handleCreateBackup = async () => {
     if (!id) return;
     const proceed = confirm('Create a manual backup now?');
     if (!proceed) return;

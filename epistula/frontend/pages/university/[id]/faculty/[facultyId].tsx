@@ -25,8 +25,8 @@ export default function FacultyPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [showCreateStudentWizard, setShowCreateStudentWizard] = useState(false);
-  const [descDraft, setDescDraft] = useState<string>('');
-  const [savingDesc, setSavingDesc] = useState(false);
+  const [_descDraft, setDescDraft] = useState<string>('');
+  const [_savingDesc, _setSavingDesc] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
 
   console.log('FacultyPage render - id:', id, 'facultyId:', facultyId);
@@ -45,13 +45,13 @@ export default function FacultyPage() {
     assigningProfessor,
     removingProfessor,
     // student flows (still available but we will use wizard instead of AddMemberModal)
-    showAddStudentModal,
-    setShowAddStudentModal,
-    availableStudents,
-    openAddStudentModal,
-    handleAddStudent,
+    showAddStudentModal: _showAddStudentModal,
+    setShowAddStudentModal: _setShowAddStudentModal,
+    availableStudents: _availableStudents,
+    openAddStudentModal: _openAddStudentModal,
+    handleAddStudent: _handleAddStudent,
     handleRemoveStudent,
-    assigningStudent,
+    assigningStudent: _assigningStudent,
     removingStudent,
     refreshMembers
   } = useFacultyMembers(

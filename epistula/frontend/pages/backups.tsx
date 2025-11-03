@@ -33,16 +33,16 @@ export default function Backups() {
   const [backupsData, setBackupsData] = useState<AllBackupsResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [restoring, setRestoring] = useState<string | null>(null);
-  const [restoringToTemp, setRestoringToTemp] = useState<string | null>(null);
-  const [uploading, setUploading] = useState<string | null>(null);
-  const [creatingBackup, setCreatingBackup] = useState<number | null>(null);
-  const [promoting, setPromoting] = useState<number | null>(null);
-  const [deletingTemp, setDeletingTemp] = useState<number | null>(null);
-  const [deletingBackup, setDeletingBackup] = useState<string | null>(null);
-  const [tempStatus, setTempStatus] = useState<Record<number, any>>({});
+  const [_restoring, setRestoring] = useState<string | null>(null);
+  const [_restoringToTemp, setRestoringToTemp] = useState<string | null>(null);
+  const [_uploading, setUploading] = useState<string | null>(null);
+  const [_creatingBackup, setCreatingBackup] = useState<number | null>(null);
+  const [_promoting, setPromoting] = useState<number | null>(null);
+  const [_deletingTemp, setDeletingTemp] = useState<number | null>(null);
+  const [_deletingBackup, setDeletingBackup] = useState<string | null>(null);
+  const [_tempStatus, setTempStatus] = useState<Record<number, any>>({});
   const [editingMeta, setEditingMeta] = useState<Record<string, {title: string; description: string; saving: boolean}>>({});
-  const [collapsedSections, setCollapsedSections] = useState<Record<number, boolean>>({});
+  const [_collapsedSections, setCollapsedSections] = useState<Record<number, boolean>>({});
 
   // Helper function for consistent logging
   const log = (level: 'info' | 'warn' | 'error', message: string, data?: any) => {
@@ -118,11 +118,11 @@ export default function Backups() {
     return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
   };
 
-  const formatDate = (dateString: string): string => {
+  const _formatDate = (dateString: string): string => {
     return new Date(dateString).toLocaleString();
   };
 
-  const handleRestore = async (universityId: number, backupName: string, universityName: string, toTemp: boolean = false) => {
+  const _handleRestore = async (universityId: number, backupName: string, universityName: string, toTemp: boolean = false) => {
     const restoreType = toTemp ? 'temporary validation schema' : 'PRODUCTION (LIVE DATA WILL BE REPLACED)';
     log('info', `Restore initiated for university ${universityId} (${universityName}) from backup: ${backupName}, to_temp=${toTemp}`);
     
@@ -193,7 +193,7 @@ export default function Backups() {
     }
   };
 
-  const handleUploadToMinio = async (universityId: number, backupName: string) => {
+  const _handleUploadToMinio = async (universityId: number, backupName: string) => {
     log('info', `Upload to MinIO initiated for backup: ${backupName} (university ${universityId})`);
     
     const uploadKey = `${universityId}-${backupName}`;
@@ -235,7 +235,7 @@ export default function Backups() {
     }
   };
 
-  const handleCreateBackup = async (universityId: number, universityName: string) => {
+  const _handleCreateBackup = async (universityId: number, universityName: string) => {
     log('info', `Create backup initiated for university ${universityId} (${universityName})`);
     
     if (!confirm(`Create a new backup for "${universityName}" now?`)) {
@@ -306,7 +306,7 @@ export default function Backups() {
     }
   }, [backupsData, checkTempStatus]);
 
-  const handlePromoteTemp = async (universityId: number, universityName: string) => {
+  const _handlePromoteTemp = async (universityId: number, universityName: string) => {
     if (!confirm(`⚠️ PROMOTE TO PRODUCTION\n\nThis will:\n1. Create a safety backup of current production\n2. Replace production with the temporary schema\n3. The current production data will be backed up and replaced\n\nPromote "${universityName}" temporary schema to production?`)) {
       return;
     }
@@ -336,7 +336,7 @@ export default function Backups() {
     }
   };
 
-  const handleDeleteTemp = async (universityId: number, universityName: string) => {
+  const _handleDeleteTemp = async (universityId: number, universityName: string) => {
     if (!confirm(`Delete the temporary schema for "${universityName}"?\n\nThis will permanently remove the temporary restore. The production data will remain unchanged.`)) {
       return;
     }
@@ -365,7 +365,7 @@ export default function Backups() {
     }
   };
 
-  const handleDeleteBackup = async (universityId: number, backupName: string, universityName: string) => {
+  const _handleDeleteBackup = async (universityId: number, backupName: string, universityName: string) => {
     if (!confirm(`Delete backup "${backupName}" for "${universityName}"?\n\nYou can re-create a new backup later if needed.`)) {
       return;
     }
@@ -400,7 +400,7 @@ export default function Backups() {
     }
   };
 
-  const startEditMeta = async (universityId: number, backup: BackupInfo) => {
+  const _startEditMeta = async (universityId: number, backup: BackupInfo) => {
     const key = `${universityId}-${backup.name}`;
     // Fetch latest meta to avoid stale data
     try {
@@ -416,7 +416,7 @@ export default function Backups() {
         description = data.description ?? '';
       }
       setEditingMeta(prev => ({...prev, [key]: { title, description, saving: false }}));
-    } catch (e) {
+    } catch (_e) {
       // fallback to current displayed
       setEditingMeta(prev => ({...prev, [key]: { title: backup.title ?? '', description: backup.description ?? '', saving: false }}));
     }
@@ -427,14 +427,14 @@ export default function Backups() {
     setEditingMeta(prev => { const cp = {...prev}; delete cp[key]; return cp; });
   };
 
-  const toggleSection = (universityId: number) => {
+  const _toggleSection = (universityId: number) => {
     setCollapsedSections(prev => ({
       ...prev,
       [universityId]: !prev[universityId]
     }));
   };
 
-  const saveMeta = async (universityId: number, backupName: string) => {
+  const _saveMeta = async (universityId: number, backupName: string) => {
     const key = `${universityId}-${backupName}`;
     const meta = editingMeta[key];
     if (!meta) return;

@@ -15,7 +15,7 @@ export function useUniversities() {
   const [universities, setUniversities] = useState<University[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const router = useRouter();
+  const _router = useRouter();
 
   const fetchUniversities = async () => {
     try {

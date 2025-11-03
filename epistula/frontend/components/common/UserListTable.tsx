@@ -52,7 +52,7 @@ export default function UserListTable<T extends UserListItem>({
           </tr>
         </thead>
         <tbody>
-          {rows.map((row, index) => (
+          {rows.map((row, _index) => (
             <tr key={row.id} className={styles.row}>
               <td className={`${styles.cell}`}>
                 <div className={styles.nameCell}>

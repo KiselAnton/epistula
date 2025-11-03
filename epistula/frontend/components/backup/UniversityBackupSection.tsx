@@ -298,7 +298,7 @@ export default function UniversityBackupSection({
         description = data.description ?? '';
       }
       setEditingMeta((prev) => ({ ...prev, [key]: { title, description, saving: false } }));
-    } catch (e) {
+    } catch (_e) {
       setEditingMeta((prev) => ({ ...prev, [key]: { title: backup.title ?? '', description: backup.description ?? '', saving: false } }));
     }
   };

@@ -10,7 +10,7 @@ interface FacultyHeaderProps {
 }
 
 
-export default function FacultyHeader({ faculty, universityId, onLogoUpdate }: FacultyHeaderProps) {
+export default function FacultyHeader({ faculty, universityId: _universityId, onLogoUpdate: _onLogoUpdate }: FacultyHeaderProps) {
   // Editing moved into the unified wizard; this header is now display-only.
 
   return (
