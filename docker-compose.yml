@@ -103,6 +103,10 @@ services:
       # Application settings
       EPISTULA_ENV: ${EPISTULA_ENV:-development}
       EPISTULA_CORS_ORIGINS: ${EPISTULA_CORS_ORIGINS:-http://localhost:3000}
+      # Root login policy (allow Docker bridge by default for local dev and E2E)
+      EPISTULA_ROOT_LOCAL_ONLY: ${EPISTULA_ROOT_LOCAL_ONLY:-true}
+      EPISTULA_TRUST_PROXY: ${EPISTULA_TRUST_PROXY:-true}
+      EPISTULA_ROOT_ALLOWED_IPS: ${EPISTULA_ROOT_ALLOWED_IPS:-172.16.0.0/12}
       
       # JWT settings
       JWT_SECRET: ${JWT_SECRET:-change_me_in_production_use_strong_random_string}
