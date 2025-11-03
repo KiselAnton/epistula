@@ -12,6 +12,9 @@ COPY . .
 # BACKEND_URL can be overridden at runtime
 ARG BACKEND_URL=http://localhost:8000
 ENV BACKEND_URL=${BACKEND_URL}
+# INTERNAL_BACKEND_URL for server-side rewrites (Docker internal network)
+ARG INTERNAL_BACKEND_URL=http://backend:8000
+ENV INTERNAL_BACKEND_URL=${INTERNAL_BACKEND_URL}
 RUN npm run build
 
 FROM node:18-alpine AS runner

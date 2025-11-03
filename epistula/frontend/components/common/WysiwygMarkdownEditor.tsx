@@ -3,6 +3,7 @@ import '@blocknote/core/fonts/inter.css';
 import '@blocknote/mantine/style.css';
 import { useCreateBlockNote } from '@blocknote/react';
 import { BlockNoteView } from '@blocknote/mantine';
+import { defaultBlockSpecs } from '@blocknote/core';
 import { uploadToStorage } from '../../lib/api';
 import styles from './MarkdownEditor.module.css';
 
@@ -35,10 +36,13 @@ export default function WysiwygMarkdownEditor({
     }
   };
 
-  // Create BlockNote editor instance
+  // Create BlockNote editor instance with video block disabled
+  const { video, ...blocksWithoutVideo } = defaultBlockSpecs;
+  
   const editor = useCreateBlockNote({
     initialContent: value ? undefined : undefined, // Will parse markdown below
     uploadFile: handleUpload,
+    blockSpecs: blocksWithoutVideo, // Use all default blocks except video
   });
 
   // Load initial markdown content
