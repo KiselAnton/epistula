@@ -36,13 +36,13 @@ export default function WysiwygMarkdownEditor({
     }
   };
 
-  // Create BlockNote editor instance with video block disabled
-  const { video, ...blocksWithoutVideo } = defaultBlockSpecs;
+  // Create BlockNote editor instance with video and audio blocks disabled
+  const { video, audio, ...allowedBlocks } = defaultBlockSpecs;
   
   const editor = useCreateBlockNote({
     initialContent: value ? undefined : undefined, // Will parse markdown below
     uploadFile: handleUpload,
-    blockSpecs: blocksWithoutVideo, // Use all default blocks except video
+    blockSpecs: allowedBlocks, // Use all default blocks except video and audio
   });
 
   // Load initial markdown content
