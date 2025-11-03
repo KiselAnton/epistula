@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import styles from '../../styles/DataTransfer.module.css';
+import { applyToAll, getStrategyFor, loadStrategies, saveStrategies, StrategyMap, Strategy } from '../../utils/strategy';
 
 interface DataTransferProps {
   universityId: number;
@@ -31,11 +32,25 @@ export default function DataTransferPanel({ universityId, universityName, hasTem
   const [importing, setImporting] = useState<string | null>(null);
   const [exportedData, setExportedData] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
-  const [selectedByEntity, setSelectedByEntity] = useState<Record<string, 'replace' | 'merge' | 'skip_existing'>>({});
+  const [selectedByEntity, setSelectedByEntity] = useState<StrategyMap>({});
+  const getStrategy = (entityKey: string): Strategy => getStrategyFor(selectedByEntity, entityKey);
 
-  const getStrategy = (entityKey: string): 'replace' | 'merge' | 'skip_existing' => {
-    return selectedByEntity[entityKey] ?? 'merge';
-  };
+  // Load strategies once when panel is shown; also keep them synced to localStorage when changed
+  useEffect(() => {
+    if (!hasTempSchema) return;
+    try {
+      const loaded = loadStrategies(universityId);
+      if (loaded && Object.keys(loaded).length > 0) {
+        setSelectedByEntity(loaded);
+      }
+    } catch {}
+  }, [universityId, hasTempSchema]);
+
+  useEffect(() => {
+    try {
+      saveStrategies(universityId, selectedByEntity);
+    } catch {}
+  }, [universityId, selectedByEntity]);
 
   const getBackendUrl = () => 'http://localhost:8000';
 
@@ -225,6 +240,30 @@ export default function DataTransferPanel({ universityId, universityName, hasTem
             </ul>
           </div>
 
+          {/* Apply-to-all control for power users */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap', margin: '0 0 0.75rem 0' }}>
+            <label htmlFor="apply-all-select" style={{ fontWeight: 600 }}>Apply strategy to all rows:</label>
+            <select id="apply-all-select" defaultValue="merge" style={{ padding: '0.35rem 0.5rem', borderRadius: 6, border: '1px solid #cfd8ff' }}>
+              <option value="merge">Merge (recommended)</option>
+              <option value="replace">Replace</option>
+              <option value="skip_existing">Skip existing</option>
+            </select>
+            <button
+              type="button"
+              className={styles.importButton}
+              onClick={(e) => {
+                const sel = (e.currentTarget.previousSibling as HTMLSelectElement) as HTMLSelectElement | null;
+                const chosen = (sel?.value as Strategy) || 'merge';
+                const allKeys = ENTITY_TYPES.map(e => e.key);
+                const updated = applyToAll(allKeys, chosen);
+                setSelectedByEntity(updated);
+              }}
+              title="Set the selected strategy for every entity row"
+            >
+              Apply to all
+            </button>
+          </div>
+
           {error && <div className={styles.error}>{error}</div>}
 
           {loading ? (
@@ -263,7 +302,7 @@ export default function DataTransferPanel({ universityId, universityName, hasTem
                             <select
                               value={getStrategy(entity.key)}
                               onChange={(e) =>
-                                setSelectedByEntity((prev) => ({
+                                setSelectedByEntity((prev: StrategyMap) => ({
                                   ...prev,
                                   [entity.key]: e.target.value as 'replace' | 'merge' | 'skip_existing',
                                 }))
