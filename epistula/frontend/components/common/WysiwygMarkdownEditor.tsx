@@ -1,4 +1,4 @@
-import { useRef, useState, useCallback } from 'react';
+import { useRef } from 'react';
 import dynamic from 'next/dynamic';
 import { uploadToStorage } from '../../lib/api';
 import styles from './MarkdownEditor.module.css';
