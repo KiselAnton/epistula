@@ -6,7 +6,7 @@ from typing import List, Optional
 from datetime import datetime
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
@@ -40,6 +40,13 @@ class LectureUpdate(BaseModel):
     scheduled_at: Optional[datetime] = None
     duration_minutes: Optional[int] = None
     is_active: Optional[bool] = None
+    
+    @field_validator("title")
+    @classmethod
+    def validate_title(cls, v):
+        if v is not None and not v.strip():
+            raise ValueError("Title cannot be empty or whitespace-only")
+        return v
 
 
 class Lecture(BaseModel):
@@ -348,6 +355,12 @@ def update_lecture(
     db.commit()
     
     row = result.fetchone()
+    
+    if not row:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Lecture {lecture_id} not found in subject {subject_id}"
+        )
     
     return Lecture(
         id=row[0],

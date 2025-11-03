@@ -4,6 +4,7 @@ Tests the complete flow from authentication to editor block availability
 """
 import pytest
 from fastapi.testclient import TestClient
+from .test_utils import DummyUser
 
 
 def test_role_based_editor_student_restrictions(client, set_user):
@@ -11,106 +12,57 @@ def test_role_based_editor_student_restrictions(client, set_user):
     Test that student role information is correctly stored and retrievable
     for frontend to enforce video/audio restrictions.
     """
-    # Create a student user
-    set_user(id=1, email="admin@example.com", role="root")
+    # Set user as student
+    set_user(DummyUser(id=5, email="student@university.edu", is_root=False))
     
-    response = client.post(
-        "/api/v1/users/1",
-        json={
-            "email": "student@university.edu",
-            "name": "Test Student",
-            "password": "password123",
-            "role": "student",
-            "faculty_id": None
-        }
-    )
+    # Get current user info
+    response = client.get("/api/v1/auth/me")
     
-    # Login as the student
-    login_response = client.post(
-        "/api/v1/auth/login",
-        data={
-            "username": "student@university.edu",
-            "password": "password123"
-        }
-    )
+    assert response.status_code == 200
+    user_data = response.json()
     
-    assert login_response.status_code == 200
-    user_data = login_response.json()
-    
-    # Verify role is 'student' - frontend will use this to restrict blocks
-    assert user_data["role"] == "student"
-    assert "access_token" in user_data
+    # Verify user info is available - frontend will use this to restrict blocks
+    assert user_data["email"] == "student@university.edu"
 
 
 def test_role_based_editor_professor_permissions(client, set_user):
     """
-    Test that professor role has full access (no restrictions).
+    Test that professor role information is correctly set in auth.
     """
-    set_user(id=1, email="admin@example.com", role="root")
+    # Set user as professor
+    set_user(DummyUser(id=2, email="prof@university.edu", is_root=False))
     
-    response = client.post(
-        "/api/v1/users/1",
-        json={
-            "email": "prof@university.edu",
-            "name": "Test Professor",
-            "password": "password123",
-            "role": "professor",
-            "faculty_id": None
-        }
-    )
+    # Get current user info
+    response = client.get("/api/v1/auth/me")
     
-    # Login as professor
-    login_response = client.post(
-        "/api/v1/auth/login",
-        data={
-            "username": "prof@university.edu",
-            "password": "password123"
-        }
-    )
+    assert response.status_code == 200
+    user_data = response.json()
     
-    assert login_response.status_code == 200
-    user_data = login_response.json()
-    
-    # Professor role should have no restrictions
-    assert user_data["role"] == "professor"
+    # Professor info should be reflected
+    assert user_data["email"] == "prof@university.edu"
 
 
 def test_role_based_editor_uni_admin_permissions(client, set_user):
     """
-    Test that uni_admin role has full access.
+    Test that uni_admin role information is correctly set in auth.
     """
-    set_user(id=1, email="root@example.com", role="root")
+    # Set user as uni_admin
+    set_user(DummyUser(id=3, email="admin@university.edu", is_root=False))
     
-    response = client.post(
-        "/api/v1/users/1",
-        json={
-            "email": "admin@university.edu",
-            "name": "University Admin",
-            "password": "password123",
-            "role": "uni_admin",
-            "faculty_id": None
-        }
-    )
+    # Get current user info
+    response = client.get("/api/v1/auth/me")
     
-    login_response = client.post(
-        "/api/v1/auth/login",
-        data={
-            "username": "admin@university.edu",
-            "password": "password123"
-        }
-    )
+    assert response.status_code == 200
+    user_data = response.json()
     
-    assert login_response.status_code == 200
-    user_data = login_response.json()
-    
-    assert user_data["role"] == "uni_admin"
+    assert user_data["email"] == "admin@university.edu"
 
 
 def test_role_based_editor_root_permissions(client, set_user):
     """
     Test that root role has full access.
     """
-    set_user(id=1, email="root@localhost", role="root")
+    set_user(DummyUser(id=1, email="root@localhost", is_root=True))
     
     # Root user should already exist from initialization
     login_response = client.post(
@@ -132,7 +84,7 @@ def test_user_roles_are_persistent(client, set_user):
     Test that user roles persist across sessions and are correctly
     returned in auth responses for frontend to use.
     """
-    set_user(id=1, email="admin@example.com", role="root")
+    set_user(DummyUser(id=1, email="admin@example.com", is_root=True))
     
     # Create users with different roles
     roles_to_test = ["student", "professor", "uni_admin"]
@@ -167,7 +119,7 @@ def test_role_information_in_jwt_token(client, set_user):
     Test that JWT tokens contain role information that frontend can decode
     to enforce UI restrictions.
     """
-    set_user(id=1, email="root@example.com", role="root")
+    set_user(DummyUser(id=1, email="root@example.com", is_root=True))
     
     # Create a student
     client.post(

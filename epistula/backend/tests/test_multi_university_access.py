@@ -27,7 +27,7 @@ def test_login_returns_university_access_list(client, set_user):
 
 def test_root_user_has_empty_university_access(client, set_user):
     """Test that root users have empty university_access list."""
-    set_user(DummyUser(id=1, email="root@localhost", is_root=True))
+    set_user(DummyUser(id=1, email="root@example.com", is_root=True))
     
     response = client.get('/api/v1/auth/me')
     

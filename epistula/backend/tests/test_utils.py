@@ -524,7 +524,9 @@ def make_lecture_delete_session(
                 return ExecRes(row=(1,) if user_is_professor else None)
             # Lecture delete
             if f"DELETE FROM {schema_name}.lectures" in sql:
-                return _DeleteResult(rowcount=delete_affected_rows if lecture_exists else 0)
+                # If subject doesn't exist or lecture doesn't exist, no rows deleted
+                actual_rows = 0 if (not subject_exists or not lecture_exists) else delete_affected_rows
+                return _DeleteResult(rowcount=actual_rows)
             return ExecRes()
         def commit(self):
             pass
