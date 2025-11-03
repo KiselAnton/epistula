@@ -154,23 +154,29 @@ class FakeS3Error(Exception):
 # ------ New helpers for DRY SQL execute stubs in tests ------
 
 class ExecRes:
-    """Generic execute() result helper with fetchone/scalar.
+    """Generic execute() result helper with fetchone/scalar/iteration.
 
     - row: tuple returned by fetchone()
+    - rows: list of tuples for iteration
     - count: integer returned by scalar()
     """
-    def __init__(self, row: Optional[tuple] = None, count: int = 0):
+    def __init__(self, row: Optional[tuple] = None, rows: Optional[list] = None, count: int = 0):
         self._row = row
+        self._rows = rows if rows is not None else ([] if row is None else [row])
         self._count = count
 
     def fetchone(self):
         return self._row
 
     def fetchall(self):
-        return [] if self._row is None else [self._row]
+        return self._rows
 
     def scalar(self):
         return self._count
+
+    def __iter__(self):
+        """Allow iteration over result rows."""
+        return iter(self._rows)
 
 
 def make_faculty_create_session(
@@ -350,3 +356,179 @@ def make_lecture_create_session(
 
     return _Sess()
 
+
+def make_lecture_list_session(
+    *,
+    uni_id: int,
+    schema_name: str,
+    subject_exists: bool = True,
+    user_is_admin: bool = False,
+    user_is_professor: bool = False,
+    lecture_rows: list = None,
+):
+    """Fake session for lecture listing flow.
+
+    Handles:
+    - University lookup
+    - Subject existence check
+    - Admin role check
+    - Professor assignment check
+    - Lecture list query
+
+    Args:
+        uni_id: University ID
+        schema_name: Schema name (e.g., "uni_1")
+        subject_exists: Whether subject exists check returns a row
+        user_is_admin: Whether user is uni_admin
+        user_is_professor: Whether user is professor for this subject
+        lecture_rows: List of lecture tuples (id, subject_id, title, description, created_at, created_by, is_published, order_number)
+    """
+    from utils.models import UniversityDB
+
+    if lecture_rows is None:
+        lecture_rows = []
+
+    class _Q:
+        def filter(self, *a, **k):
+            return self
+        def first(self):
+            return FakeUniversity(uni_id, "U", "U", schema_name, True)
+
+    class _Sess:
+        def query(self, model):
+            if model is UniversityDB:
+                return _Q()
+            return _Q()
+        def execute(self, stmt, params=None):
+            sql = str(stmt)
+            # Subject exists check
+            if f"FROM {schema_name}.subjects" in sql and "SELECT id" in sql:
+                return ExecRes(row=(params.get("subject_id", 1),)) if subject_exists else ExecRes(row=None)
+            # Admin role check
+            if "FROM public.user_university_roles" in sql and "uni_admin" in sql:
+                return ExecRes(row=(1,) if user_is_admin else None)
+            # Professor assignment check
+            if f"FROM {schema_name}.subject_professors" in sql:
+                return ExecRes(row=(1,) if user_is_professor else None)
+            # Lecture list query
+            if f"FROM {schema_name}.lectures" in sql and "SELECT" in sql:
+                return ExecRes(rows=lecture_rows)
+            return ExecRes()
+        def commit(self):
+            pass
+        def rollback(self):
+            pass
+
+    return _Sess()
+
+
+def make_lecture_update_session(
+    *,
+    uni_id: int,
+    schema_name: str,
+    subject_exists: bool = True,
+    lecture_exists: bool = True,
+    user_is_admin: bool = False,
+    user_is_professor: bool = False,
+    updated_lecture: Optional[tuple] = None,
+):
+    """Fake session for lecture update flow.
+
+    Handles:
+    - University lookup
+    - Lecture existence check
+    - Permissions: admin role check and professor assignment check
+    - Lecture update RETURNING query
+    """
+    from utils.models import UniversityDB
+
+    class _Q:
+        def filter(self, *a, **k):
+            return self
+        def first(self):
+            return FakeUniversity(uni_id, "U", "U", schema_name, True)
+
+    class _Sess:
+        def query(self, model):
+            if model is UniversityDB:
+                return _Q()
+            return _Q()
+        def execute(self, stmt, params=None):
+            sql = str(stmt)
+            # Lecture existence check
+            if f"FROM {schema_name}.lectures" in sql and "SELECT id" in sql and "WHERE id = :lecture_id" in sql:
+                return ExecRes(row=(params.get("lecture_id", 1),) if lecture_exists else None)
+            # Admin role check
+            if "FROM public.user_university_roles" in sql and "uni_admin" in sql:
+                return ExecRes(row=(1,) if user_is_admin else None)
+            # Professor assignment check
+            if f"FROM {schema_name}.subject_professors" in sql:
+                return ExecRes(row=(1,) if user_is_professor else None)
+            # Lecture update RETURNING
+            if f"UPDATE {schema_name}.lectures" in sql and "RETURNING" in sql:
+                return ExecRes(row=updated_lecture if lecture_exists and updated_lecture else None)
+            return ExecRes()
+        def commit(self):
+            pass
+        def rollback(self):
+            pass
+
+    return _Sess()
+
+
+def make_lecture_delete_session(
+    *,
+    uni_id: int,
+    schema_name: str,
+    subject_exists: bool = True,
+    lecture_exists: bool = True,
+    user_is_admin: bool = False,
+    user_is_professor: bool = False,
+    delete_affected_rows: int = 1,
+):
+    """Fake session for lecture delete flow.
+
+    Handles:
+    - University lookup
+    - Subject existence check
+    - Permissions: admin role check and professor assignment check
+    - Lecture delete query (returns rowcount)
+    """
+    from utils.models import UniversityDB
+
+    class _Q:
+        def filter(self, *a, **k):
+            return self
+        def first(self):
+            return FakeUniversity(uni_id, "U", "U", schema_name, True)
+
+    class _DeleteResult:
+        def __init__(self, rowcount: int):
+            self.rowcount = rowcount
+
+    class _Sess:
+        def query(self, model):
+            if model is UniversityDB:
+                return _Q()
+            return _Q()
+        def execute(self, stmt, params=None):
+            sql = str(stmt)
+            # Subject exists check
+            if f"FROM {schema_name}.subjects" in sql and "SELECT id" in sql:
+                return ExecRes(row=(params.get("subject_id", 1),) if subject_exists else None)
+            # Admin role check
+            if "FROM public.user_university_roles" in sql and "uni_admin" in sql:
+                return ExecRes(row=(1,) if user_is_admin else None)
+            # Professor assignment check
+            if f"FROM {schema_name}.subject_professors" in sql:
+                return ExecRes(row=(1,) if user_is_professor else None)
+            # Lecture delete
+            if f"DELETE FROM {schema_name}.lectures" in sql:
+                return _DeleteResult(rowcount=delete_affected_rows if lecture_exists else 0)
+            return ExecRes()
+        def commit(self):
+            pass
+        def rollback(self):
+            pass
+
+    return _Sess()
