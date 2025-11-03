@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import styles from '../../styles/DataTransfer.module.css';
 import { applyToAll, getStrategyFor, loadStrategies, saveStrategies, StrategyMap, Strategy } from '../../utils/strategy';
 

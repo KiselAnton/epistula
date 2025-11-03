@@ -11,7 +11,6 @@ import AddMemberModal from '../../../../components/faculty/AddMemberModal';
 import EditFacultyModal from '../../../../components/faculty/EditFacultyModal';
 import { useFacultyMembers } from '../../../../hooks/useFacultyMembers';
 import { Faculty, University, Subject } from '../../../../types';
-import MarkdownEditor from '../../../../components/common/MarkdownEditor';
 import MarkdownDisplay from '../../../../components/common/MarkdownDisplay';
 import { getBackendUrl } from '../../../../lib/config';
 import { exportFacultyFull } from '../../../../utils/dataTransfer.api';

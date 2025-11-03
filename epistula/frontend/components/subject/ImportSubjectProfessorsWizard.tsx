@@ -2,7 +2,6 @@ import React, { useMemo, useState } from 'react';
 import styles from '../../styles/Faculties.module.css';
 import buttons from '../../styles/Buttons.module.css';
 import { importEntities } from '../../utils/dataTransfer.api';
-import { normalizeLower } from '../../utils/duplicates';
 
 interface ImportSubjectProfessorsWizardProps {
   isOpen: boolean;

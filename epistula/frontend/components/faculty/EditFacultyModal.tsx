@@ -1,5 +1,4 @@
 import React, { useRef, useState } from 'react';
-import Image from 'next/image';
 import SafeImage from '../common/SafeImage';
 import { Faculty } from '../../types';
 import MarkdownEditor from '../common/MarkdownEditor';

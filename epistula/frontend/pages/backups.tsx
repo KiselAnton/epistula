@@ -2,10 +2,8 @@ import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
 import MainLayout from '../components/layout/MainLayout';
-import DataTransferPanel from '../components/backup/DataTransferPanel';
 import styles from '../styles/Backups.module.css';
 import UniversityBackupSection from '../components/backup/UniversityBackupSection';
-import btn from '../styles/Buttons.module.css';
 import { getBackendUrl } from '../lib/config';
 
 interface BackupInfo {

@@ -2,7 +2,6 @@ import { useRouter } from 'next/router';
 import { useEffect, useState, useCallback, useRef } from 'react';
 import Head from 'next/head';
 import MainLayout from '../../../components/layout/MainLayout';
-import Image from 'next/image';
 import SafeImage from '../../../components/common/SafeImage';
 import MarkdownDisplay from '../../../components/common/MarkdownDisplay';
 import styles from '../../../styles/Faculties.module.css';

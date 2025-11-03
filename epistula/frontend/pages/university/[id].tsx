@@ -1,10 +1,8 @@
 import { useRouter } from 'next/router';
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState } from 'react';
 import Head from 'next/head';
-import Image from 'next/image';
 import SafeImage from '../../components/common/SafeImage';
 import MainLayout from '../../components/layout/MainLayout';
-import MarkdownEditor from '../../components/common/MarkdownEditor';
 import EditUniversityModal from '../../components/university/EditUniversityModal';
 import MarkdownDisplay from '../../components/common/MarkdownDisplay';
 import UniversityBackupSection from '../../components/backup/UniversityBackupSection';

@@ -7,6 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
+    "lint:fix": "next lint --fix",
     "test:e2e": "playwright test"
   },
   "dependencies": {
@@ -20,6 +21,7 @@
     "@types/react-dom": "^18.0.0",
     "eslint": "^9.15.0",
     "eslint-config-next": "^15.0.0",
+    "eslint-plugin-unused-imports": "^4.0.0",
     "typescript": "^5.0.0",
     "@playwright/test": "^1.48.0"
   }
