@@ -70,156 +70,179 @@ def test_professor_can_upload_files(client, set_user):
 
 
 # ============================================================================
-# COMPLEX INTEGRATION TESTS (SKIPPED - NEEDS REFACTORING)
+# COMPLEX INTEGRATION TESTS (NOW WORKING WITH REAL DB!)
 # ============================================================================
 
 
-@pytest.mark.skip(reason="Requires real DB or complete ORM mocking - see ROLE_TESTING.md")
 def test_professor_can_create_lecture_in_assigned_subject(client, set_user):
-    """Professor can create lectures in subjects they're assigned to."""
-    PROF_ID = 123  # Changed from string to int
-    set_user(DummyUser(id=PROF_ID, email="prof@uni1.edu", is_root=False))
+    """Professor can create lectures in subjects they're assigned to.
     
-    UNI_ID = 1
-    FACULTY_ID = 5
-    SUBJECT_ID = 10
-    SCHEMA = f"uni_{UNI_ID}"
+    This test creates a real university, faculty, subject, professor user,
+    and assigns the professor to the subject, then tests lecture creation.
+    """
+    from .test_utils import DummyUser
+    import time
+    import random
     
-    import utils.database as db_mod
-    import main as app_main
-    from utils.models import UniversityDB
-    from datetime import datetime, timezone
+    # Step 1: Create university as root
+    set_user(DummyUser(id=1, email="root@epistula.edu", is_root=True))
     
-    class FakeUni:
-        id = UNI_ID
-        schema_name = SCHEMA
+    unique_code = f"PROF{int(time.time() * 1000) % 1000000}{random.randint(0, 999)}"  # Microseconds + random
+    uni_response = client.post("/api/v1/universities/", json={
+        "name": "Professor Test University",
+        "code": unique_code,
+        "description": "For testing professor permissions"
+    })
+    assert uni_response.status_code == 201, f"Failed to create university: {uni_response.json()}"
+    uni_id = uni_response.json()["id"]
     
-    class _Q:
-        def filter(self, *args, **kwargs):
-            return self
-        def first(self):
-            return FakeUni()
+    # Step 2: Create faculty
+    faculty_response = client.post(f"/api/v1/faculties/{uni_id}", json={
+        "name": "Faculty of Science",
+        "short_name": "Science",
+        "code": "SCI"
+    })
+    assert faculty_response.status_code == 201, f"Failed to create faculty: {faculty_response.json()}"
+    faculty_id = faculty_response.json()["id"]
     
-    class _Sess:
-        def query(self, model):
-            return _Q()
-        def execute(self, stmt, params=None):
-            sql = str(stmt)
-            # Subject exists
-            if f"{SCHEMA}.subjects" in sql and "SELECT 1" in sql:
-                class Result:
-                    def fetchone(self): return (1,)
-                return Result()
-            # Not admin
-            if "user_university_roles" in sql and "uni_admin" in sql:
-                class Result:
-                    def fetchone(self): return None
-                return Result()
-            # Is assigned professor
-            if f"{SCHEMA}.subject_professors" in sql:
-                class Result:
-                    def fetchone(self): return (1,)
-                return Result()
-            # Lecture creation
-            if f"INSERT INTO {SCHEMA}.lectures" in sql:
-                class Result:
-                    def fetchone(self):
-                        now = datetime.now(timezone.utc)
-                        return (1, SUBJECT_ID, "New Lecture", "Description", now, PROF_ID, True, 1)
-                return Result()
-            class EmptyResult:
-                def fetchone(self): return None
-            return EmptyResult()
-        def commit(self): pass
+    # Step 3: Create subject
+    subject_response = client.post(f"/api/v1/subjects/{uni_id}/{faculty_id}", json={
+        "name": "Physics 101",
+        "code": "PHYS101"
+    })
+    assert subject_response.status_code == 201, f"Failed to create subject: {subject_response.json()}"
+    subject_data = subject_response.json()
+    subject_id = subject_data["id"]
     
-    def _override_db():
-        yield _Sess()
+    # Step 4: Create professor user
+    prof_response = client.post(f"/api/v1/universities/{uni_id}/users", json={
+        "email": "prof@test.edu",
+        "name": "Test Professor",
+        "password": "password123",
+        "role": "professor"
+    })
+    assert prof_response.status_code == 201, f"Failed to create professor: {prof_response.json()}"
+    prof_id = prof_response.json()["id"]
     
-    app_main.app.dependency_overrides[db_mod.get_db] = _override_db
+    # Step 4b: Assign professor to faculty (required before assigning to subject)
+    faculty_assign_response = client.post(
+        f"/api/v1/faculties/{uni_id}/{faculty_id}/professors",
+        json={"professor_id": prof_id}
+    )
+    assert faculty_assign_response.status_code == 201, f"Failed to assign professor to faculty: {faculty_assign_response.json()}"
     
-    try:
-        response = client.post(
-            f"/api/v1/subjects/{UNI_ID}/{FACULTY_ID}/{SUBJECT_ID}/lectures",
-            json={
-                "title": "New Lecture",
-                "description": "Description"
-            }
-        )
-        assert response.status_code == 201
-        data = response.json()
-        assert data["title"] == "New Lecture"
-        assert data["created_by"] == PROF_ID
-    finally:
-        app_main.app.dependency_overrides.clear()
+    # Step 5: Assign professor to subject
+    assign_response = client.post(
+        f"/api/v1/subjects/{uni_id}/{faculty_id}/{subject_id}/professors",
+        json={"professor_id": prof_id}
+    )
+    assert assign_response.status_code == 201, f"Failed to assign professor: {assign_response.json()}"
+    
+    # Step 6: Now switch to professor user and create lecture
+    set_user(DummyUser(id=prof_id, email="prof@test.edu", is_root=False))
+    
+    lecture_response = client.post(
+        f"/api/v1/subjects/{uni_id}/{faculty_id}/{subject_id}/lectures",
+        json={
+            "title": "Introduction to Physics",
+            "description": "First lecture covering basics",
+            "is_published": False
+        }
+    )
+    
+    # Should succeed - professor is assigned to this subject
+    assert lecture_response.status_code == 201, f"Professor should be able to create lecture: {lecture_response.json()}"
+    lecture_data = lecture_response.json()
+    assert lecture_data["title"] == "Introduction to Physics"
+    assert lecture_data["created_by"] == prof_id
 
 
-@pytest.mark.skip(reason="Requires real DB or complete ORM mocking - see ROLE_TESTING.md")
 def test_professor_cannot_create_lecture_in_unassigned_subject(client, set_user):
-    """Professor cannot create lectures in subjects they're not assigned to."""
-    PROF_ID = 123  # Integer ID for database compatibility
-    set_user(DummyUser(id=PROF_ID, email="prof@uni1.edu", is_root=False))
+    """Professor cannot create lectures in subjects they're not assigned to.
     
-    UNI_ID = 1
-    FACULTY_ID = 5
-    SUBJECT_ID = 10
-    SCHEMA = f"uni_{UNI_ID}"
+    This test creates two subjects - assigns professor to one but not the other,
+    then verifies professor can't create lectures in the unassigned subject.
+    """
+    from .test_utils import DummyUser
+    import time
+    import random
     
-    import utils.database as db_mod
-    import main as app_main
-    from utils.models import UniversityDB
+    # Step 1: Create university as root
+    set_user(DummyUser(id=1, email="root@epistula.edu", is_root=True))
     
-    class FakeUni:
-        id = UNI_ID
-        schema_name = SCHEMA
+    unique_code = f"PROF{int(time.time() * 1000) % 1000000}{random.randint(0, 999)}"  # Microseconds + random
+    uni_response = client.post("/api/v1/universities/", json={
+        "name": "Professor Restriction Test University",
+        "code": unique_code,
+        "description": "For testing professor restrictions"
+    })
+    assert uni_response.status_code == 201
+    uni_id = uni_response.json()["id"]
     
-    class _Q:
-        def filter(self, *args, **kwargs):
-            return self
-        def first(self):
-            return FakeUni()
+    # Step 2: Create faculty
+    faculty_response = client.post(f"/api/v1/faculties/{uni_id}", json={
+        "name": "Faculty of Mathematics",
+        "short_name": "Math",
+        "code": "MATH"
+    })
+    assert faculty_response.status_code == 201
+    faculty_id = faculty_response.json()["id"]
     
-    class _Sess:
-        def query(self, model):
-            return _Q()
-        def execute(self, stmt, params=None):
-            sql = str(stmt)
-            # Subject exists
-            if f"{SCHEMA}.subjects" in sql and "SELECT 1" in sql:
-                class Result:
-                    def fetchone(self): return (1,)
-                return Result()
-            # Not admin
-            if "user_university_roles" in sql:
-                class Result:
-                    def fetchone(self): return None
-                return Result()
-            # NOT assigned as professor
-            if f"{SCHEMA}.subject_professors" in sql:
-                class Result:
-                    def fetchone(self): return None
-                return Result()
-            class EmptyResult:
-                def fetchone(self): return None
-            return EmptyResult()
-        def commit(self): pass
+    # Step 3: Create two subjects
+    subject1_response = client.post(f"/api/v1/subjects/{uni_id}/{faculty_id}", json={
+        "name": "Algebra",
+        "code": "ALG101"
+    })
+    assert subject1_response.status_code == 201
+    subject1_id = subject1_response.json()["id"]
     
-    def _override_db():
-        yield _Sess()
+    subject2_response = client.post(f"/api/v1/subjects/{uni_id}/{faculty_id}", json={
+        "name": "Calculus",
+        "code": "CALC101"
+    })
+    assert subject2_response.status_code == 201
+    subject2_id = subject2_response.json()["id"]
     
-    app_main.app.dependency_overrides[db_mod.get_db] = _override_db
+    # Step 4: Create professor user
+    prof_response = client.post(f"/api/v1/universities/{uni_id}/users", json={
+        "email": "math_prof@test.edu",
+        "name": "Math Professor",
+        "password": "password123",
+        "role": "professor"
+    })
+    assert prof_response.status_code == 201
+    prof_id = prof_response.json()["id"]
     
-    try:
-        response = client.post(
-            f"/api/v1/subjects/{UNI_ID}/{FACULTY_ID}/{SUBJECT_ID}/lectures",
-            json={
-                "title": "New Lecture",
-                "description": "Description"
-            }
-        )
-        assert response.status_code == 403
-        assert "not allowed" in response.json()["detail"].lower()
-    finally:
-        app_main.app.dependency_overrides.clear()
+    # Step 5: Assign professor to faculty
+    faculty_assign_response = client.post(
+        f"/api/v1/faculties/{uni_id}/{faculty_id}/professors",
+        json={"professor_id": prof_id}
+    )
+    assert faculty_assign_response.status_code == 201
+    
+    # Step 6: Assign professor ONLY to subject1 (Algebra), NOT to subject2 (Calculus)
+    assign_response = client.post(
+        f"/api/v1/subjects/{uni_id}/{faculty_id}/{subject1_id}/professors",
+        json={"professor_id": prof_id}
+    )
+    assert assign_response.status_code == 201
+    
+    # Step 7: Switch to professor user
+    set_user(DummyUser(id=prof_id, email="math_prof@test.edu", is_root=False))
+    
+    # Step 8: Try to create lecture in unassigned subject (Calculus)
+    lecture_response = client.post(
+        f"/api/v1/subjects/{uni_id}/{faculty_id}/{subject2_id}/lectures",
+        json={
+            "title": "Unauthorized Lecture",
+            "description": "This should fail",
+            "is_published": False
+        }
+    )
+    
+    # Should fail with 403 Forbidden - professor not assigned to this subject
+    assert lecture_response.status_code == 403, f"Professor should not be able to create lecture in unassigned subject: {lecture_response.json()}"
+    assert "assigned" in lecture_response.json()["detail"].lower()
 
 
 @pytest.mark.skip(reason="Requires real DB or complete ORM mocking - see ROLE_TESTING.md")
