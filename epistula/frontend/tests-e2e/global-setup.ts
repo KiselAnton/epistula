@@ -10,6 +10,11 @@ function ensureDir(dir: string) {
 }
 
 async function globalSetup(_config: FullConfig) {
+  // Allow disabling global setup when running flows that explicitly test login
+  if (process.env.EPISTULA_E2E_DISABLE_GLOBAL_SETUP === '1') {
+    // No seeding or authentication; tests will handle login explicitly
+    return;
+  }
   const port = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
   const frontendBase = process.env.EPISTULA_E2E_BASE_URL || `http://localhost:${port}`;
   const backendBase = process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_BACKEND_URL || process.env.BACKEND_URL || 'http://localhost:8000';

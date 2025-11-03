@@ -6,6 +6,13 @@ set -euo pipefail
 ROOT_DIR="$(git rev-parse --show-toplevel)"
 
 echo "[pre-push] Rebuilding and restarting containers..."
+# Ensure backend uses test-friendly root credentials matching UI tests
+export ROOT_EMAIL="${ROOT_EMAIL:-root@epistula.test}"
+export ROOT_PASSWORD="${ROOT_PASSWORD:-root_password_123}"
+# Ensure root login policy permits Docker bridge subnet and proxy headers
+export EPISTULA_ROOT_LOCAL_ONLY="${EPISTULA_ROOT_LOCAL_ONLY:-true}"
+export EPISTULA_TRUST_PROXY="${EPISTULA_TRUST_PROXY:-true}"
+export EPISTULA_ROOT_ALLOWED_IPS="${EPISTULA_ROOT_ALLOWED_IPS:-172.16.0.0/12}"
 pushd "$ROOT_DIR" >/dev/null
 if command -v docker >/dev/null 2>&1; then
   docker compose up -d --build frontend backend
@@ -79,14 +86,15 @@ npm ci >/dev/null 2>&1 || npm install >/dev/null 2>&1 || true
 if command -v npx >/dev/null 2>&1; then
   npx playwright install chromium >/dev/null 2>&1 || true
 fi
-# Use the existing frontend on port 3000; config reuses if running
-# Enable optional UI tests and provide root creds for global setup
+# Use the existing frontend on port 3000; config reuses if running.
+# Provide root creds matching backend and disable global setup so UI tests can perform login flows.
 export EPISTULA_E2E_ENABLE_UI_TESTS=1
-export NEXT_PUBLIC_ROOT_EMAIL="${NEXT_PUBLIC_ROOT_EMAIL:-root@localhost.localdomain}"
-export EPISTULA_ROOT_EMAIL="${EPISTULA_ROOT_EMAIL:-${NEXT_PUBLIC_ROOT_EMAIL}}"
-export EPISTULA_ROOT_PASSWORD="${EPISTULA_ROOT_PASSWORD:-changeme123}"
-# Run only the smoke test to keep pre-push fast and stable
-PORT=3000 npx playwright test tests-e2e/smoke.spec.ts
+export NEXT_PUBLIC_ROOT_EMAIL="${NEXT_PUBLIC_ROOT_EMAIL:-$ROOT_EMAIL}"
+export EPISTULA_ROOT_EMAIL="${EPISTULA_ROOT_EMAIL:-$ROOT_EMAIL}"
+export EPISTULA_ROOT_PASSWORD="${EPISTULA_ROOT_PASSWORD:-$ROOT_PASSWORD}"
+export EPISTULA_E2E_DISABLE_GLOBAL_SETUP=1
+# Run full E2E suite
+PORT=3000 npm run -s test:e2e
 popd >/dev/null
 
 echo "[pre-push] Tests passed. Proceeding with push."
