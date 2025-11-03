@@ -15,8 +15,73 @@ due to SQLAlchemy ORM incompatibility with partial mocking. See ROLE_TESTING.md
 for recommended approaches (full integration tests vs unit tests).
 """
 import pytest
+import time
+import random
 from fastapi.testclient import TestClient
 from .test_utils import DummyUser
+
+
+# ============================================================================
+# HELPER FUNCTION FOR E2E TESTS
+# ============================================================================
+
+def setup_admin_with_university(client, set_user):
+    """
+    Creates a full test environment: university + faculty + subject + admin user.
+    
+    Returns dict with: uni_id, faculty_id, subject_id, admin_id, unique_code
+    """
+    # Generate unique code to avoid conflicts
+    unique_code = f"ADM{int(time.time() * 1000) % 1000000}{random.randint(0, 999)}"
+    
+    # Create university as root
+    set_user(DummyUser(id=1, email="root@example.com", is_root=True))
+    
+    uni_response = client.post("/api/v1/universities/", json={
+        "name": f"Test University {unique_code}",
+        "code": unique_code,
+        "description": "For admin testing"
+    })
+    assert uni_response.status_code == 201
+    uni_id = uni_response.json()["id"]
+    
+    # Create faculty
+    faculty_code = f"TF{random.randint(100, 999)}"
+    fac_response = client.post(f"/api/v1/faculties/{uni_id}", json={
+        "name": "Test Faculty",
+        "short_name": "TF",
+        "code": faculty_code
+    })
+    assert fac_response.status_code == 201
+    faculty_id = fac_response.json()["id"]
+    
+    # Create subject
+    subj_code = f"SUBJ{random.randint(100, 999)}"
+    subj_response = client.post(f"/api/v1/subjects/{uni_id}/{faculty_id}", json={
+        "name": "Test Subject",
+        "code": subj_code
+    })
+    assert subj_response.status_code == 201
+    subject_id = subj_response.json()["id"]
+    
+    # Create admin user
+    admin_response = client.post(f"/api/v1/universities/{uni_id}/users", json={
+        "email": f"admin_{unique_code}@test.edu",
+        "password": "AdminPass123!",
+        "name": "Test Admin",
+        "role": "uni_admin",
+        "faculty_id": faculty_id
+    })
+    assert admin_response.status_code == 201
+    admin_id = admin_response.json()["id"]
+    
+    return {
+        "uni_id": uni_id,
+        "faculty_id": faculty_id,
+        "subject_id": subject_id,
+        "admin_id": admin_id,
+        "unique_code": unique_code
+    }
 
 
 # ============================================================================
@@ -76,61 +141,26 @@ def test_admin_can_upload_files(client, set_user):
 # ============================================================================
 
 
-@pytest.mark.skip(reason="Requires real DB or complete ORM mocking - see ROLE_TESTING.md")
 def test_admin_can_view_own_university(client, set_user):
     """Uni admin can view their assigned university."""
-    # Setup: admin for university 1
-    set_user(DummyUser(id=2, email="admin@uni1.edu", is_root=False))
+    setup = setup_admin_with_university(client, set_user)
     
-    # Mock DB to return university 1 for this admin
-    import utils.database as db_mod
-    import main as app_main
-    from utils.models import UniversityDB
+    # Switch to admin user
+    set_user(DummyUser(id=setup["admin_id"], email=f"admin_{setup['unique_code']}@test.edu", is_root=False))
     
-    class _Q:
-        def filter(self, *args, **kwargs):
-            return self
-        def all(self):
-            # Admin should see their university
-            class FakeUni:
-                id = 1
-                name = "University 1"
-                code = "UNI1"
-                schema_name = "uni_1"
-                is_active = True
-                logo_url = None
-            return [FakeUni()]
+    # Admin should see their university when listing
+    response = client.get("/api/v1/universities/")
+    assert response.status_code == 200
+    data = response.json()
     
-    class _Sess:
-        def query(self, model):
-            if model is UniversityDB:
-                return _Q()
-            return _Q()
-        def execute(self, stmt, params=None):
-            # Mock user_university_roles check
-            sql = str(stmt)
-            if "user_university_roles" in sql:
-                class Result:
-                    def fetchall(self):
-                        return [(1,)]  # Has access to uni 1
-                return Result()
-            class EmptyResult:
-                def fetchall(self): return []
-            return EmptyResult()
+    # Should see at least their own university
+    uni_ids = [u["id"] for u in data]
+    assert setup["uni_id"] in uni_ids, "Admin should see their own university"
     
-    def _override_db():
-        yield _Sess()
-    
-    app_main.app.dependency_overrides[db_mod.get_db] = _override_db
-    
-    try:
-        response = client.get("/api/v1/universities/")
-        assert response.status_code == 200
-        data = response.json()
-        assert len(data) == 1
-        assert data[0]["id"] == 1
-    finally:
-        app_main.app.dependency_overrides.clear()
+    # Find their university in the list
+    their_uni = next((u for u in data if u["id"] == setup["uni_id"]), None)
+    assert their_uni is not None
+    assert their_uni["code"] == setup["unique_code"]
 
 
 def test_admin_cannot_create_university(client, set_user):
@@ -156,191 +186,76 @@ def test_admin_cannot_delete_university(client, set_user):
     assert response.status_code == 403
 
 
-@pytest.mark.skip(reason="Requires real DB or complete ORM mocking - see ROLE_TESTING.md")
 def test_admin_can_create_faculty(client, set_user):
     """Uni admin can create faculties in their university."""
-    set_user(DummyUser(id=2, email="admin@uni1.edu", is_root=False))
+    setup = setup_admin_with_university(client, set_user)
     
-    UNI_ID = 1
-    SCHEMA = f"uni_{UNI_ID}"
+    # Switch to admin user
+    set_user(DummyUser(id=setup["admin_id"], email=f"admin_{setup['unique_code']}@test.edu", is_root=False))
     
-    import utils.database as db_mod
-    import main as app_main
-    from utils.models import UniversityDB
-    from datetime import datetime, timezone
+    # Create a new faculty in their university
+    fac_code = f"NEWFAC{random.randint(100, 999)}"
+    response = client.post(f"/api/v1/faculties/{setup['uni_id']}", json={
+        "name": "New Faculty",
+        "short_name": "NF",
+        "code": fac_code
+    })
     
-    class FakeUni:
-        id = UNI_ID
-        name = "University 1"
-        code = "UNI1"
-        schema_name = SCHEMA
-        is_active = True
-    
-    class _Q:
-        def filter(self, *args, **kwargs):
-            return self
-        def first(self):
-            return FakeUni()
-    
-    class _Sess:
-        def query(self, model):
-            if model is UniversityDB:
-                return _Q()
-            return _Q()
-        def execute(self, stmt, params=None):
-            sql = str(stmt)
-            # Admin check
-            if "user_university_roles" in sql and "uni_admin" in sql:
-                class Result:
-                    def fetchone(self): return (1,)
-                return Result()
-            # Faculty creation
-            if f"INSERT INTO {SCHEMA}.faculties" in sql:
-                class Result:
-                    def fetchone(self):
-                        return (1, "CS", "Computer Science", datetime.now(timezone.utc), True)
-                return Result()
-            class EmptyResult:
-                def fetchone(self): return None
-            return EmptyResult()
-        def commit(self): pass
-    
-    def _override_db():
-        yield _Sess()
-    
-    app_main.app.dependency_overrides[db_mod.get_db] = _override_db
-    
-    try:
-        response = client.post(f"/api/v1/faculties/{UNI_ID}", json={
-            "code": "CS",
-            "name": "Computer Science"
-        })
-        assert response.status_code == 201
-        data = response.json()
-        assert data["code"] == "CS"
-        assert data["name"] == "Computer Science"
-    finally:
-        app_main.app.dependency_overrides.clear()
+    assert response.status_code == 201
+    data = response.json()
+    assert data["code"] == fac_code
+    assert data["name"] == "New Faculty"
 
 
-@pytest.mark.skip(reason="Requires real DB or complete ORM mocking - see ROLE_TESTING.md")
 def test_admin_cannot_manage_other_university(client, set_user):
     """Uni admin cannot manage faculties in other universities."""
-    set_user(DummyUser(id=2, email="admin@uni1.edu", is_root=False))
+    # Create first university with admin
+    setup1 = setup_admin_with_university(client, set_user)
     
-    # Try to create faculty in university 2 (admin only has access to uni 1)
-    import utils.database as db_mod
-    import main as app_main
-    from utils.models import UniversityDB
+    # Create second university (as root)
+    set_user(DummyUser(id=1, email="root@example.com", is_root=True))
+    unique_code2 = f"UNI{int(time.time() * 1000) % 1000000}{random.randint(0, 999)}"
+    uni2_response = client.post("/api/v1/universities/", json={
+        "name": f"Other University {unique_code2}",
+        "code": unique_code2
+    })
+    assert uni2_response.status_code == 201
+    uni2_id = uni2_response.json()["id"]
     
-    class FakeUni:
-        id = 2
-        name = "University 2"
-        schema_name = "uni_2"
+    # Switch to admin from first university
+    set_user(DummyUser(id=setup1["admin_id"], email=f"admin_{setup1['unique_code']}@test.edu", is_root=False))
     
-    class _Q:
-        def filter(self, *args, **kwargs):
-            return self
-        def first(self):
-            return FakeUni()
+    # Try to create faculty in second university (should be forbidden)
+    response = client.post(f"/api/v1/faculties/{uni2_id}", json={
+        "name": "Forbidden Faculty",
+        "short_name": "FF",
+        "code": "FORBID123"
+    })
     
-    class _Sess:
-        def query(self, model):
-            return _Q()
-        def execute(self, stmt, params=None):
-            sql = str(stmt)
-            # Admin check for uni 2 - no permission
-            if "user_university_roles" in sql:
-                class Result:
-                    def fetchone(self): return None
-                return Result()
-            class EmptyResult:
-                def fetchone(self): return None
-            return EmptyResult()
-        def commit(self): pass
-    
-    def _override_db():
-        yield _Sess()
-    
-    app_main.app.dependency_overrides[db_mod.get_db] = _override_db
-    
-    try:
-        response = client.post("/api/v1/faculties/2", json={
-            "code": "CS",
-            "name": "Computer Science"
-        })
-        assert response.status_code == 403
-    finally:
-        app_main.app.dependency_overrides.clear()
+    assert response.status_code == 403, "Admin should not be able to manage other universities"
 
 
-@pytest.mark.skip(reason="Requires real DB or complete ORM mocking - see ROLE_TESTING.md")
 def test_admin_can_create_users(client, set_user):
     """Uni admin can create users in their university."""
-    set_user(DummyUser(id=2, email="admin@uni1.edu", is_root=False))
+    setup = setup_admin_with_university(client, set_user)
     
-    UNI_ID = 1
+    # Switch to admin user
+    set_user(DummyUser(id=setup["admin_id"], email=f"admin_{setup['unique_code']}@test.edu", is_root=False))
     
-    import utils.database as db_mod
-    import main as app_main
-    from utils.models import UniversityDB
-    from datetime import datetime, timezone
+    # Create a professor user in their university
+    prof_email = f"professor_{int(time.time() * 1000) % 1000000}@test.edu"
+    response = client.post(f"/api/v1/universities/{setup['uni_id']}/users", json={
+        "email": prof_email,
+        "name": "Test Professor",
+        "password": "ProfPass123!",
+        "role": "professor",
+        "faculty_id": setup["faculty_id"]
+    })
     
-    class FakeUni:
-        id = UNI_ID
-        schema_name = f"uni_{UNI_ID}"
-        is_active = True
-    
-    class _Q:
-        def filter(self, *args, **kwargs):
-            return self
-        def first(self):
-            return FakeUni()
-    
-    class _Sess:
-        def query(self, model):
-            return _Q()
-        def execute(self, stmt, params=None):
-            sql = str(stmt)
-            # Admin permission check
-            if "user_university_roles" in sql and "uni_admin" in sql:
-                class Result:
-                    def fetchone(self): return (1,)
-                return Result()
-            # User creation
-            if "INSERT INTO public.users" in sql:
-                class Result:
-                    def fetchone(self):
-                        return ("user123", "prof@uni1.edu", "Professor One", "hashedpw", datetime.now(timezone.utc), datetime.now(timezone.utc), True)
-                return Result()
-            # Role assignment
-            if "INSERT INTO public.user_university_roles" in sql:
-                class Result:
-                    def fetchone(self): return (1,)
-                return Result()
-            class EmptyResult:
-                def fetchone(self): return None
-            return EmptyResult()
-        def commit(self): pass
-    
-    def _override_db():
-        yield _Sess()
-    
-    app_main.app.dependency_overrides[db_mod.get_db] = _override_db
-    
-    try:
-        response = client.post(f"/api/v1/users/universities/{UNI_ID}/users", json={
-            "email": "prof@uni1.edu",
-            "name": "Professor One",
-            "password": "password123",
-            "role": "professor"
-        })
-        assert response.status_code == 201
-        data = response.json()
-        assert data["email"] == "prof@uni1.edu"
-        assert data["role"] == "professor"
-    finally:
-        app_main.app.dependency_overrides.clear()
+    assert response.status_code == 201
+    data = response.json()
+    assert data["email"] == prof_email
+    assert data["role"] == "professor"
 
 
 def test_admin_can_upload_files(client, set_user):
@@ -363,141 +278,83 @@ def test_admin_can_upload_files(client, set_user):
         assert "/storage/" in data["url"]
 
 
-@pytest.mark.skip(reason="Requires real DB or complete ORM mocking - see ROLE_TESTING.md")
 def test_admin_can_assign_professors_to_subjects(client, set_user):
     """Uni admin can assign professors to subjects."""
-    set_user(DummyUser(id=2, email="admin@uni1.edu", is_root=False))
+    setup = setup_admin_with_university(client, set_user)
     
-    UNI_ID = 1
-    FACULTY_ID = 5
-    SUBJECT_ID = 10
-    PROF_ID = "prof123"
-    SCHEMA = f"uni_{UNI_ID}"
+    # Create a professor as root
+    set_user(DummyUser(id=1, email="root@example.com", is_root=True))
+    prof_email = f"professor_{int(time.time() * 1000) % 1000000}@test.edu"
+    prof_response = client.post(f"/api/v1/universities/{setup['uni_id']}/users", json={
+        "email": prof_email,
+        "name": "Test Professor",
+        "password": "ProfPass123!",
+        "role": "professor",
+        "faculty_id": setup["faculty_id"]
+    })
+    assert prof_response.status_code == 201
+    prof_id = prof_response.json()["id"]
     
-    import utils.database as db_mod
-    import main as app_main
-    from utils.models import UniversityDB
-    from datetime import datetime, timezone
+    # Assign professor to faculty first (required before assigning to subject)
+    faculty_assign = client.post(
+        f"/api/v1/faculties/{setup['uni_id']}/{setup['faculty_id']}/professors",
+        json={"professor_id": prof_id}
+    )
+    assert faculty_assign.status_code == 201
     
-    class FakeUni:
-        id = UNI_ID
-        schema_name = SCHEMA
-        is_active = True
+    # Switch to admin user
+    set_user(DummyUser(id=setup["admin_id"], email=f"admin_{setup['unique_code']}@test.edu", is_root=False))
     
-    class _Q:
-        def filter(self, *args, **kwargs):
-            return self
-        def first(self):
-            return FakeUni()
+    # Assign professor to subject
+    response = client.post(
+        f"/api/v1/subjects/{setup['uni_id']}/{setup['faculty_id']}/{setup['subject_id']}/professors",
+        json={"professor_id": prof_id}
+    )
     
-    class _Sess:
-        def query(self, model):
-            return _Q()
-        def execute(self, stmt, params=None):
-            sql = str(stmt)
-            # Admin check
-            if "user_university_roles" in sql and "uni_admin" in sql:
-                class Result:
-                    def fetchone(self): return (1,)
-                return Result()
-            # Subject exists
-            if f"{SCHEMA}.subjects" in sql and "SELECT id" in sql:
-                class Result:
-                    def fetchone(self): return (SUBJECT_ID,)
-                return Result()
-            # User exists and is professor
-            if "public.users" in sql and "public.user_university_roles" in sql:
-                class Result:
-                    def fetchone(self): return (PROF_ID, "prof@uni1.edu", "Prof Name", "professor")
-                return Result()
-            # Assignment
-            if f"INSERT INTO {SCHEMA}.subject_professors" in sql:
-                class Result:
-                    def fetchone(self): return (SUBJECT_ID, PROF_ID, datetime.now(timezone.utc), True)
-                return Result()
-            class EmptyResult:
-                def fetchone(self): return None
-            return EmptyResult()
-        def commit(self): pass
-    
-    def _override_db():
-        yield _Sess()
-    
-    app_main.app.dependency_overrides[db_mod.get_db] = _override_db
-    
-    try:
-        response = client.post(
-            f"/api/v1/subject-professors/{UNI_ID}/{FACULTY_ID}/{SUBJECT_ID}/professors",
-            json={"user_id": PROF_ID}
-        )
-        assert response.status_code == 201
-        data = response.json()
-        assert data["subject_id"] == SUBJECT_ID
-        assert data["professor_id"] == PROF_ID
-    finally:
-        app_main.app.dependency_overrides.clear()
+    assert response.status_code == 201
+    data = response.json()
+    assert data["professor_id"] == prof_id
+    assert "assigned_at" in data
 
 
-@pytest.mark.skip(reason="Requires real DB or complete ORM mocking - see ROLE_TESTING.md")
 def test_admin_can_view_lectures(client, set_user):
-    """Uni admin can view all lectures in their university."""
-    set_user(DummyUser(id=2, email="admin@uni1.edu", is_root=False))
+    """Uni admin can view all lectures (published and unpublished) in their university."""
+    setup = setup_admin_with_university(client, set_user)
     
-    UNI_ID = 1
-    FACULTY_ID = 5
-    SUBJECT_ID = 10
-    SCHEMA = f"uni_{UNI_ID}"
+    # Create lectures as root - one published, one unpublished
+    set_user(DummyUser(id=1, email="root@example.com", is_root=True))
     
-    import utils.database as db_mod
-    import main as app_main
-    from utils.models import UniversityDB
-    from datetime import datetime, timezone
+    # Create published lecture
+    pub_response = client.post(
+        f"/api/v1/subjects/{setup['uni_id']}/{setup['faculty_id']}/{setup['subject_id']}/lectures",
+        json={"title": "Published Lecture", "description": "Public"}
+    )
+    assert pub_response.status_code == 201
+    pub_id = pub_response.json()["id"]
     
-    class FakeUni:
-        id = UNI_ID
-        schema_name = SCHEMA
+    # Publish it
+    client.patch(
+        f"/api/v1/subjects/{setup['uni_id']}/{setup['faculty_id']}/{setup['subject_id']}/lectures/{pub_id}",
+        json={"is_active": True}
+    )
     
-    class _Q:
-        def filter(self, *args, **kwargs):
-            return self
-        def first(self):
-            return FakeUni()
+    # Create unpublished (draft) lecture
+    draft_response = client.post(
+        f"/api/v1/subjects/{setup['uni_id']}/{setup['faculty_id']}/{setup['subject_id']}/lectures",
+        json={"title": "Draft Lecture", "description": "Not public"}
+    )
+    assert draft_response.status_code == 201
     
-    class _Sess:
-        def query(self, model):
-            return _Q()
-        def execute(self, stmt, params=None):
-            sql = str(stmt)
-            # Subject exists
-            if f"{SCHEMA}.subjects" in sql and "SELECT 1" in sql:
-                class Result:
-                    def fetchone(self): return (1,)
-                return Result()
-            # Lectures query
-            if f"FROM {SCHEMA}.lectures" in sql and "ORDER BY" in sql:
-                class Result:
-                    def fetchall(self):
-                        now = datetime.now(timezone.utc)
-                        return [
-                            (1, SUBJECT_ID, "Lecture 1", "Description 1", now, "creator1", True, 1),
-                            (2, SUBJECT_ID, "Lecture 2", "Description 2", now, "creator2", False, 2),
-                        ]
-                return Result()
-            class EmptyResult:
-                def fetchone(self): return None
-                def fetchall(self): return []
-            return EmptyResult()
+    # Switch to admin user
+    set_user(DummyUser(id=setup["admin_id"], email=f"admin_{setup['unique_code']}@test.edu", is_root=False))
     
-    def _override_db():
-        yield _Sess()
+    # Admin should see ALL lectures (both published and unpublished)
+    response = client.get(f"/api/v1/subjects/{setup['uni_id']}/{setup['faculty_id']}/{setup['subject_id']}/lectures")
+    assert response.status_code == 200
+    data = response.json()
     
-    app_main.app.dependency_overrides[db_mod.get_db] = _override_db
-    
-    try:
-        response = client.get(f"/api/v1/subjects/{UNI_ID}/{FACULTY_ID}/{SUBJECT_ID}/lectures")
-        assert response.status_code == 200
-        data = response.json()
-        # Admin should see both published and unpublished lectures
-        assert len(data) == 2
-    finally:
-        app_main.app.dependency_overrides.clear()
+    # Admin sees both published and draft lectures
+    assert len(data) == 2, "Admin should see both published and unpublished lectures"
+    titles = sorted([lec["title"] for lec in data])
+    assert titles == ["Draft Lecture", "Published Lecture"]
+
