@@ -77,7 +77,7 @@ def test_professor_can_upload_files(client, set_user):
 @pytest.mark.skip(reason="Requires real DB or complete ORM mocking - see ROLE_TESTING.md")
 def test_professor_can_create_lecture_in_assigned_subject(client, set_user):
     """Professor can create lectures in subjects they're assigned to."""
-    PROF_ID = "prof123"
+    PROF_ID = 123  # Changed from string to int
     set_user(DummyUser(id=PROF_ID, email="prof@uni1.edu", is_root=False))
     
     UNI_ID = 1
@@ -156,7 +156,7 @@ def test_professor_can_create_lecture_in_assigned_subject(client, set_user):
 @pytest.mark.skip(reason="Requires real DB or complete ORM mocking - see ROLE_TESTING.md")
 def test_professor_cannot_create_lecture_in_unassigned_subject(client, set_user):
     """Professor cannot create lectures in subjects they're not assigned to."""
-    PROF_ID = "prof123"
+    PROF_ID = 123  # Integer ID for database compatibility
     set_user(DummyUser(id=PROF_ID, email="prof@uni1.edu", is_root=False))
     
     UNI_ID = 1
@@ -225,7 +225,7 @@ def test_professor_cannot_create_lecture_in_unassigned_subject(client, set_user)
 @pytest.mark.skip(reason="Requires real DB or complete ORM mocking - see ROLE_TESTING.md")
 def test_professor_can_update_own_lecture(client, set_user):
     """Professor can update lectures they created."""
-    PROF_ID = "prof123"
+    PROF_ID = 123  # Integer ID for database compatibility
     set_user(DummyUser(id=PROF_ID, email="prof@uni1.edu", is_root=False))
     
     UNI_ID = 1
@@ -296,7 +296,7 @@ def test_professor_can_update_own_lecture(client, set_user):
 @pytest.mark.skip(reason="Requires real DB or complete ORM mocking - see ROLE_TESTING.md")
 def test_professor_can_delete_own_lecture(client, set_user):
     """Professor can delete lectures in assigned subjects."""
-    PROF_ID = "prof123"
+    PROF_ID = 123  # Integer ID for database compatibility
     set_user(DummyUser(id=PROF_ID, email="prof@uni1.edu", is_root=False))
     
     UNI_ID = 1
@@ -362,7 +362,7 @@ def test_professor_can_delete_own_lecture(client, set_user):
 @pytest.mark.skip(reason="Requires real DB or complete ORM mocking - see ROLE_TESTING.md")
 def test_professor_can_assign_students_to_subject(client, set_user):
     """Professor can assign students to their subjects."""
-    PROF_ID = "prof123"
+    PROF_ID = 123  # Integer ID for database compatibility
     set_user(DummyUser(id=PROF_ID, email="prof@uni1.edu", is_root=False))
     
     UNI_ID = 1
@@ -441,13 +441,13 @@ def test_professor_can_assign_students_to_subject(client, set_user):
 @pytest.mark.skip(reason="Requires real DB or complete ORM mocking - see ROLE_TESTING.md")
 def test_professor_cannot_assign_professors(client, set_user):
     """Professor cannot assign other professors to subjects."""
-    PROF_ID = "prof123"
+    PROF_ID = 123  # Integer ID for database compatibility
     set_user(DummyUser(id=PROF_ID, email="prof@uni1.edu", is_root=False))
     
     UNI_ID = 1
     FACULTY_ID = 5
     SUBJECT_ID = 10
-    OTHER_PROF_ID = "prof456"
+    OTHER_PROF_ID = 456  # Integer ID for database compatibility
     SCHEMA = f"uni_{UNI_ID}"
     
     import utils.database as db_mod
@@ -499,7 +499,7 @@ def test_professor_can_upload_files(client, set_user):
     from io import BytesIO
     from unittest.mock import patch
     
-    PROF_ID = "prof123"
+    PROF_ID = 123  # Integer ID for database compatibility
     set_user(DummyUser(id=PROF_ID, email="prof@uni1.edu", is_root=False))
     
     file_content = b"lecture notes content"
@@ -518,7 +518,7 @@ def test_professor_can_upload_files(client, set_user):
 @pytest.mark.skip(reason="Requires real DB or complete ORM mocking - see ROLE_TESTING.md")
 def test_professor_sees_all_lectures_in_assigned_subject(client, set_user):
     """Professor sees both published and unpublished lectures in assigned subjects."""
-    PROF_ID = "prof123"
+    PROF_ID = 123  # Integer ID for database compatibility
     set_user(DummyUser(id=PROF_ID, email="prof@uni1.edu", is_root=False))
     
     UNI_ID = 1

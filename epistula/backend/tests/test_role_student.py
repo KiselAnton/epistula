@@ -24,7 +24,7 @@ from .test_utils import DummyUser
 
 def test_student_cannot_create_university(client, set_user):
     """Student cannot create universities."""
-    STUDENT_ID = "student123"
+    STUDENT_ID = 789  # Integer ID for database compatibility
     set_user(DummyUser(id=STUDENT_ID, email="student@uni1.edu", is_root=False))
     
     response = client.post("/api/v1/universities/", json={
@@ -37,7 +37,7 @@ def test_student_cannot_create_university(client, set_user):
 
 def test_student_cannot_create_faculty(client, set_user):
     """Student cannot create faculties."""
-    STUDENT_ID = "student123"
+    STUDENT_ID = 789  # Integer ID for database compatibility
     set_user(DummyUser(id=STUDENT_ID, email="student@uni1.edu", is_root=False))
     
     # Try to create faculty - should fail with 403 regardless of university existence
@@ -55,7 +55,7 @@ def test_student_cannot_create_faculty(client, set_user):
 @pytest.mark.skip(reason="Requires real DB or complete ORM mocking - see ROLE_TESTING.md")
 def test_student_cannot_create_lecture(client, set_user):
     """Student cannot create lectures."""
-    STUDENT_ID = "student123"
+    STUDENT_ID = 789  # Integer ID for database compatibility
     set_user(DummyUser(id=STUDENT_ID, email="student@uni1.edu", is_root=False))
     
     UNI_ID = 1
@@ -124,7 +124,7 @@ def test_student_cannot_create_lecture(client, set_user):
 @pytest.mark.skip(reason="Requires real DB or complete ORM mocking - see ROLE_TESTING.md")
 def test_student_cannot_update_lecture(client, set_user):
     """Student cannot update lectures."""
-    STUDENT_ID = "student123"
+    STUDENT_ID = 789  # Integer ID for database compatibility
     set_user(DummyUser(id=STUDENT_ID, email="student@uni1.edu", is_root=False))
     
     UNI_ID = 1
@@ -175,7 +175,7 @@ def test_student_cannot_update_lecture(client, set_user):
 @pytest.mark.skip(reason="Requires real DB or complete ORM mocking - see ROLE_TESTING.md")
 def test_student_cannot_delete_lecture(client, set_user):
     """Student cannot delete lectures."""
-    STUDENT_ID = "student123"
+    STUDENT_ID = 789  # Integer ID for database compatibility
     set_user(DummyUser(id=STUDENT_ID, email="student@uni1.edu", is_root=False))
     
     UNI_ID = 1
@@ -225,7 +225,7 @@ def test_student_cannot_delete_lecture(client, set_user):
 @pytest.mark.skip(reason="Requires real DB or complete ORM mocking - see ROLE_TESTING.md")
 def test_student_sees_only_published_lectures(client, set_user):
     """Student sees only published lectures in assigned subjects."""
-    STUDENT_ID = "student123"
+    STUDENT_ID = 789  # Integer ID for database compatibility
     set_user(DummyUser(id=STUDENT_ID, email="student@uni1.edu", is_root=False))
     
     UNI_ID = 1
@@ -314,7 +314,7 @@ def test_student_sees_only_published_lectures(client, set_user):
 @pytest.mark.skip(reason="Requires real DB or complete ORM mocking - see ROLE_TESTING.md")
 def test_student_cannot_view_unassigned_subject_lectures(client, set_user):
     """Student cannot view lectures in subjects they're not assigned to."""
-    STUDENT_ID = "student123"
+    STUDENT_ID = 789  # Integer ID for database compatibility
     set_user(DummyUser(id=STUDENT_ID, email="student@uni1.edu", is_root=False))
     
     UNI_ID = 1
@@ -369,7 +369,7 @@ def test_student_can_upload_files(client, set_user):
     from io import BytesIO
     from unittest.mock import patch
     
-    STUDENT_ID = "student123"
+    STUDENT_ID = 789  # Integer ID for database compatibility
     set_user(DummyUser(id=STUDENT_ID, email="student@uni1.edu", is_root=False))
     
     file_content = b"assignment submission"
@@ -393,13 +393,13 @@ def test_student_can_upload_files(client, set_user):
 @pytest.mark.skip(reason="Requires real DB or complete ORM mocking - see ROLE_TESTING.md")
 def test_student_cannot_assign_users(client, set_user):
     """Student cannot assign other students to subjects."""
-    STUDENT_ID = "student123"
+    STUDENT_ID = 789  # Integer ID for database compatibility
     set_user(DummyUser(id=STUDENT_ID, email="student@uni1.edu", is_root=False))
     
     UNI_ID = 1
     FACULTY_ID = 5
     SUBJECT_ID = 10
-    OTHER_STUDENT_ID = "student456"
+    OTHER_STUDENT_ID = 790  # Integer ID for database compatibility
     SCHEMA = f"uni_{UNI_ID}"
     
     import utils.database as db_mod
@@ -444,7 +444,7 @@ def test_student_cannot_assign_users(client, set_user):
 @pytest.mark.skip(reason="Requires real DB or complete ORM mocking - see ROLE_TESTING.md")
 def test_student_cannot_create_users(client, set_user):
     """Student cannot create new users."""
-    STUDENT_ID = "student123"
+    STUDENT_ID = 789  # Integer ID for database compatibility
     set_user(DummyUser(id=STUDENT_ID, email="student@uni1.edu", is_root=False))
     
     UNI_ID = 1
@@ -494,7 +494,7 @@ def test_student_cannot_create_users(client, set_user):
 @pytest.mark.skip(reason="Requires real DB or complete ORM mocking - see ROLE_TESTING.md")
 def test_student_cannot_delete_users(client, set_user):
     """Student cannot delete users."""
-    STUDENT_ID = "student123"
+    STUDENT_ID = 789  # Integer ID for database compatibility
     set_user(DummyUser(id=STUDENT_ID, email="student@uni1.edu", is_root=False))
     
     UNI_ID = 1
@@ -540,7 +540,7 @@ def test_student_cannot_delete_users(client, set_user):
 @pytest.mark.skip(reason="Requires real DB or complete ORM mocking - see ROLE_TESTING.md")
 def test_student_can_view_own_profile(client, set_user):
     """Student can view their own profile via /auth/me."""
-    STUDENT_ID = "student123"
+    STUDENT_ID = 789  # Integer ID for database compatibility
     set_user(DummyUser(id=STUDENT_ID, email="student@uni1.edu", is_root=False))
     
     response = client.get("/api/v1/auth/me")
