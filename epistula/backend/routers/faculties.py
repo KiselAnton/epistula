@@ -139,11 +139,18 @@ def create_faculty(
     """
     # Check permissions (root or university admin)
     if not current_user.is_root:
-        # TODO: Check if user is admin of this university
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Only root or university admins can create faculties"
-        )
+        # Check if user is admin of this university
+        admin_check = db.execute(text("""
+            SELECT 1 FROM public.user_university_roles
+            WHERE user_id = :user_id AND university_id = :university_id
+              AND role = 'uni_admin' AND is_active = TRUE
+        """), {"user_id": current_user.id, "university_id": university_id}).fetchone()
+        
+        if not admin_check:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Only root or university admins can create faculties"
+            )
     
     # Check if university exists
     uni = db.query(UniversityDB).filter(UniversityDB.id == university_id).first()
@@ -225,12 +232,20 @@ def delete_faculty(
         university_id: ID of the university
         faculty_id: ID of the faculty to delete
     """
-    # Check permissions
+    # Check permissions (root or university admin)
     if not current_user.is_root:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Only root or university admins can delete faculties"
-        )
+        # Check if user is admin of this university
+        admin_check = db.execute(text("""
+            SELECT 1 FROM public.user_university_roles
+            WHERE user_id = :user_id AND university_id = :university_id
+              AND role = 'uni_admin' AND is_active = TRUE
+        """), {"user_id": current_user.id, "university_id": university_id}).fetchone()
+        
+        if not admin_check:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Only root or university admins can delete faculties"
+            )
     
     # Check if university exists
     uni = db.query(UniversityDB).filter(UniversityDB.id == university_id).first()
