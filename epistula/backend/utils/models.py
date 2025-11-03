@@ -121,6 +121,18 @@ class UserUpdate(BaseModel):
     password: Optional[str] = Field(None, min_length=8, max_length=100)
 
 
+class UniversityAccess(BaseModel):
+    """University access information for a user"""
+    university_id: int
+    university_name: str
+    university_code: str
+    role: UserRole
+    is_active: bool = True  # User's active status in this university
+    logo_url: Optional[str] = None
+
+    model_config = ConfigDict(from_attributes=True)
+
+
 class User(UserBase):
     """Complete user model"""
     id: str
@@ -128,6 +140,7 @@ class User(UserBase):
     updated_at: datetime
     is_active: bool = True
     universities: List[int] = []  # List of university IDs user has access to
+    university_access: List[UniversityAccess] = []  # Detailed access info with roles
     primary_university_id: Optional[int] = None  # Main university for the user
 
     model_config = ConfigDict(from_attributes=True)

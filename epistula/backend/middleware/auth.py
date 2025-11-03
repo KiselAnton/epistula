@@ -218,11 +218,13 @@ def db_user_to_pydantic(db_user: UserDB, db: Session = None) -> User:
     Returns:
         Pydantic User object
     """
-    from utils.models import UserRole, UserUniversityRoleDB
+    from utils.models import UserRole, UserUniversityRoleDB, UniversityAccess
+    from sqlalchemy import text
     
     # Determine role and universities
     role = UserRole.ROOT if db_user.is_root else UserRole.STUDENT
     universities = []
+    university_access = []
     primary_university_id = None
     
     # Fetch university roles if db session provided
@@ -232,9 +234,6 @@ def db_user_to_pydantic(db_user: UserDB, db: Session = None) -> User:
         ).all()
         
         if user_roles:
-            universities = [ur.university_id for ur in user_roles]
-            primary_university_id = universities[0] if universities else None
-            
             # Determine highest role across all universities
             role_priority = {
                 UserRole.ROOT: 4,
@@ -244,14 +243,44 @@ def db_user_to_pydantic(db_user: UserDB, db: Session = None) -> User:
             }
             
             highest_role = UserRole.STUDENT
-            for ur in user_roles:
-                try:
-                    ur_role = UserRole(ur.role)
-                    if role_priority.get(ur_role, 0) > role_priority.get(highest_role, 0):
-                        highest_role = ur_role
-                except (ValueError, KeyError):
-                    pass
             
+            # Build detailed university access list
+            for ur in user_roles:
+                # Fetch university details (only active, non-temp universities)
+                uni_query = text("""
+                    SELECT id, name, code, schema_name, is_active, logo_url
+                    FROM public.universities
+                    WHERE id = :uni_id
+                    AND is_active = TRUE
+                    AND schema_name NOT LIKE '%_temp'
+                """)
+                result = db.execute(uni_query, {"uni_id": ur.university_id}).fetchone()
+                
+                if result and ur.is_active:  # Only include if both university and user role are active
+                    try:
+                        ur_role = UserRole(ur.role)
+                        university_access.append(UniversityAccess(
+                            university_id=result[0],
+                            university_name=result[1],
+                            university_code=result[2],
+                            role=ur_role,
+                            is_active=ur.is_active,
+                            logo_url=result[5]
+                        ))
+                        
+                        # Track highest role
+                        if role_priority.get(ur_role, 0) > role_priority.get(highest_role, 0):
+                            highest_role = ur_role
+                    except (ValueError, KeyError):
+                        pass
+            
+            # Set universities list (legacy field for backward compatibility)
+            universities = [ua.university_id for ua in university_access]
+            
+            # Set primary university (first active university)
+            primary_university_id = universities[0] if universities else None
+            
+            # Use highest role if not root
             role = highest_role if not db_user.is_root else UserRole.ROOT
     
     return User(
@@ -263,5 +292,6 @@ def db_user_to_pydantic(db_user: UserDB, db: Session = None) -> User:
         updated_at=db_user.updated_at,
         is_active=db_user.is_active,
         universities=universities,
+        university_access=university_access,
         primary_university_id=primary_university_id,
     )

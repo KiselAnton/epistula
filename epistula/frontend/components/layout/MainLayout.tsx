@@ -19,6 +19,7 @@ export default function MainLayout({ children, breadcrumbs = ['Dashboard'] }: Ma
   const [primaryUniId, setPrimaryUniId] = useState<number | null>(null);
   const [primaryUniName, setPrimaryUniName] = useState<string | null>(null);
   const [isRoot, setIsRoot] = useState(false);
+  const [hasMultipleUniversities, setHasMultipleUniversities] = useState(false);
   const router = useRouter();
 
   // Logout clears local storage and redirects to login
@@ -46,6 +47,8 @@ export default function MainLayout({ children, breadcrumbs = ['Dashboard'] }: Ma
           try {
             const u = JSON.parse(raw);
             setIsRoot(u?.role === 'root');
+            const universityAccess = u?.university_access || [];
+            setHasMultipleUniversities(universityAccess.length > 1);
             if (u?.primary_university_id) {
               setPrimaryUniId(Number(u.primary_university_id));
             }
@@ -270,6 +273,15 @@ export default function MainLayout({ children, breadcrumbs = ['Dashboard'] }: Ma
               })}
             </ol>
           </nav>
+          {hasMultipleUniversities && (
+            <button
+              onClick={() => router.push('/select-university')}
+              className={styles.switchUniversityBtn}
+              title="Switch University"
+            >
+              🔄 Switch University
+            </button>
+          )}
         </header>
         <section className={styles.content}>
           {children}

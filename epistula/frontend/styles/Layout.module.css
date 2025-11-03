@@ -126,13 +126,16 @@
   border-bottom: 1px solid rgba(255,255,255,0.06);
   background: rgba(255,255,255,0.02);
   backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
 }
 
 .breadcrumbs {
-  height: 56px;
   display: flex;
   align-items: center;
-  padding: 0 16px;
+  flex: 1;
 }
 
 .breadcrumbs ol {
@@ -156,6 +159,31 @@
 .crumbSep {
   color: #475569;
   padding: 0 4px;
+}
+
+.switchUniversityBtn {
+  background: rgba(102, 126, 234, 0.15);
+  border: 1px solid rgba(102, 126, 234, 0.3);
+  color: #a5b4fc;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+  margin-left: 16px;
+}
+
+.switchUniversityBtn:hover {
+  background: rgba(102, 126, 234, 0.25);
+  border-color: rgba(102, 126, 234, 0.5);
+  color: #c7d2fe;
+  transform: translateY(-1px);
+}
+
+.switchUniversityBtn:active {
+  transform: translateY(0);
 }
 
 .content {

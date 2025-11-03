@@ -67,17 +67,44 @@ export default function Login() {
 
   // Initial health check + quick retry once after 2s (run once on mount)
   useEffect(() => {
-    // Check if user is already logged in, redirect to dashboard
+    // Check if user is already logged in, redirect appropriately
     if (typeof window !== 'undefined') {
       const token = localStorage.getItem('token');
       if (token) {
-        // Prefer redirecting to user's primary university if available
         const raw = localStorage.getItem('user');
         if (raw) {
           try {
-            const u = JSON.parse(raw);
-            if (u?.primary_university_id) {
-              window.location.href = `/university/${u.primary_university_id}`;
+            const user = JSON.parse(raw);
+            const universityAccess = user.university_access || [];
+            
+            // Root users go to dashboard
+            if (user.role === 'root') {
+              window.location.href = '/dashboard';
+              return;
+            }
+            
+            // Check if there's a previously selected university
+            const selectedUniId = localStorage.getItem('selected_university_id');
+            if (selectedUniId && universityAccess.some((ua: any) => ua.university_id === parseInt(selectedUniId))) {
+              window.location.href = `/university/${selectedUniId}`;
+              return;
+            }
+            
+            // Single university - redirect directly
+            if (universityAccess.length === 1) {
+              window.location.href = `/university/${universityAccess[0].university_id}`;
+              return;
+            }
+            
+            // Multiple universities - show selector
+            if (universityAccess.length > 1) {
+              window.location.href = '/select-university';
+              return;
+            }
+            
+            // Fallback to primary or dashboard
+            if (user.primary_university_id) {
+              window.location.href = `/university/${user.primary_university_id}`;
               return;
             }
           } catch {}
@@ -146,12 +173,23 @@ export default function Login() {
         if (data.user) {
           localStorage.setItem('user', JSON.stringify(data.user));
           
-          // Redirect based on user role and university
-          // If user has a primary university (admin, professor, student), go to their university
-          if (data.user.primary_university_id) {
-            window.location.href = `/university/${data.user.primary_university_id}`;
-          } else {
-            // Otherwise go to dashboard (root users)
+          const universityAccess = data.user.university_access || [];
+          
+          // Root users always go to dashboard
+          if (data.user.role === 'root') {
+            window.location.href = '/dashboard';
+          }
+          // Single university - redirect directly
+          else if (universityAccess.length === 1) {
+            localStorage.setItem('selected_university_id', String(universityAccess[0].university_id));
+            window.location.href = `/university/${universityAccess[0].university_id}`;
+          }
+          // Multiple universities - show selector
+          else if (universityAccess.length > 1) {
+            window.location.href = '/select-university';
+          }
+          // No universities - fallback to dashboard
+          else {
             window.location.href = '/dashboard';
           }
         } else {
