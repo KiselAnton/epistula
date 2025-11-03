@@ -448,16 +448,29 @@ export default function UniversityUsersPage() {
     };
 
     fetchData();
-  }, [id, router, router.isReady, selectedRole, debouncedSearch]);
+  }, [id, router.isReady, selectedRole, debouncedSearch]);
 
   // Keep URL query in sync (shareable/back-forward friendly)
   useEffect(() => {
     if (!router.isReady) return;
-    const query: any = { ...router.query };
-    if (selectedRole !== 'all') query.role = selectedRole; else delete query.role;
-    if (debouncedSearch) query.q = search; else delete query.q;
-    router.replace({ pathname: router.pathname, query: { ...query, id } }, undefined, { shallow: true });
-  }, [selectedRole, debouncedSearch, search, id, router]);
+    const desired: any = { id };
+    if (selectedRole !== 'all') desired.role = selectedRole;
+    if (debouncedSearch) desired.q = search;
+
+    // Avoid redundant router.replace if query hasn't changed
+    const current = router.query || {};
+    const keys = new Set<string>([...Object.keys(current), ...Object.keys(desired)]);
+    let changed = false;
+    for (const k of Array.from(keys)) {
+      if ((current as any)[k]?.toString() !== (desired as any)[k]?.toString()) {
+        changed = true;
+        break;
+      }
+    }
+    if (!changed) return;
+
+    router.replace({ pathname: router.pathname, query: desired }, undefined, { shallow: true });
+  }, [selectedRole, debouncedSearch, search, id, router.isReady]);
 
   useEffect(() => {
     // Debounce search input

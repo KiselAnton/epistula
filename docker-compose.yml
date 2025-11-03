@@ -112,8 +112,8 @@ services:
       # Root user (for initial setup)
       ROOT_EMAIL: ${ROOT_EMAIL:-root@localhost}
       ROOT_PASSWORD: ${ROOT_PASSWORD:-root_password_change_me}
-      # Optionally reset root password on each start (use only once when changing)
-      RESET_ROOT_PASSWORD_ON_START: ${RESET_ROOT_PASSWORD_ON_START:-0}
+      # Reset root password on each start to sync with .env (safe, idempotent)
+      RESET_ROOT_PASSWORD_ON_START: ${RESET_ROOT_PASSWORD_ON_START:-1}
       # Backups
       BACKUPS_DIR: /backups/database
       BACKUPS_RETENTION_DAYS: 30
