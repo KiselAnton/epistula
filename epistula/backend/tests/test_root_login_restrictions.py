@@ -19,11 +19,10 @@ class _DummyDBUser:
 def test_root_login_denied_from_remote_ip(client, monkeypatch):
     # Arrange: patch auth helpers to avoid DB
     import routers.auth as auth_router
-    import middleware.auth as auth_utils
     dummy = _DummyDBUser()
     monkeypatch.setattr(auth_router, "authenticate_user", lambda db, e, p: dummy)
     monkeypatch.setattr(auth_router, "create_access_token", lambda data: "tok")
-    monkeypatch.setattr(auth_utils, "db_user_to_pydantic", lambda db_user, db=None: {
+    monkeypatch.setattr(auth_router, "db_user_to_pydantic", lambda db_user, db=None: {
         "id": str(dummy.id),
         "email": dummy.email,
         "name": dummy.name,
@@ -55,11 +54,10 @@ def test_root_login_denied_from_remote_ip(client, monkeypatch):
 def test_root_login_allowed_from_localhost(client, monkeypatch):
     # Arrange: patch auth helpers to avoid DB
     import routers.auth as auth_router
-    import middleware.auth as auth_utils
     dummy = _DummyDBUser()
     monkeypatch.setattr(auth_router, "authenticate_user", lambda db, e, p: dummy)
     monkeypatch.setattr(auth_router, "create_access_token", lambda data: "tok")
-    monkeypatch.setattr(auth_utils, "db_user_to_pydantic", lambda db_user, db=None: {
+    monkeypatch.setattr(auth_router, "db_user_to_pydantic", lambda db_user, db=None: {
         "id": str(dummy.id),
         "email": dummy.email,
         "name": dummy.name,
