@@ -1,6 +1,6 @@
 import React, { useRef, useState } from 'react';
 import SafeImage from '../common/SafeImage';
-import MarkdownEditor from '../common/MarkdownEditor';
+import WysiwygMarkdownEditor from '../common/WysiwygMarkdownEditor';
 import { getBackendUrl } from '../../lib/config';
 import buttons from '../../styles/Buttons.module.css';
 
@@ -105,7 +105,7 @@ const EditUniversityModal: React.FC<Props> = ({ isOpen, onClose, university, onU
 
         <div style={{ marginTop: 12 }}>
           <h3 style={{ margin: '0 0 8px', fontSize: '1.05rem' }}>Description</h3>
-          <MarkdownEditor value={desc} onChange={setDesc} onSave={saveFields} isSaving={saving} placeholder="Describe this university..." />
+          <WysiwygMarkdownEditor value={desc} onChange={setDesc} onSave={saveFields} isSaving={saving} placeholder="Describe this university..." />
         </div>
 
         <div style={{ marginTop: 12 }}>

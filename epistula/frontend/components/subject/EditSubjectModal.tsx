@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import SafeImage from '../common/SafeImage';
 import { Subject } from '../../types';
 import { getBackendUrl } from '../../lib/config';
-import MarkdownEditor from '../common/MarkdownEditor';
+import WysiwygMarkdownEditor from '../common/WysiwygMarkdownEditor';
 import buttons from '../../styles/Buttons.module.css';
 import modalStyles from '../../styles/Modal.module.css';
 
@@ -148,7 +148,7 @@ const EditSubjectModal: React.FC<EditSubjectModalProps> = ({ isOpen, onClose, su
           </label>
           <div>
             <h3 style={{ margin: '0.5rem 0', fontSize: '1.05rem' }}>Description</h3>
-            <MarkdownEditor value={desc} onChange={setDesc} onSave={handleSave} isSaving={saving} placeholder="Add a detailed description (Markdown supported)" />
+                      <WysiwygMarkdownEditor value={desc} onChange={setDesc} onSave={handleSave} isSaving={saving} placeholder="Add a detailed description (Markdown supported)" />
           </div>
         </div>
 

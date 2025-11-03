@@ -18,18 +18,26 @@ export default function MarkdownEditor({ value, onChange, onSave, isSaving, plac
   const imageInputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const colorPickerRef = useRef<HTMLDivElement>(null);
-  const converterRef = useRef(new Showdown.Converter());
+  const converterRef = useRef(new Showdown.Converter({
+    // GitHub-flavored markdown options
+    strikethrough: true,
+    tables: true,
+    tasklists: true,
+    simpleLineBreaks: true,
+    openLinksInNewWindow: true,
+    ghCodeBlocks: true,
+    parseImgDimensions: true,
+    // Allow literal underscores and asterisks
+    literalMidWordUnderscores: true,
+    literalMidWordAsterisks: true,
+    // Disable escaping of HTML entities and tags
+    noHeaderId: true,
+    // This is the key - set flavor to 'github' to ensure HTML passthrough
+  }));
   
-  // Configure Showdown to allow raw HTML (for <u>, <span style>, etc.)
+  // Configure Showdown flavor and additional options
   useEffect(() => {
     converterRef.current.setFlavor('github');
-    converterRef.current.setOption('simpleLineBreaks', true);
-    converterRef.current.setOption('strikethrough', true);
-    converterRef.current.setOption('tables', true);
-    converterRef.current.setOption('tasklists', true);
-    converterRef.current.setOption('openLinksInNewWindow', true);
-    converterRef.current.setOption('parseImgDimensions', true);
-    converterRef.current.setOption('encodeEmails', false);
   }, []);
 
   // Insert markdown at cursor position

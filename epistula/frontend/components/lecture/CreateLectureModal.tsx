@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import MarkdownEditor from '../common/MarkdownEditor';
+import WysiwygMarkdownEditor from '../common/WysiwygMarkdownEditor';
 import styles from './CreateLectureModal.module.css';
 
 interface CreateLectureModalProps {
@@ -148,7 +148,7 @@ export default function CreateLectureModal({
             <label htmlFor="description">
               Description (Markdown)
             </label>
-            <MarkdownEditor
+            <WysiwygMarkdownEditor
               value={description}
               onChange={setDescription}
               onSave={() => { /* submit is handled by form, this is a convenience */ }}

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Lecture } from '../../types';
 import { getBackendUrl } from '../../lib/config';
-import MarkdownEditor from '../common/MarkdownEditor';
+import WysiwygMarkdownEditor from '../common/WysiwygMarkdownEditor';
 import buttons from '../../styles/Buttons.module.css';
 import modalStyles from '../../styles/Modal.module.css';
 
@@ -127,7 +127,7 @@ export default function EditLectureModal({ isOpen, lecture, universityId, facult
 
           <div>
             <label style={{ display: 'block', fontWeight: 600, marginBottom: 6 }}>Description (Markdown)</label>
-            <MarkdownEditor
+            <WysiwygMarkdownEditor
               value={description}
               onChange={setDescription}
               onSave={handleSave}
