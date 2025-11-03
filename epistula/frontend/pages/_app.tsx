@@ -15,6 +15,8 @@ import Head from 'next/head';
 import { useRouter } from 'next/router';
 import { useEffect } from 'react';
 import '../styles/globals.css';
+import '@uiw/react-md-editor/markdown-editor.css';
+import '@uiw/react-markdown-preview/markdown.css';
 import { SkeletonStyles } from '../components/Skeleton';
 
 export default function App({ Component, pageProps }: AppProps) {

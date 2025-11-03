@@ -2,8 +2,10 @@
 const nextConfig = {
   reactStrictMode: true,
   
-  // Performance optimizations
-  swcMinify: true, // Use SWC for faster minification
+  // Allow CSS imports from node_modules for WYSIWYG editor
+  transpilePackages: ['@uiw/react-md-editor', '@uiw/react-markdown-preview'],
+  
+  // Performance optimizations (swcMinify and optimizeFonts removed - deprecated in Next.js 15)
   
   // Compiler optimizations
   compiler: {
@@ -22,9 +24,6 @@ const nextConfig = {
   
   // Production source maps (disable for faster builds)
   productionBrowserSourceMaps: false,
-  
-  // Optimize fonts
-  optimizeFonts: true,
   
   // HTTP headers for caching
   async headers() {
