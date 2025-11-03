@@ -304,3 +304,24 @@ export const prefetchPatterns = {
 };
 
 export { cache };
+
+/**
+ * Upload a file to backend storage (MinIO) and return its URL payload.
+ */
+export async function uploadToStorage(file: File, folder: string = 'uploads'): Promise<{ url: string; filename: string; content_type: string; size: number }>{
+  const token = getToken();
+  const form = new FormData();
+  form.append('file', file);
+
+  const url = `${getBackendUrl()}/storage/upload?folder=${encodeURIComponent(folder)}`;
+  const resp = await fetch(url, {
+    method: 'POST',
+    headers: token ? { 'Authorization': `Bearer ${token}` } : undefined,
+    body: form,
+  });
+  if (!resp.ok) {
+    const err = await resp.json().catch(() => ({ detail: resp.statusText }));
+    throw new Error(err.detail || 'Upload failed');
+  }
+  return resp.json();
+}

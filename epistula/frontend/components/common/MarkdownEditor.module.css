@@ -12,11 +12,19 @@
   padding: 8px;
   border-bottom: 1px solid #e5e7eb;
   background: #f9fafb;
+  flex-wrap: wrap;
+  align-items: center;
 }
 
 .toolbarGroup {
   display: flex;
-  gap: 6px;
+  gap: 4px;
+  padding: 0 4px;
+  border-right: 1px solid #e5e7eb;
+}
+
+.toolbarGroup:last-child {
+  border-right: none;
 }
 
 .toolButton {
@@ -26,14 +34,97 @@
   border: 1px solid #e5e7eb;
   border-radius: 6px;
   cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
 }
 
-.toolButton:hover {
+.toolButton:hover:not(:disabled) {
   background: #f3f4f6;
+  border-color: #d1d5db;
+}
+
+.toolButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .toolButton.active {
-  background: #e5e7eb;
+  background: #2563eb;
+  color: #fff;
+  border-color: #2563eb;
+}
+
+.toolButton.active:hover {
+  background: #1d4ed8;
+  border-color: #1d4ed8;
+}
+
+.colorPicker {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  margin-top: 4px;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 12px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  z-index: 1000;
+  min-width: 200px;
+}
+
+.colorGrid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.colorSwatch {
+  width: 28px;
+  height: 28px;
+  border: 2px solid #e5e7eb;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+  padding: 0;
+}
+
+.colorSwatch:hover {
+  border-color: #2563eb;
+  transform: scale(1.1);
+}
+
+.customColorRow {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  padding-top: 8px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.colorInput {
+  width: 50px;
+  height: 32px;
+  border: 1px solid #e5e7eb;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.applyColorButton {
+  flex: 1;
+  padding: 6px 12px;
+  font-size: 12px;
+  background: #2563eb;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.applyColorButton:hover {
+  background: #1d4ed8;
 }
 
 .editorArea {

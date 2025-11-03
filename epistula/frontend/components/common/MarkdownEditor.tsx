@@ -1,175 +1,234 @@
-import { useState, useEffect, useRef } from 'react';
+import { useRef, useState, useEffect } from 'react';
+import Showdown from 'showdown';
 import styles from './MarkdownEditor.module.css';
+import { uploadToStorage } from '../../lib/api';
 
 interface MarkdownEditorProps {
   value: string;
-  onChange: (value: string) => void;
+  onChange: (v: string) => void;
   onSave: () => void;
   isSaving?: boolean;
   placeholder?: string;
 }
 
 export default function MarkdownEditor({ value, onChange, onSave, isSaving, placeholder }: MarkdownEditorProps) {
-  const [isEditing, setIsEditing] = useState(false);
-  const [showPreview, setShowPreview] = useState(false);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const [selectedTab, setSelectedTab] = useState<'write' | 'preview'>('write');
+  const [showColorPicker, setShowColorPicker] = useState(false);
+  const [selectedColor, setSelectedColor] = useState('#e53e3e');
+  const imageInputRef = useRef<HTMLInputElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const colorPickerRef = useRef<HTMLDivElement>(null);
+  const converterRef = useRef(new Showdown.Converter());
 
-  useEffect(() => {
-    if (isEditing && textareaRef.current) {
-      textareaRef.current.focus();
+  // Insert markdown at cursor position
+  const insertAtCursor = (insertText: string) => {
+    const textarea = document.querySelector(`.${styles.textarea}`) as HTMLTextAreaElement;
+    if (!textarea) {
+      onChange(value + insertText);
+      return;
     }
-  }, [isEditing]);
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if ((e.ctrlKey || e.metaKey) && e.key === 's') {
-      e.preventDefault();
-      handleSave();
-    }
-    if ((e.ctrlKey || e.metaKey) && e.key === 'b') {
-      e.preventDefault();
-      insertMarkdown('**', '**');
-    }
-    if ((e.ctrlKey || e.metaKey) && e.key === 'i') {
-      e.preventDefault();
-      insertMarkdown('_', '_');
-    }
-    if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
-      e.preventDefault();
-      insertMarkdown('[', '](url)');
-    }
-  };
-
-  const insertMarkdown = (before: string, after: string) => {
-    const textarea = textareaRef.current;
-    if (!textarea) return;
-
     const start = textarea.selectionStart;
     const end = textarea.selectionEnd;
-    const selectedText = value.substring(start, end);
-    const newText = value.substring(0, start) + before + selectedText + after + value.substring(end);
-    
-    onChange(newText);
-    
+    const before = value.slice(0, start);
+    const after = value.slice(end);
+    onChange(before + insertText + after);
     setTimeout(() => {
-      if (selectedText) {
-        textarea.setSelectionRange(start + before.length, end + before.length);
-      } else {
-        textarea.setSelectionRange(start + before.length, start + before.length);
-      }
+      textarea.focus();
+      textarea.selectionStart = textarea.selectionEnd = start + insertText.length;
     }, 0);
   };
 
-  const handleSave = () => {
-    onSave();
-    setIsEditing(false);
+  // Upload handler
+  const handleUpload = async (file: File, isImage: boolean) => {
+    const res = await uploadToStorage(file);
+    if (!res?.url) throw new Error('Upload failed');
+    if (isImage) {
+      insertAtCursor(`![${file.name}](${res.url})`);
+    } else {
+      insertAtCursor(`[${file.name}](${res.url})`);
+    }
   };
 
-  const renderMarkdown = (text: string) => {
-    if (!text) return null;
-    
-    let html = text;
-    
-    html = html.replace(/^### (.*$)/gim, '<h3>$1</h3>');
-    html = html.replace(/^## (.*$)/gim, '<h2>$1</h2>');
-    html = html.replace(/^# (.*$)/gim, '<h1>$1</h1>');
-    html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
-    html = html.replace(/\*(.+?)\*/g, '<em>$1</em>');
-    html = html.replace(/_(.+?)_/g, '<em>$1</em>');
-    html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
-    html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
-    html = html.replace(/```([^`]+)```/g, '<pre><code>$1</code></pre>');
-    html = html.replace(/^\* (.+)$/gim, '<li>$1</li>');
-    html = html.replace(/(<li>[\s\S]*<\/li>)/g, '<ul>$1</ul>');
-    html = html.replace(/\n/g, '<br />');
-    
-    return <div dangerouslySetInnerHTML={{ __html: html }} />;
+  // Drag/drop and paste handlers
+  const onDrop = async (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    const files = Array.from(e.dataTransfer.files);
+    for (const file of files) {
+      const isImage = (file.type || '').startsWith('image/');
+      try { await handleUpload(file, isImage); } catch (err) { alert((err as Error).message || 'Upload failed'); }
+    }
+  };
+  const onPaste = async (e: React.ClipboardEvent<HTMLDivElement>) => {
+    const items = e.clipboardData?.items || [];
+    for (let i = 0; i < items.length; i++) {
+      const it = items[i];
+      if (it.kind === 'file') {
+        const file = it.getAsFile();
+        if (file) {
+          const isImage = (file.type || '').startsWith('image/');
+          try { await handleUpload(file, isImage); } catch (err) { alert((err as Error).message || 'Upload failed'); }
+        }
+      }
+    }
   };
 
-  if (!isEditing && !value) {
-    return (
-      <div className={styles.emptyState} onClick={() => setIsEditing(true)}>
-        <span className={styles.emptyIcon}>📝</span>
-        <p className={styles.emptyText}>Click to add a description...</p>
-        <p className={styles.emptyHint}>Use Markdown to format your content</p>
-      </div>
-    );
-  }
+  // Close color picker when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (colorPickerRef.current && !colorPickerRef.current.contains(event.target as Node)) {
+        setShowColorPicker(false);
+      }
+    };
+    if (showColorPicker) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [showColorPicker]);
 
-  if (!isEditing) {
-    return (
-      <div className={styles.viewMode} onClick={() => setIsEditing(true)}>
-        <div className={styles.content}>
-          {renderMarkdown(value)}
-        </div>
-        <div className={styles.editHint}>Click to edit</div>
-        <button
-          type="button"
-          className={styles.editToggle}
-          onClick={(e) => {
-            e.stopPropagation();
-            setIsEditing(true);
-          }}
-          aria-label="Edit description"
-          title="Edit"
-        >
-          ✏️ Edit
-        </button>
-      </div>
-    );
-  }
+  const applyColor = (color: string) => {
+    insertAtCursor(`<span style='color:${color}'>text</span>`);
+    setSelectedColor(color);
+    setShowColorPicker(false);
+  };
+
+  const predefinedColors = [
+    '#e53e3e', '#d69e2e', '#38a169', '#3182ce', '#805ad5', 
+    '#d53f8c', '#000000', '#718096', '#f56565', '#ed8936'
+  ];
 
   return (
-    <div className={styles.editorContainer}>
+    <div className={styles.editorContainer} onDrop={onDrop} onPaste={onPaste} onDragOver={(e) => e.preventDefault()}>
+      {/* Hidden inputs for uploads */}
+      <input ref={imageInputRef} type="file" style={{ display: 'none' }} onChange={async (e) => {
+        const f = e.target.files?.[0];
+        if (!f) return;
+        try { await handleUpload(f, true); } catch (err) { alert((err as Error).message || 'Upload failed'); }
+        e.currentTarget.value = '';
+      }} />
+      <input ref={fileInputRef} type="file" style={{ display: 'none' }} onChange={async (e) => {
+        const f = e.target.files?.[0];
+        if (!f) return;
+        try { await handleUpload(f, false); } catch (err) { alert((err as Error).message || 'Upload failed'); }
+        e.currentTarget.value = '';
+      }} />
+
+      {/* Toolbar */}
       <div className={styles.toolbar}>
+        {/* Mode Toggle (Radio-style) */}
         <div className={styles.toolbarGroup}>
-          <button className={styles.toolButton} onClick={() => insertMarkdown('# ', '')} title="Heading 1" type="button">H1</button>
-          <button className={styles.toolButton} onClick={() => insertMarkdown('## ', '')} title="Heading 2" type="button">H2</button>
-          <button className={styles.toolButton} onClick={() => insertMarkdown('### ', '')} title="Heading 3" type="button">H3</button>
-        </div>
-        
-        <div className={styles.toolbarGroup}>
-          <button className={styles.toolButton} onClick={() => insertMarkdown('**', '**')} title="Bold (Ctrl+B)" type="button"><strong>B</strong></button>
-          <button className={styles.toolButton} onClick={() => insertMarkdown('_', '_')} title="Italic (Ctrl+I)" type="button"><em>I</em></button>
-          <button className={styles.toolButton} onClick={() => insertMarkdown('`', '`')} title="Code" type="button">{'<> '}</button>
-        </div>
-        
-        <div className={styles.toolbarGroup}>
-          <button className={styles.toolButton} onClick={() => insertMarkdown('[', '](url)')} title="Link (Ctrl+K)" type="button">🔗</button>
-          <button className={styles.toolButton} onClick={() => insertMarkdown('* ', '')} title="Bullet list" type="button">• List</button>
+          <button 
+            type="button" 
+            className={`${styles.toolButton} ${selectedTab === 'write' ? styles.active : ''}`}
+            onClick={() => setSelectedTab('write')}
+            title="Write"
+          >
+            Write
+          </button>
+          <button 
+            type="button" 
+            className={`${styles.toolButton} ${selectedTab === 'preview' ? styles.active : ''}`}
+            onClick={() => setSelectedTab('preview')}
+            title="Preview"
+          >
+            Preview
+          </button>
         </div>
 
+        {/* Formatting Buttons (only show in write mode) */}
+        {selectedTab === 'write' && (
+          <>
+            <div className={styles.toolbarGroup}>
+              <button type="button" className={styles.toolButton} title="Heading 1" onClick={() => insertAtCursor('\n# ')}>H1</button>
+              <button type="button" className={styles.toolButton} title="Heading 2" onClick={() => insertAtCursor('\n## ')}>H2</button>
+              <button type="button" className={styles.toolButton} title="Heading 3" onClick={() => insertAtCursor('\n### ')}>H3</button>
+            </div>
+            <div className={styles.toolbarGroup}>
+              <button type="button" className={styles.toolButton} title="Bold" onClick={() => insertAtCursor('**bold**')}><strong>B</strong></button>
+              <button type="button" className={styles.toolButton} title="Italic" onClick={() => insertAtCursor('_italic_')}><em>I</em></button>
+              <button type="button" className={styles.toolButton} title="Underline" onClick={() => insertAtCursor('<u>underline</u>')}><u>U</u></button>
+              <button type="button" className={styles.toolButton} title="Strikethrough" onClick={() => insertAtCursor('~~strike~~')}><s>S</s></button>
+              <div style={{ position: 'relative' }}>
+                <button 
+                  type="button" 
+                  className={styles.toolButton} 
+                  title="Text Color" 
+                  onClick={() => setShowColorPicker(!showColorPicker)}
+                >
+                  <span style={{color: selectedColor}}>A</span>
+                </button>
+                {showColorPicker && (
+                  <div ref={colorPickerRef} className={styles.colorPicker}>
+                    <div className={styles.colorGrid}>
+                      {predefinedColors.map(color => (
+                        <button
+                          key={color}
+                          type="button"
+                          className={styles.colorSwatch}
+                          style={{ backgroundColor: color }}
+                          onClick={() => applyColor(color)}
+                          title={color}
+                        />
+                      ))}
+                    </div>
+                    <div className={styles.customColorRow}>
+                      <input
+                        type="color"
+                        value={selectedColor}
+                        onChange={(e) => setSelectedColor(e.target.value)}
+                        className={styles.colorInput}
+                      />
+                      <button
+                        type="button"
+                        className={styles.applyColorButton}
+                        onClick={() => applyColor(selectedColor)}
+                      >
+                        Apply
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+            <div className={styles.toolbarGroup}>
+              <button type="button" className={styles.toolButton} title="Bullet List" onClick={() => insertAtCursor('\n* item')}>• List</button>
+              <button type="button" className={styles.toolButton} title="Numbered List" onClick={() => insertAtCursor('\n1. item')}>1. List</button>
+              <button type="button" className={styles.toolButton} title="Checkbox" onClick={() => insertAtCursor('\n- [ ] item')}>☑️</button>
+            </div>
+            <div className={styles.toolbarGroup}>
+              <button type="button" className={styles.toolButton} title="Blockquote" onClick={() => insertAtCursor('\n> quote')}>❝</button>
+              <button type="button" className={styles.toolButton} title="Code Block" onClick={() => insertAtCursor('\n```\ncode\n```')}>{'<>'}</button>
+              <button type="button" className={styles.toolButton} title="Link" onClick={() => insertAtCursor('[link](url)')}>🔗</button>
+            </div>
+            <div className={styles.toolbarGroup}>
+              <button type="button" className={styles.toolButton} title="Insert image" onClick={() => imageInputRef.current?.click()}>🖼️</button>
+              <button type="button" className={styles.toolButton} title="Insert file link" onClick={() => fileInputRef.current?.click()}>📎</button>
+            </div>
+          </>
+        )}
+
+        {/* Save Button (always visible) */}
         <div className={styles.toolbarGroup} style={{ marginLeft: 'auto' }}>
-          <button className={`${styles.toolButton} ${showPreview ? styles.active : ''}`} onClick={() => setShowPreview(!showPreview)} title="Toggle preview" type="button">👁️ Preview</button>
+          <button type="button" className={styles.saveButton} onClick={onSave} disabled={isSaving}>
+            {isSaving ? 'Saving…' : 'Save'}
+          </button>
         </div>
       </div>
 
+      {/* Editor */}
       <div className={styles.editorArea}>
-        {!showPreview ? (
+        {selectedTab === 'write' ? (
           <textarea
-            ref={textareaRef}
             className={styles.textarea}
             value={value}
             onChange={(e) => onChange(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder={placeholder || "Start typing... Use Markdown for formatting\n\nExamples:\n# Heading 1\n## Heading 2\n**bold** _italic_\n* List item\n[link](url)\n`code`"}
-            disabled={isSaving}
+            placeholder={placeholder || 'Write using Markdown… Drop or paste images/files to upload'}
           />
         ) : (
-          <div className={styles.preview}>
-            {renderMarkdown(value)}
-          </div>
+          <div className={styles.preview}
+               dangerouslySetInnerHTML={{ __html: converterRef.current.makeHtml(value || '') }} />
         )}
       </div>
-
-      <div className={styles.actions}>
-        <div className={styles.hint}>
-          <kbd>Ctrl</kbd> + <kbd>S</kbd> to save • <kbd>Ctrl</kbd> + <kbd>B</kbd> bold • <kbd>Ctrl</kbd> + <kbd>I</kbd> italic
-        </div>
-        <div className={styles.actionButtons}>
-          <button className={styles.cancelButton} onClick={() => setIsEditing(false)} disabled={isSaving} type="button">Cancel</button>
-          <button className={styles.saveButton} onClick={handleSave} disabled={isSaving} type="button">{isSaving ? 'Saving...' : 'Save'}</button>
-        </div>
-      </div>
+      <div className={styles.hint}>Tip: drag & drop or paste images/files to upload to MinIO automatically.</div>
     </div>
   );
 }
