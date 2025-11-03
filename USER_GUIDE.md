@@ -31,6 +31,17 @@ What’s included today:
 
 If your session is missing or expires, you’ll be returned to the login page.
 
+## Import/Export: what do the options mean?
+
+When moving data between the temporary area and live data, you may see these choices:
+
+- Temporary area: a safe copy for testing. Changes here don’t affect your live data until you choose to promote them.
+- Replace: throw away matching items in the destination and load exactly what’s in the file.
+- Merge: keep what you already have, update matching items, and add anything missing.
+- Skip existing: only add new items; don’t change anything that’s already there.
+
+Tip: If you’re unsure, try it in the temporary area first. Promote to live only after you’ve checked everything looks right.
+
 ## Tips & troubleshooting
 
 - If the login page says the server is not reachable, ensure the backend is running on port 8000. The quick fix is to re‑run the updater:

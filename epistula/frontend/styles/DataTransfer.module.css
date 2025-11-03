@@ -45,6 +45,31 @@
   font-size: 0.9rem;
 }
 
+.helpBox {
+  background-color: #f5f7ff;
+  border: 1px solid #cfd8ff;
+  border-radius: 6px;
+  padding: 0.9rem 1rem;
+  margin: 0.75rem 0 1.25rem 0;
+  color: #333;
+}
+
+.helpBox strong {
+  display: block;
+  margin-bottom: 0.4rem;
+  color: #3b4cca;
+}
+
+.helpList {
+  margin: 0.25rem 0 0 0;
+  padding-left: 1.15rem;
+}
+
+.helpList li {
+  margin: 0.2rem 0;
+  line-height: 1.35;
+}
+
 .error {
   background-color: #fee;
   border: 1px solid #fcc;

@@ -31,6 +31,11 @@ export default function DataTransferPanel({ universityId, universityName, hasTem
   const [importing, setImporting] = useState<string | null>(null);
   const [exportedData, setExportedData] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
+  const [selectedByEntity, setSelectedByEntity] = useState<Record<string, 'replace' | 'merge' | 'skip_existing'>>({});
+
+  const getStrategy = (entityKey: string): 'replace' | 'merge' | 'skip_existing' => {
+    return selectedByEntity[entityKey] ?? 'merge';
+  };
 
   const getBackendUrl = () => 'http://localhost:8000';
 
@@ -124,7 +129,18 @@ export default function DataTransferPanel({ universityId, universityName, hasTem
       return;
     }
 
-    if (!confirm(`Import ${exportedData.count} ${entityType} records to ${toTemp ? 'TEMP' : 'PRODUCTION'} schema?\n\nStrategy: ${strategy}\n\nThis will ${strategy === 'replace' ? 'REPLACE existing records' : strategy === 'merge' ? 'UPDATE existing and ADD new records' : 'only ADD new records'}.`)) {
+    const strategyText =
+      strategy === 'replace'
+        ? 'Replace: throw away matching items and load exactly what is in the file.'
+        : strategy === 'merge'
+        ? 'Merge: keep what you already have, update matches, and add anything missing.'
+        : 'Skip existing: only add new items; do not change anything that already exists.';
+
+    const destText = toTemp
+      ? 'Temporary area (safe copy — does not change your live data)'
+      : 'Production (live data will be updated based on the strategy)';
+
+    if (!confirm(`Import ${exportedData.count} ${entityType} records to ${destText}?\n\n${strategyText}\n\nDo you want to continue?`)) {
       return;
     }
 
@@ -199,6 +215,16 @@ export default function DataTransferPanel({ universityId, universityName, hasTem
             <p>Export data from temp schema and import to production (or vice versa)</p>
           </div>
 
+          <div className={styles.helpBox}>
+            <strong>Plain-language guide</strong>
+            <ul className={styles.helpList}>
+              <li><b>Temporary area</b>: a safe copy for testing. Changes here don’t affect your live data until you choose to promote.</li>
+              <li><b>Replace</b>: throw away matching items in the destination and load exactly what’s in the file.</li>
+              <li><b>Merge</b>: keep what you already have, update matching items, and add anything missing.</li>
+              <li><b>Skip existing</b>: only add new items; leave anything that’s already there unchanged.</li>
+            </ul>
+          </div>
+
           {error && <div className={styles.error}>{error}</div>}
 
           {loading ? (
@@ -233,20 +259,38 @@ export default function DataTransferPanel({ universityId, universityName, hasTem
                         <td className={styles.count}>{tempCount}</td>
                         <td className={styles.actions}>
                           <div className={styles.actionGroup}>
+                            <span className={styles.actionLabel}>Strategy:</span>
+                            <select
+                              value={getStrategy(entity.key)}
+                              onChange={(e) =>
+                                setSelectedByEntity((prev) => ({
+                                  ...prev,
+                                  [entity.key]: e.target.value as 'replace' | 'merge' | 'skip_existing',
+                                }))
+                              }
+                              style={{ padding: '0.25rem 0.4rem', borderRadius: 6, border: '1px solid #cfd8ff' }}
+                              title="Choose how imports handle existing items for this entity"
+                            >
+                              <option value="merge">Merge (recommended)</option>
+                              <option value="replace">Replace</option>
+                              <option value="skip_existing">Skip existing</option>
+                            </select>
+                          </div>
+                          <div className={styles.actionGroup}>
                             <span className={styles.actionLabel}>From Temp:</span>
                             <button
                               onClick={() => handleExport(entity.key, true)}
                               disabled={tempCount === 0 || !!exporting}
                               className={styles.exportButton}
-                              title="Export from temp schema"
+                              title="Export from the temporary (safe copy) area"
                             >
                               {exportingTemp ? '⏳' : '📤'} Export
                             </button>
                             <button
-                              onClick={() => handleImport(entity.key, false, 'merge')}
+                              onClick={() => handleImport(entity.key, false, getStrategy(entity.key))}
                               disabled={!exportedData || exportedData.entity_type !== entity.key || !!importing}
                               className={styles.importButton}
-                              title="Import to production (merge strategy)"
+                              title={`Import to production — Using strategy: ${getStrategy(entity.key) === 'replace' ? 'Replace' : getStrategy(entity.key) === 'merge' ? 'Merge' : 'Skip existing'}`}
                             >
                               {importingProd ? '⏳' : '📥'} → Prod
                             </button>
@@ -262,10 +306,10 @@ export default function DataTransferPanel({ universityId, universityName, hasTem
                               {exportingProd ? '⏳' : '📤'} Export
                             </button>
                             <button
-                              onClick={() => handleImport(entity.key, true, 'merge')}
+                              onClick={() => handleImport(entity.key, true, getStrategy(entity.key))}
                               disabled={!exportedData || exportedData.entity_type !== entity.key || !!importing}
                               className={styles.importButton}
-                              title="Import to temp (merge strategy)"
+                              title={`Import to temporary area — Using strategy: ${getStrategy(entity.key) === 'replace' ? 'Replace' : getStrategy(entity.key) === 'merge' ? 'Merge' : 'Skip existing'}`}
                             >
                               {importingTemp ? '⏳' : '📥'} → Temp
                             </button>
