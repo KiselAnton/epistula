@@ -1,5 +1,4 @@
 import { Faculty } from '../../types';
-import MarkdownDisplay from '../common/MarkdownDisplay';
 import { getBackendUrl } from '../../lib/config';
 import Image from 'next/image';
 
@@ -62,18 +61,11 @@ export default function FacultyHeader({ faculty, universityId: _universityId, on
           display: 'flex',
           gap: '1rem',
           color: '#666',
-          fontSize: '0.95rem',
-          marginBottom: '1rem'
+          fontSize: '0.95rem'
         }}>
           <span><strong>Code:</strong> {faculty.code}</span>
           <span><strong>Short Name:</strong> {faculty.short_name}</span>
         </div>
-        {faculty.description && (
-          <div style={{ marginTop: '0.5rem' }}>
-            <MarkdownDisplay content={faculty.description} />
-          </div>
-        )}
-        {/* Editing moved to modal; no inline controls here */}
       </div>
     </div>
   );

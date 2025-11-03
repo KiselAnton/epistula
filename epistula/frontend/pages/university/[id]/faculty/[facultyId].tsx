@@ -212,15 +212,7 @@ export default function FacultyPage() {
               </button>
             </div>
 
-            {/* Subjects Section */}
-            <SubjectsSection 
-              subjects={subjects} 
-              universityId={id as string} 
-              facultyId={facultyId as string}
-              isTemp={!!university.schema_name?.endsWith('_temp')}
-            />
-
-            {/* Description is editable in the wizard; show display-only here */}
+            {/* Description - moved above subjects section */}
             {faculty.description && (
               <div style={{ marginTop: '1.5rem' }}>
                 <h3 style={{ marginBottom: '0.5rem' }}>Description</h3>
@@ -229,6 +221,14 @@ export default function FacultyPage() {
                 </div>
               </div>
             )}
+
+            {/* Subjects Section */}
+            <SubjectsSection 
+              subjects={subjects} 
+              universityId={id as string} 
+              facultyId={facultyId as string}
+              isTemp={!!university.schema_name?.endsWith('_temp')}
+            />
 
             {/* Faculty Members (Professors) Section */}
             <div style={{ marginTop: '2rem' }}>
