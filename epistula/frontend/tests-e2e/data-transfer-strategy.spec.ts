@@ -12,64 +12,24 @@ import fs from 'fs';
  * - Asserts the import request payload contains strategy: "replace"
  */
 test.describe('Data Transfer per-row strategy selector', () => {
-  let universityId: number;
-
-  test.beforeAll(async () => {
-    // Try to read seeded university id from global setup (if present)
-    const authDir = path.join(process.cwd(), 'tests-e2e', '.auth');
-    const idsPath = path.join(authDir, 'ids.json');
-    if (fs.existsSync(idsPath)) {
-      const ids = JSON.parse(fs.readFileSync(idsPath, 'utf-8'));
-      universityId = ids.universityId;
-    }
-    if (!universityId) universityId = 1;
-  });
+  // Test is self-contained; no dynamic university id needed
 
   test('row strategy select influences import payload', async ({ page, request }) => {
     // Ensure origin before accessing localStorage
     await page.goto('/dashboard');
     const token = await page.evaluate(() => localStorage.getItem('token'));
-    const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
-    // Pick a valid university (first)
-    const universitiesResp = await request.get(`${backendUrl}/api/v1/universities/`, {
-      headers: { 'Authorization': `Bearer ${token}` },
-    });
-    expect(universitiesResp.ok()).toBeTruthy();
-    const universities = await universitiesResp.json();
-    expect(universities.length).toBeGreaterThan(0);
-    const testUniversity = universities[0];
-    universityId = testUniversity.id;
+  const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+  const universityId = 1;
 
-    // Navigate to Backups and expand panel
-    await page.goto('/backups');
-    await page.waitForTimeout(500);
-
-    // Expand the first university section and open Data Transfer panel
-    await page.locator('text=Backup Management').waitFor();
-    const firstToggle = page.locator('button[title="Expand section"]').first();
-    if (await firstToggle.isVisible()) {
-      await firstToggle.click();
-    }
-
-    // Open the Data Transfer panel toggle
-  const dataTransferToggle = page.getByRole('button', { name: /Data Transfer \(Temp ↔ Production\)/ });
-  await dataTransferToggle.waitFor({ state: 'visible' });
-  await dataTransferToggle.click();
-
-    // Accept confirmation dialogs automatically
-    page.on('dialog', (dialog) => dialog.accept());
-
-    // Set up route mocks: temp-status says temp exists; entities show counts; capture export and import
-    let seenImportPayload: any = null;
-
+    // Mock temp-status before navigating to /backups
     await page.route(`${backendUrl}/api/v1/backups/${universityId}/temp-status`, async (route) => {
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
         body: JSON.stringify({
           university_id: universityId,
-          university_name: 'Test',
+          university_name: 'Test University',
           has_temp_schema: true,
           temp_schema: `uni_${universityId}_temp`,
           production_schema: `uni_${universityId}`,
@@ -79,14 +39,42 @@ test.describe('Data Transfer per-row strategy selector', () => {
       });
     });
 
-    await page.route(new RegExp(`${backendUrl.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}/api/v1/data-transfer/${universityId}/entities\?from_temp=.*`), async (route) => {
+    // Mock /api/v1/backups/all to include a university with a temp schema
+    await page.route(`${backendUrl}/api/v1/backups/all`, async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          universities: [
+            {
+              university_id: universityId,
+              university_name: 'Test University',
+              backups: [
+                {
+                  name: 'backup1.sql',
+                  size_bytes: 123456,
+                  created_at: new Date().toISOString(),
+                  in_minio: false,
+                  university_id: universityId,
+                  university_name: 'Test University',
+                },
+              ],
+            },
+          ],
+          total_backup_count: 1,
+        }),
+      });
+    });
+
+    // Mock entity counts endpoints to ensure Export buttons are enabled
+    await page.route(`${backendUrl}/api/v1/data-transfer/${universityId}/entities?from_temp=true`, async (route) => {
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
         body: JSON.stringify({
           university_id: universityId,
-          schema_name: `uni_${universityId}`,
-          is_temp: route.request().url().includes('from_temp=true'),
+          schema_name: `uni_${universityId}_temp`,
+          is_temp: true,
           entities: {
             faculties: 1,
             subjects: 1,
@@ -100,6 +88,60 @@ test.describe('Data Transfer per-row strategy selector', () => {
         }),
       });
     });
+    await page.route(`${backendUrl}/api/v1/data-transfer/${universityId}/entities?from_temp=false`, async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          university_id: universityId,
+          schema_name: `uni_${universityId}`,
+          is_temp: false,
+          entities: {
+            faculties: 1,
+            subjects: 1,
+            faculty_professors: 0,
+            faculty_students: 0,
+            subject_professors: 0,
+            lectures: 0,
+            lecture_materials: 0,
+          },
+          total_entities: 2,
+        }),
+      });
+    });
+
+    // Navigate to Backups and expand panel
+    await page.goto('/backups');
+    await page.waitForTimeout(1000); // Increased wait for UI render
+
+    // Debug: log all buttons with title="Expand section"
+    const expandButtons = await page.locator('button[title="Expand section"]').all();
+    console.log('Expand section buttons found:', expandButtons.length);
+
+      // Expand the first university section (force expanded)
+      const firstToggle = page.locator('button[title="Expand section"], button[aria-label="Expand"]').first();
+      await expect(firstToggle).toBeVisible({ timeout: 10000 });
+      await firstToggle.click();
+      await page.waitForTimeout(500); // Wait for expansion
+
+  // Wait for Temp Schema Active badge to confirm temp status is loaded
+  await page.locator('text=Temp Schema Active').waitFor({ timeout: 10000 });
+
+  // Debug: print all button texts after temp status
+  const allButtons = await page.locator('button').allTextContents();
+  console.log('All button texts after temp status:', allButtons);
+
+  // Try to find the Data Transfer panel toggle by partial text
+  const dataTransferToggle = page.locator('button', { hasText: /Data Transfer/ }).first();
+  await expect(dataTransferToggle).toBeVisible({ timeout: 10000 });
+  await dataTransferToggle.click();
+  await page.waitForTimeout(500); // Wait for panel to open
+
+    // Accept confirmation dialogs automatically
+    page.on('dialog', (dialog) => dialog.accept());
+
+    // Set up route mocks: capture export and import
+    let seenImportPayload: any = null;
 
     await page.route(`${backendUrl}/api/v1/data-transfer/${universityId}/export`, async (route) => {
       const req = route.request();

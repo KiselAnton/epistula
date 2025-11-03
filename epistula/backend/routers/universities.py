@@ -6,6 +6,9 @@ to root users. University creation uses the database function
 both the registry row and the dedicated schema (uni_<id>).
 """
 from typing import List, Optional
+import logging
+import shutil
+from pathlib import Path
 
 from fastapi import APIRouter, Depends, HTTPException, status, File, UploadFile
 from sqlalchemy import text
@@ -19,6 +22,7 @@ from utils.models import UserDB
 from utils.minio_client import upload_file, delete_file
 from minio.error import S3Error
 
+logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/v1/universities", tags=["universities"])
 
 
@@ -288,12 +292,35 @@ def delete_university(
                 # Ignore if file doesn't exist or storage is unavailable
                 pass
 
-        # 5) Drop the university schema and all of its contents
+        # 5) Handle backups: preserve for production unis, delete for temp unis
+        is_temp_university = schema_name.endswith("_temp")
+        if is_temp_university:
+            # Temp universities: delete their backups (they're just test data)
+            backup_dir = Path("/app/backups/database") / f"uni_{university_id}"
+            if backup_dir.exists():
+                try:
+                    shutil.rmtree(backup_dir)
+                    logger.info(f"Deleted backup directory for temp university {university_id}")
+                except Exception as e:
+                    logger.warning(f"Failed to delete backup dir for temp uni {university_id}: {e}")
+        else:
+            # Production universities: keep backups for potential future restoration
+            logger.info(f"Preserving backups for production university {university_id} ('{uni.name}')")
+            # Optionally mark the backups directory with a .deleted marker
+            backup_dir = Path("/app/backups/database") / f"uni_{university_id}"
+            if backup_dir.exists():
+                marker = backup_dir / ".university_deleted"
+                try:
+                    marker.write_text(f"University '{uni.name}' (ID {university_id}) was deleted on {db.execute(text('SELECT NOW()')).scalar()}")
+                except Exception as e:
+                    logger.warning(f"Failed to write deletion marker: {e}")
+
+        # 6) Drop the university schema and all of its contents
         # CASCADE will drop all tables in the schema. Using IF EXISTS keeps this
         # safe for temp/partial schemas that may not have been fully created.
         db.execute(text(f"DROP SCHEMA IF EXISTS {schema_name} CASCADE"))
 
-        # 6) Delete the university record itself
+        # 7) Delete the university record itself
         db.delete(uni)
 
         # Commit the transaction
