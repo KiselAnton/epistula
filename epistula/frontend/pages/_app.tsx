@@ -16,7 +16,7 @@ import { useRouter } from 'next/router';
 import { useEffect } from 'react';
 import '../styles/globals.css';
 import '@blocknote/core/fonts/inter.css';
-import '@blocknote/react/style.css';
+import '@blocknote/mantine/style.css';
 import '@uiw/react-markdown-preview/markdown.css';
 import { SkeletonStyles } from '../components/Skeleton';
 

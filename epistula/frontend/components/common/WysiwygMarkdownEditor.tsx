@@ -1,8 +1,8 @@
 import { useEffect } from 'react';
 import '@blocknote/core/fonts/inter.css';
-import '@blocknote/react/style.css';
-import { BlockNoteView } from '@blocknote/react';
+import '@blocknote/mantine/style.css';
 import { useCreateBlockNote } from '@blocknote/react';
+import { BlockNoteView } from '@blocknote/mantine';
 import { uploadToStorage } from '../../lib/api';
 import styles from './MarkdownEditor.module.css';
 

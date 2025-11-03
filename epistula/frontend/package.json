@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@blocknote/core": "^0.41.1",
+    "@blocknote/mantine": "^0.41.1",
     "@blocknote/react": "^0.41.1",
     "@uiw/react-md-editor": "^4.0.8",
     "next": "^15.0.0",
