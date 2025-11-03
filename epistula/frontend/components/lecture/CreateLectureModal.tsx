@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import WysiwygMarkdownEditor from '../common/WysiwygMarkdownEditor';
+import { getCurrentUserRole } from '../../utils/auth';
 import styles from './CreateLectureModal.module.css';
 
 interface CreateLectureModalProps {
@@ -154,6 +155,7 @@ export default function CreateLectureModal({
               onSave={() => { /* submit is handled by form, this is a convenience */ }}
               isSaving={isSubmitting}
               placeholder="Add a brief description of the lecture..."
+              userRole={getCurrentUserRole()}
             />
           </div>
 

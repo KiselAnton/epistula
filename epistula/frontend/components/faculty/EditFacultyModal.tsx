@@ -3,6 +3,7 @@ import SafeImage from '../common/SafeImage';
 import { Faculty } from '../../types';
 import WysiwygMarkdownEditor from '../common/WysiwygMarkdownEditor';
 import { getBackendUrl } from '../../lib/config';
+import { getCurrentUserRole } from '../../utils/auth';
 
 interface Props {
   isOpen: boolean;
@@ -91,7 +92,7 @@ const EditFacultyModal: React.FC<Props> = ({ isOpen, onClose, universityId, facu
 
         <div style={{ marginTop: 12 }}>
           <h3 style={{ margin: '0 0 8px', fontSize: '1.05rem' }}>Description</h3>
-          <WysiwygMarkdownEditor value={desc} onChange={setDesc} onSave={saveFields} isSaving={saving} placeholder="Describe this faculty..." />
+          <WysiwygMarkdownEditor value={desc} onChange={setDesc} onSave={saveFields} isSaving={saving} placeholder="Describe this faculty..." userRole={getCurrentUserRole()} />
         </div>
 
         <div style={{ marginTop: 12 }}>

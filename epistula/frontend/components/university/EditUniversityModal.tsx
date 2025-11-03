@@ -2,6 +2,7 @@ import React, { useRef, useState } from 'react';
 import SafeImage from '../common/SafeImage';
 import WysiwygMarkdownEditor from '../common/WysiwygMarkdownEditor';
 import { getBackendUrl } from '../../lib/config';
+import { getCurrentUserRole } from '../../utils/auth';
 import buttons from '../../styles/Buttons.module.css';
 
 export interface University {
@@ -105,7 +106,7 @@ const EditUniversityModal: React.FC<Props> = ({ isOpen, onClose, university, onU
 
         <div style={{ marginTop: 12 }}>
           <h3 style={{ margin: '0 0 8px', fontSize: '1.05rem' }}>Description</h3>
-          <WysiwygMarkdownEditor value={desc} onChange={setDesc} onSave={saveFields} isSaving={saving} placeholder="Describe this university..." />
+          <WysiwygMarkdownEditor value={desc} onChange={setDesc} onSave={saveFields} isSaving={saving} placeholder="Describe this university..." userRole={getCurrentUserRole()} />
         </div>
 
         <div style={{ marginTop: 12 }}>

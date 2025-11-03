@@ -13,6 +13,7 @@ interface WysiwygMarkdownEditorProps {
   onSave: () => void;
   isSaving?: boolean;
   placeholder?: string;
+  userRole?: 'root' | 'uni_admin' | 'professor' | 'student'; // Optional role for permissions
 }
 
 export default function WysiwygMarkdownEditor({ 
@@ -20,7 +21,8 @@ export default function WysiwygMarkdownEditor({
   onChange, 
   onSave, 
   isSaving, 
-  placeholder 
+  placeholder,
+  userRole 
 }: WysiwygMarkdownEditorProps) {
   
   // Handle file uploads for BlockNote
@@ -36,13 +38,20 @@ export default function WysiwygMarkdownEditor({
     }
   };
 
-  // Create BlockNote editor instance with video and audio blocks disabled
-  const { video, audio, ...allowedBlocks } = defaultBlockSpecs;
+  // Role-based block restrictions: students cannot use video/audio
+  // Staff (root, uni_admin, professor) can use all blocks
+  const isStudent = userRole === 'student';
+  const blockSpecs = isStudent 
+    ? (() => {
+        const { video, audio, ...allowedBlocks } = defaultBlockSpecs;
+        return allowedBlocks;
+      })()
+    : defaultBlockSpecs;
   
   const editor = useCreateBlockNote({
     initialContent: value ? undefined : undefined, // Will parse markdown below
     uploadFile: handleUpload,
-    blockSpecs: allowedBlocks, // Use all default blocks except video and audio
+    blockSpecs, // Use role-based block specs
   });
 
   // Load initial markdown content

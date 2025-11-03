@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Lecture } from '../../types';
 import { getBackendUrl } from '../../lib/config';
 import WysiwygMarkdownEditor from '../common/WysiwygMarkdownEditor';
+import { getCurrentUserRole } from '../../utils/auth';
 import buttons from '../../styles/Buttons.module.css';
 import modalStyles from '../../styles/Modal.module.css';
 
@@ -133,6 +134,7 @@ export default function EditLectureModal({ isOpen, lecture, universityId, facult
               onSave={handleSave}
               isSaving={saving}
               placeholder="Add a description, outline topics, or reading links..."
+              userRole={getCurrentUserRole()}
             />
           </div>
 

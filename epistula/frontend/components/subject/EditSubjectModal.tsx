@@ -3,6 +3,7 @@ import SafeImage from '../common/SafeImage';
 import { Subject } from '../../types';
 import { getBackendUrl } from '../../lib/config';
 import WysiwygMarkdownEditor from '../common/WysiwygMarkdownEditor';
+import { getCurrentUserRole } from '../../utils/auth';
 import buttons from '../../styles/Buttons.module.css';
 import modalStyles from '../../styles/Modal.module.css';
 
@@ -148,7 +149,7 @@ const EditSubjectModal: React.FC<EditSubjectModalProps> = ({ isOpen, onClose, su
           </label>
           <div>
             <h3 style={{ margin: '0.5rem 0', fontSize: '1.05rem' }}>Description</h3>
-                      <WysiwygMarkdownEditor value={desc} onChange={setDesc} onSave={handleSave} isSaving={saving} placeholder="Add a detailed description (Markdown supported)" />
+                      <WysiwygMarkdownEditor value={desc} onChange={setDesc} onSave={handleSave} isSaving={saving} placeholder="Add a detailed description (Markdown supported)" userRole={getCurrentUserRole()} />
           </div>
         </div>
 
