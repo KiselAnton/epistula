@@ -6,8 +6,9 @@ and defines core health check endpoints.
 
 from pathlib import Path
 import os
-from fastapi import FastAPI
+from fastapi import FastAPI, Request, status
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from contextlib import asynccontextmanager
 
 from routers.auth import router as auth_router
@@ -19,11 +20,13 @@ from routers.subjects import router as subjects_router
 from routers.subject_professors import router as subject_professors_router
 from routers.subject_students import router as subject_students_router
 from routers.lectures import router as lectures_router
+from routers.lecture_notes import router as lecture_notes_router
 from routers.storage import router as storage_router
 from routers.users import router as users_router
 from routers.backups import router as backups_router
 from routers.data_transfer import router as data_transfer_router
 from init_root_user import init_root_user
+from init_test_admin import init_test_admin
 from utils.minio_client import ensure_bucket_exists
 from utils.backups import start_backup_scheduler
 
@@ -39,6 +42,11 @@ async def lifespan(app: FastAPI):
     # Startup
     print("Starting up Epistula...")
     init_root_user()
+    # Optionally seed a test admin for development/manual testing
+    try:
+        init_test_admin()
+    except Exception as e:
+        print(f"Warning: Test admin initialization failed: {e}")
     
     # Initialize MinIO bucket
     try:
@@ -85,6 +93,7 @@ app.include_router(subjects_router)
 app.include_router(subject_professors_router)
 app.include_router(subject_students_router)
 app.include_router(lectures_router)
+app.include_router(lecture_notes_router)
 app.include_router(storage_router)
 app.include_router(users_router)
 app.include_router(backups_router)
@@ -155,6 +164,27 @@ app.add_middleware(
     allow_headers=["*"],
     expose_headers=["*"],
 )
+
+
+# Global exception handler to ensure CORS headers on errors
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    """Handle all uncaught exceptions and ensure CORS headers are present."""
+    import traceback
+    print(f"Unhandled exception: {exc}")
+    print(traceback.format_exc())
+    
+    return JSONResponse(
+        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        content={"detail": "Internal server error"},
+        headers={
+            "Access-Control-Allow-Origin": request.headers.get("origin", "*"),
+            "Access-Control-Allow-Credentials": "true",
+            "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS, PATCH",
+            "Access-Control-Allow-Headers": "*",
+        },
+    )
+
 
 # Health check endpoint
 @app.get("/health")

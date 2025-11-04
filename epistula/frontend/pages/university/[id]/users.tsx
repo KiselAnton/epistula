@@ -45,6 +45,7 @@ export default function UniversityUsersPage() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [createError, setCreateError] = useState('');
   const [creating, setCreating] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState<number | null>(null);
 
   // Edit user modal state
   const [showEditModal, setShowEditModal] = useState(false);
@@ -371,6 +372,17 @@ export default function UniversityUsersPage() {
       setSearch(qQuery);
       setDebouncedSearch(qQuery.toLowerCase());
     }
+    
+    // Get current user ID from local storage
+    const userStr = localStorage.getItem('user');
+    if (userStr) {
+      try {
+        const user = JSON.parse(userStr);
+        setCurrentUserId(user.id);
+      } catch (e) {
+        console.error('Failed to parse user from localStorage', e);
+      }
+    }
   }, [router.isReady, roleQuery, qQuery]);
 
   useEffect(() => {
@@ -487,10 +499,7 @@ export default function UniversityUsersPage() {
         <Head>
           <title>Epistula -- Users</title>
         </Head>
-        <MainLayout breadcrumbs={[
-          { label: 'Universities', href: '/universities' },
-          'Loading...'
-        ]}>
+        <MainLayout breadcrumbs={['Loading...']}>
           <div style={{ padding: '2rem', textAlign: 'center' }}>
             <p>Loading users...</p>
           </div>
@@ -505,10 +514,7 @@ export default function UniversityUsersPage() {
         <Head>
           <title>Epistula -- Error</title>
         </Head>
-        <MainLayout breadcrumbs={[
-          { label: 'Universities', href: '/universities' },
-          'Error'
-        ]}>
+        <MainLayout breadcrumbs={['Error']}>
           <div style={{ padding: '2rem' }}>
             <h1>Error</h1>
             <p style={{ color: '#dc3545' }}>{error || 'University not found'}</p>
@@ -531,7 +537,6 @@ export default function UniversityUsersPage() {
         <title>Epistula -- {university.name} Users</title>
       </Head>
       <MainLayout breadcrumbs={[
-        { label: 'Universities', href: '/universities' },
         { label: university.name, href: `/university/${id}` },
         'Users'
       ]}>
@@ -714,36 +719,39 @@ export default function UniversityUsersPage() {
                           >
                             Edit
                           </button>
-                          {user.is_active ? (
-                            <button
-                              onClick={() => handleDeactivateUser(user.id)}
-                              style={{
-                                padding: '0.25rem 0.75rem',
-                                background: '#ffc107',
-                                color: '#000',
-                                border: 'none',
-                                borderRadius: '4px',
-                                cursor: 'pointer',
-                                fontSize: '0.85rem'
-                              }}
-                            >
-                              Deactivate
-                            </button>
-                          ) : (
-                            <button
-                              onClick={() => handleActivateUser(user.id)}
-                              style={{
-                                padding: '0.25rem 0.75rem',
-                                background: '#28a745',
-                                color: 'white',
-                                border: 'none',
-                                borderRadius: '4px',
-                                cursor: 'pointer',
-                                fontSize: '0.85rem'
-                              }}
-                            >
-                              Activate
-                            </button>
+                          {/* Hide deactivate/activate buttons for current user */}
+                          {currentUserId !== user.id && (
+                            user.is_active ? (
+                              <button
+                                onClick={() => handleDeactivateUser(user.id)}
+                                style={{
+                                  padding: '0.25rem 0.75rem',
+                                  background: '#ffc107',
+                                  color: '#000',
+                                  border: 'none',
+                                  borderRadius: '4px',
+                                  cursor: 'pointer',
+                                  fontSize: '0.85rem'
+                                }}
+                              >
+                                Deactivate
+                              </button>
+                            ) : (
+                              <button
+                                onClick={() => handleActivateUser(user.id)}
+                                style={{
+                                  padding: '0.25rem 0.75rem',
+                                  background: '#28a745',
+                                  color: 'white',
+                                  border: 'none',
+                                  borderRadius: '4px',
+                                  cursor: 'pointer',
+                                  fontSize: '0.85rem'
+                                }}
+                              >
+                                Activate
+                              </button>
+                            )
                           )}
                         </td>
                       </tr>

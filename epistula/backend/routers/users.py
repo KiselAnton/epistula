@@ -430,6 +430,13 @@ def update_user(
     # Validate access
     validate_university_access(current_user, university_id, db)
     
+    # Prevent self-deactivation
+    if user_id == current_user.id and update_data.is_active is False:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="You cannot deactivate yourself"
+        )
+    
     try:
         # Check if user exists in this university
         result = db.execute(text("""
@@ -526,6 +533,13 @@ def delete_user(
     """
     # Validate access
     validate_university_access(current_user, university_id, db)
+    
+    # Prevent self-deletion
+    if user_id == current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="You cannot delete yourself"
+        )
     
     try:
         # Check if user exists in this university

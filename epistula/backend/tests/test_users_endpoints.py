@@ -596,3 +596,122 @@ def test_get_user_by_id_not_found_returns_404(client, monkeypatch, set_user):
         assert response.status_code == 404
     finally:
         app_main.app.dependency_overrides.clear()
+
+
+def test_cannot_deactivate_self(client, monkeypatch, set_user):
+    """Test that a user cannot deactivate themselves."""
+    import routers.users as users_router
+    
+    # Admin user with ID 42
+    admin = DummyUser(id=42, email="admin@test.com", is_root=False)
+    set_user(admin)
+    
+    monkeypatch.setattr(users_router, "validate_university_access", lambda user, uid, db: True)
+    
+    class _Sess:
+        def rollback(self):
+            pass
+    
+    import utils.database as db_mod
+    import main as app_main
+    def _override_db():
+        yield _Sess()
+    app_main.app.dependency_overrides[db_mod.get_db] = _override_db
+    
+    try:
+        # Try to deactivate self
+        response = client.patch("/api/v1/universities/1/users/42", json={
+            "is_active": False
+        })
+        assert response.status_code == 400
+        assert "cannot deactivate yourself" in response.json()["detail"].lower()
+    finally:
+        app_main.app.dependency_overrides.clear()
+
+
+def test_cannot_delete_self(client, monkeypatch, set_user):
+    """Test that a user cannot delete themselves."""
+    import routers.users as users_router
+    
+    # Admin user with ID 42
+    admin = DummyUser(id=42, email="admin@test.com", is_root=False)
+    set_user(admin)
+    
+    monkeypatch.setattr(users_router, "validate_university_access", lambda user, uid, db: True)
+    
+    class _Sess:
+        def rollback(self):
+            pass
+    
+    import utils.database as db_mod
+    import main as app_main
+    def _override_db():
+        yield _Sess()
+    app_main.app.dependency_overrides[db_mod.get_db] = _override_db
+    
+    try:
+        # Try to delete self
+        response = client.delete("/api/v1/universities/1/users/42")
+        assert response.status_code == 400
+        assert "cannot delete yourself" in response.json()["detail"].lower()
+    finally:
+        app_main.app.dependency_overrides.clear()
+
+
+def test_can_activate_self(client, monkeypatch, set_user):
+    """Test that a user can reactivate themselves (this should be allowed)."""
+    import routers.users as users_router
+    from datetime import datetime
+    
+    # Admin user with ID 42
+    admin = DummyUser(id=42, email="admin@test.com", is_root=False)
+    set_user(admin)
+    
+    monkeypatch.setattr(users_router, "validate_university_access", lambda user, uid, db: True)
+    
+    class _Res:
+        def __init__(self, row=None):
+            self._row = row
+        def fetchone(self):
+            return self._row
+    
+    class _Sess:
+        def __init__(self):
+            self.executed_statements = []
+        def execute(self, stmt, params=None):
+            sql_text = getattr(stmt, "text", str(stmt))
+            self.executed_statements.append((sql_text, params))
+            
+            # Get user data
+            if "SELECT u.email, u.name, uur.role" in sql_text:
+                return _Res(("admin@test.com", "Admin User", "uni_admin", None, datetime(2024, 1, 1), False))
+            
+            # Update is_active
+            if "UPDATE public.user_university_roles" in sql_text and "SET is_active" in sql_text:
+                return _Res(None)
+            
+            return _Res(None)
+        
+        def commit(self):
+            pass
+        
+        def rollback(self):
+            pass
+    
+    import utils.database as db_mod
+    import main as app_main
+    def _override_db():
+        yield _Sess()
+    app_main.app.dependency_overrides[db_mod.get_db] = _override_db
+    
+    try:
+        # Reactivate self should succeed
+        response = client.patch("/api/v1/universities/1/users/42", json={
+            "is_active": True
+        })
+        assert response.status_code == 200
+        body = response.json()
+        assert body["is_active"] is True
+    finally:
+        app_main.app.dependency_overrides.clear()
+
