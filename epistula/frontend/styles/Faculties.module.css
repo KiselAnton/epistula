@@ -261,6 +261,18 @@
   animation: slideUp 0.3s;
 }
 
+.modalContent {
+  background: white;
+  border-radius: 12px;
+  padding: 2rem;
+  max-width: 600px;
+  width: 90%;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  animation: slideUp 0.3s;
+}
+
 @keyframes slideUp {
   from {
     opacity: 0;

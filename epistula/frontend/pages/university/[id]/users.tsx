@@ -719,29 +719,47 @@ export default function UniversityUsersPage() {
                           >
                             Edit
                           </button>
-                          {/* Hide deactivate/activate buttons for current user */}
+                          {/* Hide deactivate/activate/delete buttons for current user */}
                           {currentUserId !== user.id && (
-                            user.is_active ? (
+                            <>
+                              {user.is_active ? (
+                                <button
+                                  onClick={() => handleDeactivateUser(user.id)}
+                                  style={{
+                                    padding: '0.25rem 0.75rem',
+                                    background: '#ffc107',
+                                    color: '#000',
+                                    border: 'none',
+                                    borderRadius: '4px',
+                                    cursor: 'pointer',
+                                    fontSize: '0.85rem',
+                                    marginRight: '0.5rem'
+                                  }}
+                                >
+                                  Deactivate
+                                </button>
+                              ) : (
+                                <button
+                                  onClick={() => handleActivateUser(user.id)}
+                                  style={{
+                                    padding: '0.25rem 0.75rem',
+                                    background: '#28a745',
+                                    color: 'white',
+                                    border: 'none',
+                                    borderRadius: '4px',
+                                    cursor: 'pointer',
+                                    fontSize: '0.85rem',
+                                    marginRight: '0.5rem'
+                                  }}
+                                >
+                                  Activate
+                                </button>
+                              )}
                               <button
-                                onClick={() => handleDeactivateUser(user.id)}
+                                onClick={() => handleDeleteUser(user.id)}
                                 style={{
                                   padding: '0.25rem 0.75rem',
-                                  background: '#ffc107',
-                                  color: '#000',
-                                  border: 'none',
-                                  borderRadius: '4px',
-                                  cursor: 'pointer',
-                                  fontSize: '0.85rem'
-                                }}
-                              >
-                                Deactivate
-                              </button>
-                            ) : (
-                              <button
-                                onClick={() => handleActivateUser(user.id)}
-                                style={{
-                                  padding: '0.25rem 0.75rem',
-                                  background: '#28a745',
+                                  background: '#dc3545',
                                   color: 'white',
                                   border: 'none',
                                   borderRadius: '4px',
@@ -749,9 +767,9 @@ export default function UniversityUsersPage() {
                                   fontSize: '0.85rem'
                                 }}
                               >
-                                Activate
+                                Delete
                               </button>
-                            )
+                            </>
                           )}
                         </td>
                       </tr>
