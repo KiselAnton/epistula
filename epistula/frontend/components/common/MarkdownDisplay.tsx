@@ -26,11 +26,16 @@ export default function MarkdownDisplay({ content, className, variant = 'default
   if (!content) return null;
 
   const variantClass = variant === 'compact' ? styles.compact : '';
+  // Sanitize content by stripping raw HTML video/audio tags before rendering
+  const sanitizeContent = (src: string) =>
+    src.replace(/<\s*(video|audio)[^>]*>[\s\S]*?<\s*\/\s*\1\s*>/gi, '')
+       .replace(/<\s*(source|track)[^>]*>/gi, '');
+  const safeContent = sanitizeContent(content);
   
   return (
     <div className={`${styles.markdown} ${variantClass} ${className || ''}`} data-color-mode="light">
       <MarkdownPreview 
-        source={content}
+        source={safeContent}
         style={{ 
           backgroundColor: 'transparent',
           padding: 0,

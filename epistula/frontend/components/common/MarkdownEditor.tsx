@@ -130,6 +130,22 @@ export default function MarkdownEditor({ value, onChange, onSave, isSaving, plac
     '#d53f8c', '#000000', '#718096', '#f56565', '#ed8936'
   ];
 
+  // Simple sanitizer to strip <video> and <audio> tags from generated HTML
+  const sanitizePreviewHtml = (html: string) => {
+    try {
+      if (typeof window !== 'undefined' && typeof document !== 'undefined') {
+        const wrapper = document.createElement('div');
+        wrapper.innerHTML = html;
+        wrapper.querySelectorAll('video, audio, source, track').forEach((el) => el.remove());
+        return wrapper.innerHTML;
+      }
+    } catch {}
+    // Fallback: naive removal if DOM not available
+    return html
+      .replace(/<\s*(video|audio)[^>]*>[\s\S]*?<\s*\/\s*\1\s*>/gi, '')
+      .replace(/<\s*(source|track)[^>]*>/gi, '');
+  };
+
   return (
     <div className={styles.editorContainer} onDrop={onDrop} onPaste={onPaste} onDragOver={(e) => e.preventDefault()}>
       {/* Hidden inputs for uploads */}
@@ -284,8 +300,11 @@ export default function MarkdownEditor({ value, onChange, onSave, isSaving, plac
             placeholder={placeholder || 'Write using Markdown… Drop or paste images/files to upload'}
           />
         ) : (
-          <div className={styles.preview}
-               dangerouslySetInnerHTML={{ __html: converterRef.current.makeHtml(value || '') }} />
+          <div
+            className={styles.preview}
+            // Ensure preview never renders <video>/<audio> tags
+            dangerouslySetInnerHTML={{ __html: sanitizePreviewHtml(converterRef.current.makeHtml(value || '')) }}
+          />
         )}
       </div>
       <div className={styles.hint}>Tip: drag & drop or paste images/files to upload to MinIO automatically.</div>

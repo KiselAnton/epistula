@@ -6,7 +6,7 @@ This module provides:
 - Current user extraction from tokens
 """
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, UTC
 from typing import Optional
 from jose import JWTError, jwt
 import bcrypt
@@ -83,9 +83,9 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -
     to_encode = data.copy()
     
     if expires_delta:
-        expire = datetime.utcnow() + expires_delta
+        expire = datetime.now(UTC) + expires_delta
     else:
-        expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+        expire = datetime.now(UTC) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     
     to_encode.update({"exp": expire})
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
@@ -256,7 +256,8 @@ def db_user_to_pydantic(db_user: UserDB, db: Session = None) -> User:
                 """)
                 result = db.execute(uni_query, {"uni_id": ur.university_id}).fetchone()
                 
-                if result and ur.is_active:  # Only include if both university and user role are active
+                # Include only if university is active; there is no per-role is_active column
+                if result:
                     try:
                         ur_role = UserRole(ur.role)
                         university_access.append(UniversityAccess(
@@ -264,7 +265,8 @@ def db_user_to_pydantic(db_user: UserDB, db: Session = None) -> User:
                             university_name=result[1],
                             university_code=result[2],
                             role=ur_role,
-                            is_active=ur.is_active,
+                            # Membership record implies active access; university itself already filtered as active
+                            is_active=True,
                             logo_url=result[5]
                         ))
                         

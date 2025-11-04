@@ -55,6 +55,7 @@ export default function UniversityPage() {
   
   // Breadcrumb policy: root users can access the Universities list; admins cannot
   const [isRoot, setIsRoot] = useState(false);
+  const [isStudent, setIsStudent] = useState(false);
 
   const _handleLogoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -232,6 +233,7 @@ export default function UniversityPage() {
         const user = JSON.parse(userRaw);
         let canEditLocal = false;
         if (user?.role === 'root') { setIsRoot(true); canEditLocal = true; }
+        setIsStudent(user?.role === 'student');
         // Edit rights: root or uni_admin for this university
         const uniId = parseInt(id as string);
         if (user?.role === 'root') {
@@ -368,9 +370,7 @@ export default function UniversityPage() {
   };
 
   if (loading) {
-    const breadcrumbs = isRoot
-      ? [{ label: 'Universities', href: '/universities' }, 'Loading...']
-      : ['Loading...'];
+    const breadcrumbs = ['Loading...'];
     return (
       <>
         <Head>
@@ -386,9 +386,7 @@ export default function UniversityPage() {
   }
 
   if (error || !university) {
-    const breadcrumbs = isRoot
-      ? [{ label: 'Universities', href: '/universities' }, 'Error']
-      : ['Error'];
+    const breadcrumbs = ['Error'];
     return (
       <>
         <Head>
@@ -412,10 +410,7 @@ export default function UniversityPage() {
       <Head>
         <title>Epistula -- {university.name}</title>
       </Head>
-      <MainLayout breadcrumbs={isRoot ? [
-        { label: 'Universities', href: '/universities' },
-        university.name
-      ] : [
+      <MainLayout breadcrumbs={[
         university.name
       ]}>
         <div style={{ padding: '2rem' }}>
@@ -498,18 +493,7 @@ export default function UniversityPage() {
               </div>
             )}
 
-            {/* Backups & Restore block */}
-            <div style={{ marginTop: '1.5rem' }}>
-              <UniversityBackupSection
-                universityId={Number(id)}
-                universityName={university.name}
-                defaultCollapsed={true}
-                initialBackups={backups}
-                onChanged={() => {
-                  // Optionally refresh anything else on this page after operations
-                }}
-              />
-            </div>
+            {/* Backups & Restore block moved to end of page below faculties and action buttons */}
 
             <div style={{ marginTop: '2rem', padding: '1rem', background: '#f8f9fa', borderRadius: '8px' }}>
               <p style={{ margin: 0, color: '#666' }}>
@@ -684,6 +668,7 @@ export default function UniversityPage() {
             </div>
 
             <div style={{ marginTop: '2rem', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1rem' }}>
+              {!isStudent && (
               <button
                 onClick={() => router.push(`/university/${university.id}/faculties`)}
                 style={{
@@ -707,7 +692,8 @@ export default function UniversityPage() {
                 <span style={{ fontSize: '1.5rem' }}>🎓</span>
                 Manage Faculties
               </button>
-
+              )}
+              {canEdit && (
               <button
                 onClick={() => router.push(`/university/${university.id}/users`)}
                 style={{
@@ -731,6 +717,19 @@ export default function UniversityPage() {
                 <span style={{ fontSize: '1.5rem' }}>👥</span>
                 Manage Users
               </button>
+              )}
+            </div>
+            {/* Backups & Restore block (now at the very end) */}
+            <div style={{ marginTop: '2rem' }}>
+              <UniversityBackupSection
+                universityId={Number(id)}
+                universityName={university.name}
+                defaultCollapsed={true}
+                initialBackups={backups}
+                onChanged={() => {
+                  // Optionally refresh anything else on this page after operations
+                }}
+              />
             </div>
           </div>
         </div>

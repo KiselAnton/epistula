@@ -1,6 +1,7 @@
 import { Lecture } from '../../types';
 import MarkdownDisplay from '../common/MarkdownDisplay';
 import buttons from '../../styles/Buttons.module.css';
+import LectureNoteEditor from './LectureNoteEditor';
 
 interface LecturesSectionProps {
   lectures: Lecture[];
@@ -13,6 +14,10 @@ interface LecturesSectionProps {
   onImportMaterials?: (lectureId: number) => void;
   onExportMaterials?: (lectureId: number) => void;
   onExportLectures?: () => void;
+  universityId: string;
+  facultyId: string;
+  subjectId: string;
+  showNoteEditor?: boolean;
 }
 
 export default function LecturesSection({
@@ -25,7 +30,11 @@ export default function LecturesSection({
   publishingLecture,
   onImportMaterials,
   onExportMaterials,
-  onExportLectures
+  onExportLectures,
+  universityId,
+  facultyId,
+  subjectId,
+  showNoteEditor = true
 }: LecturesSectionProps) {
   const formatDateTime = (dateString: string | null) => {
     if (!dateString) return 'Not scheduled';
@@ -159,6 +168,17 @@ export default function LecturesSection({
                   )}
                 </div>
               </div>
+              {/* Student private note editor */}
+              {showNoteEditor && (
+                <div style={{ marginTop: '1rem' }}>
+                  <LectureNoteEditor
+                    universityId={universityId}
+                    facultyId={facultyId}
+                    subjectId={subjectId}
+                    lectureId={lecture.id}
+                  />
+                </div>
+              )}
             </div>
           ))}
         </div>

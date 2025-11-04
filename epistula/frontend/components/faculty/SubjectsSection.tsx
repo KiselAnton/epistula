@@ -12,11 +12,14 @@ interface SubjectsSectionProps {
 
 export default function SubjectsSection({ subjects, universityId, facultyId, isTemp }: SubjectsSectionProps) {
   const router = useRouter();
+  const user = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('user') || 'null') : null;
+  const isStudent = user?.role === 'student';
 
   return (
     <div style={{ marginTop: '2rem' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
         <h2>Subjects ({subjects.length})</h2>
+        {!isStudent && (
         <button
           onClick={() => router.push(`/university/${universityId}/faculty/${facultyId}/subjects`)}
           style={{
@@ -32,6 +35,7 @@ export default function SubjectsSection({ subjects, universityId, facultyId, isT
         >
           Manage Subjects
         </button>
+        )}
       </div>
 
       {subjects.length > 0 ? (
@@ -65,6 +69,7 @@ export default function SubjectsSection({ subjects, universityId, facultyId, isT
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '0.5rem' }}>
                 <h3 style={{ margin: 0, fontSize: '1.1rem', color: '#007bff' }}>{subject.name}</h3>
                 <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                  {!isStudent && (
                   <button
                     onClick={async (e) => {
                       e.stopPropagation();
@@ -90,6 +95,7 @@ export default function SubjectsSection({ subjects, universityId, facultyId, isT
                   >
                     Export
                   </button>
+                  )}
                   <span style={{
                   background: subject.is_active ? '#28a745' : '#dc3545',
                   color: 'white',

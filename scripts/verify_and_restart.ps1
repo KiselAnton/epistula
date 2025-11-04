@@ -15,10 +15,12 @@ Write-Info "Repo root: $RepoRoot"
 
 if (-not $SkipRestart) {
     # Rebuild and restart containers FIRST
-    Write-Info "Rebuilding and restarting backend and frontend containers..."
+    Write-Info "Rebuilding and restarting backend and frontend containers (parallel build with BuildKit)..."
     Push-Location $RepoRoot
     try {
-        docker compose up -d --build frontend backend
+        $env:DOCKER_BUILDKIT = "1"
+        docker compose build --parallel frontend backend
+        docker compose up -d frontend backend
         Write-Info "Containers restarted. Waiting for backend health..."
     } catch {
         Write-Err "Docker compose failed: $($_.Exception.Message)"
@@ -61,7 +63,17 @@ if (-not $SkipRestart) {
 Write-Info "Running backend tests..."
 Push-Location "$RepoRoot\epistula\backend"
 try {
-    python -m pytest -q --tb=short
+    $workers = $env:EPISTULA_TEST_WORKERS
+    if ($workers -and $workers -ne "1") {
+        Write-Info "Parallelizing backend tests with $workers workers"
+        if ($workers -eq "auto") {
+            python -m pytest -q --tb=short -n auto --dist=loadscope
+        } else {
+            python -m pytest -q --tb=short -n $workers --dist=loadscope
+        }
+    } else {
+        python -m pytest -q --tb=short
+    }
 } catch {
     Pop-Location
     Write-Err "Tests failed."

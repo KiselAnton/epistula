@@ -20,10 +20,12 @@ if (Test-Path "$RepoRoot/scripts/clean_workspace.ps1") {
 }
 
 # Rebuild/restart and health check
-Write-Info "Rebuilding and restarting containers..."
+Write-Info "Rebuilding and restarting containers (parallel build with BuildKit)..."
 Push-Location $RepoRoot
 try {
-  docker compose up -d --build frontend backend | Out-Null
+  $env:DOCKER_BUILDKIT = "1"
+  docker compose build --parallel frontend backend | Out-Null
+  docker compose up -d frontend backend | Out-Null
 } catch {
   Pop-Location
   Write-Err "Docker compose failed. Aborting commit."
@@ -62,7 +64,17 @@ if (-not $frontendOk) {
 Write-Info "Running backend tests..."
 Push-Location "$RepoRoot\epistula\backend"
 try {
-  python -m pytest -q --tb=short
+  $workers = $env:EPISTULA_TEST_WORKERS
+  if ($workers -and $workers -ne "1") {
+    Write-Info "Parallelizing backend tests with $workers workers"
+    if ($workers -eq "auto") {
+      python -m pytest -q --tb=short -n auto --dist=loadscope
+    } else {
+      python -m pytest -q --tb=short -n $workers --dist=loadscope
+    }
+  } else {
+    python -m pytest -q --tb=short
+  }
 } catch {
   Pop-Location
   Write-Err "Tests failed. Aborting commit."

@@ -83,6 +83,12 @@ const nextConfig = {
         source: '/favicon.ico',
         destination: '/api/favicon',
       },
+      // Proxy API v1 calls to backend so relative 
+      // fetch('/api/v1/...') works in all environments
+      {
+        source: '/api/v1/:path*',
+        destination: `${internalBackendUrl}/api/v1/:path*`,
+      },
       {
         source: '/storage/:path*',
         destination: `${internalBackendUrl}/storage/:path*`,

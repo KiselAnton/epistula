@@ -19,6 +19,7 @@ import ImportSubjectProfessorsWizard from '../../../../../../components/subject/
 import ImportLectureMaterialsWizard from '../../../../../../components/subject/ImportLectureMaterialsWizard';
 import ImportSubjectStudentsWizard from '../../../../../../components/subject/ImportSubjectStudentsWizard';
 import { exportSubjectProfessorsFiltered, exportSubjectStudentsFiltered, exportLecturesFiltered, exportLectureMaterialsFiltered, exportSubjectStudentsLocal } from '../../../../../../utils/exportHelpers';
+import { useAuth } from '../../../../../../context/AuthContext';
 
 export default function SubjectDetailPage() {
   const router = useRouter();
@@ -63,6 +64,7 @@ export default function SubjectDetailPage() {
   const { lectures, loading: lecturesLoading, deletingLecture, handleDeleteLecture, handleCreateLecture, publishingLecture, togglePublishLecture, refreshLectures } = useLectures(
     (id as string) || '', (facultyId as string) || '', (subjectId as string) || ''
   );
+  const { userId } = useAuth();
 
   useEffect(() => {
     if (!id || !facultyId || !subjectId) return;
@@ -113,14 +115,14 @@ export default function SubjectDetailPage() {
 
   if (loading || membersLoading || lecturesLoading) {
     return <><Head><title>Epistula -- Loading...</title></Head>
-      <MainLayout breadcrumbs={[{ label: 'Universities', href: '/universities' }, 'Loading...']}>
+  <MainLayout breadcrumbs={['Loading...']}>
         <div style={{ padding: '2rem', textAlign: 'center' }}><p>Loading subject...</p></div>
       </MainLayout></>;
   }
 
   if (error || !subject || !faculty || !university) {
     return <><Head><title>Epistula -- Error</title></Head>
-      <MainLayout breadcrumbs={[{ label: 'Universities', href: '/universities' }, 'Error']}>
+  <MainLayout breadcrumbs={['Error']}>
         <div style={{ padding: '2rem' }}><h1>Error</h1>
           <p style={{ color: '#dc3545' }}>{error || 'Subject not found'}</p>
           <button onClick={() => router.push(`/university/${id}/faculty/${facultyId}/subjects`)}>Back to Subjects</button>
@@ -130,11 +132,8 @@ export default function SubjectDetailPage() {
 
   return <><Head><title>Epistula -- {subject.name}</title></Head>
     <MainLayout breadcrumbs={[
-      { label: 'Universities', href: '/universities' },
       { label: university.name, href: `/university/${id}` },
-      { label: 'Faculties', href: `/university/${id}/faculties` },
       { label: faculty.name, href: `/university/${id}/faculty/${facultyId}` },
-      { label: 'Subjects', href: `/university/${id}/faculty/${facultyId}/subjects` },
       subject.name
     ]}>
       <div style={{ padding: '2rem' }}>
@@ -173,6 +172,10 @@ export default function SubjectDetailPage() {
             onImportMaterials={(lid) => setShowImportMaterials({ open: true, lectureId: lid })}
             onExportMaterials={async (lid) => { try { await exportLectureMaterialsFiltered(id as string, lid); } catch (e: any) { alert(e?.message || 'Export failed'); } }}
             onExportLectures={async () => { try { await exportLecturesFiltered(id as string, subjectId as string); } catch (e: any) { alert(e?.message || 'Export failed'); } }}
+            universityId={id as string}
+            facultyId={facultyId as string}
+            subjectId={subjectId as string}
+            showNoteEditor={!!userId && students.some(s => s.student_id === userId)}
           />
           <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1rem', flexWrap: 'wrap' }}>
             <button onClick={() => setShowImportLectures(true)} style={{ padding: '0.5rem 1rem', background: '#6c757d', color: 'white', border: 'none', borderRadius: 6, cursor: 'pointer' }}>⬆️ Import Lectures</button>
@@ -187,6 +190,7 @@ export default function SubjectDetailPage() {
                 exportSubjectStudentsLocal(id as string, subjectId as string, simple);
               } catch {}
               alert(e?.message || 'Export failed'); } }} style={{ padding: '0.5rem 1rem', background: '#5a6268', color: 'white', border: 'none', borderRadius: 6, cursor: 'pointer' }}>⬇️ Export Students</button>
+            <button onClick={() => router.push(`/university/${id}/my/notes`)} style={{ padding: '0.5rem 1rem', background: '#17a2b8', color: 'white', border: 'none', borderRadius: 6, cursor: 'pointer' }}>📝 My Notes</button>
           </div>
           <SubjectProfessorsSection professors={professors} universityId={id as string} onAddProfessor={openAddProfessorModal} onRemoveProfessor={handleRemoveProfessor} removingProfessor={removingProfessor} />
           <SubjectStudentsSection 

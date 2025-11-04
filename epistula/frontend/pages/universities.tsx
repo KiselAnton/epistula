@@ -22,6 +22,9 @@ interface University {
 export default function Universities() {
   const router = useRouter();
   const [universities, setUniversities] = useState<University[]>([]);
+  const [search, setSearch] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [fav, setFav] = useState<Record<number, true>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -101,7 +104,21 @@ export default function Universities() {
     } catch {}
 
     fetchUniversities();
+    // Load favorites
+    try {
+      const raw = localStorage.getItem('fav:universities');
+      if (raw) setFav(JSON.parse(raw));
+    } catch {}
   }, [fetchUniversities, router]);
+
+  // Debounce search input
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(search.trim().toLowerCase()), 250);
+    return () => clearTimeout(t);
+  }, [search]);
+
+  // Reset to first page on search change
+  useEffect(() => { setCurrentPage(1); }, [debouncedSearch]);
 
   const handleCreateUniversity = async () => {
     setError('');
@@ -191,8 +208,33 @@ export default function Universities() {
   // Pagination logic
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-  const currentUniversities = universities.slice(indexOfFirstItem, indexOfLastItem);
-  const totalPages = Math.ceil(universities.length / itemsPerPage);
+  const filtered = universities.filter(u => {
+    if (!debouncedSearch) return true;
+    const hay = `${u.name} ${u.code} ${u.schema_name} ${u.description ?? ''}`.toLowerCase();
+    return hay.includes(debouncedSearch);
+  });
+  const currentUniversities = filtered.slice(indexOfFirstItem, indexOfLastItem);
+  const totalPages = Math.ceil(filtered.length / itemsPerPage) || 1;
+
+  // Sort favorites to top
+  const sortWithFav = (list: University[]) => {
+    return [...list].sort((a, b) => {
+      const af = fav[a.id] ? 1 : 0;
+      const bf = fav[b.id] ? 1 : 0;
+      if (af !== bf) return bf - af; // true first
+      return a.name.localeCompare(b.name);
+    });
+  };
+  const currentSorted = sortWithFav(currentUniversities);
+
+  const toggleFav = (id: number) => {
+    setFav((prev) => {
+      const next = { ...prev } as Record<number, true>;
+      if (next[id]) delete next[id]; else next[id] = true;
+      try { localStorage.setItem('fav:universities', JSON.stringify(next)); } catch {}
+      return next;
+    });
+  };
 
   if (loading) {
     return (
@@ -211,23 +253,32 @@ export default function Universities() {
         <div className={styles.container}>
         <div className={styles.header}>
           <h1>Universities</h1>
-          <button 
+          <div style={{ display:'flex', gap: '0.5rem', alignItems:'center' }}>
+            <input
+              aria-label="Search universities"
+              placeholder="Search…"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              style={{ padding:'0.5rem 0.75rem', border:'1px solid #ccc', borderRadius:6, minWidth:220 }}
+            />
+            <button 
             className={styles.createButton}
             onClick={() => setShowCreateModal(true)}
           >
             + Register New University
           </button>
+          </div>
         </div>
 
         {error && <div className={styles.error}>{error}</div>}
 
         <div className={styles.cardsContainer}>
-          {currentUniversities.length === 0 ? (
+          {currentSorted.length === 0 ? (
             <div className={styles.noData}>
-              No universities found. Create your first one!
+              No universities found{debouncedSearch ? ' for this search.' : '. Create your first one!'}
             </div>
           ) : (
-            currentUniversities.map((uni) => (
+            currentSorted.map((uni) => (
               <div 
                 key={uni.id} 
                 className={styles.universityCard}
@@ -258,7 +309,7 @@ export default function Universities() {
                         <span style={{ fontSize: '1.8rem' }}>🏛️</span>
                       )}
                     </div>
-                    <div>
+                    <div style={{ display:'flex', alignItems:'center', gap:'0.5rem' }}>
                       <h3 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                         {uni.name}
                         {uni.schema_name?.endsWith('_temp') && (
@@ -276,6 +327,14 @@ export default function Universities() {
                           </span>
                         )}
                       </h3>
+                      <button
+                        aria-label={`Favorite ${uni.name}`}
+                        title={fav[uni.id] ? 'Unfavorite' : 'Favorite'}
+                        onClick={(e) => { e.stopPropagation(); toggleFav(uni.id); }}
+                        style={{ background:'transparent', border:'none', cursor:'pointer', fontSize:'1.1rem' }}
+                      >
+                        {fav[uni.id] ? '⭐' : '☆'}
+                      </button>
                       <span className={styles.cardCode}>{uni.code}</span>
                     </div>
                   </div>

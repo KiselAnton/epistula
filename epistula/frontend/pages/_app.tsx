@@ -19,6 +19,7 @@ import '@blocknote/core/fonts/inter.css';
 import '@blocknote/mantine/style.css';
 import '@uiw/react-markdown-preview/markdown.css';
 import { SkeletonStyles } from '../components/Skeleton';
+import { AuthProvider } from '../context/AuthContext';
 
 export default function App({ Component, pageProps }: AppProps) {
   const router = useRouter();
@@ -52,7 +53,9 @@ export default function App({ Component, pageProps }: AppProps) {
       {/* Global skeleton animation styles */}
       <SkeletonStyles />
       
-      <Component {...pageProps} />
+      <AuthProvider>
+        <Component {...pageProps} />
+      </AuthProvider>
     </>
   );
 }

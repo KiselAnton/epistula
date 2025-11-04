@@ -12,9 +12,9 @@ from datetime import datetime, timedelta
 # API base URL
 BASE_URL = "http://localhost:8000/api/v1"
 
-# Root credentials (assuming root user exists with ID 1)
-ROOT_EMAIL = "root@epistula.edu"
-ROOT_PASSWORD = "root_password"  # You may need to adjust this
+# Root credentials (match docker-compose defaults)
+ROOT_EMAIL = "root@localhost.localdomain"
+ROOT_PASSWORD = "changeme123"
 
 def login(email: str, password: str):
     """Login and get auth token"""
@@ -45,6 +45,18 @@ def create_university(token: str, name: str, code: str, description: str):
     else:
         print(f"✗ Failed to create university {name}: {response.status_code} - {response.text}")
         return None
+
+def find_university(token: str, code: str):
+    """Find an existing university by code"""
+    headers = {"Authorization": f"Bearer {token}"}
+    r = requests.get(f"{BASE_URL}/universities/", headers=headers)
+    if r.status_code != 200:
+        return None
+    items = r.json()
+    for u in items:
+        if u.get("code") == code:
+            return u
+    return None
 
 def create_faculty(token: str, uni_id: int, name: str, short_name: str, code: str):
     """Create a faculty"""
@@ -182,29 +194,50 @@ def create_lecture(token: str, uni_id: int, faculty_id: int, subject_id: int, ti
         print(f"      ✗ Failed to create lecture {title}: {response.status_code} - {response.text}")
         return None
 
-def create_backup(token: str, uni_id: int, description: str):
-    """Create a backup"""
-    headers = {"Authorization": f"Bearer {token}"}
-    response = requests.post(f"{BASE_URL}/backups/universities/{uni_id}",
+def create_lecture_note(student_token: str, uni_id: int, faculty_id: int, subject_id: int, lecture_id: int, content: str):
+    """Create or update a private lecture note for the student."""
+    headers = {"Authorization": f"Bearer {student_token}"}
+    response = requests.post(
+        f"{BASE_URL}/subjects/{uni_id}/{faculty_id}/{subject_id}/lectures/{lecture_id}/notes",
         headers=headers,
-        json={"description": description}
+        json={"content": content}
     )
-    if response.status_code == 200:
-        print(f"  ✓ Created backup: {description}")
+    if response.status_code in (200, 201):
+        print(f"        ✓ Added note for lecture {lecture_id}")
         return response.json()
+    else:
+        print(f"        ✗ Failed to add note for lecture {lecture_id}: {response.status_code} - {response.text}")
+        return None
+
+def create_backup(token: str, uni_id: int, description: str):
+    """Create a backup using current backups API and set metadata."""
+    headers = {"Authorization": f"Bearer {token}"}
+    response = requests.post(f"{BASE_URL}/backups/{uni_id}/create", headers=headers)
+    if response.status_code == 200:
+        print(f"  ✓ Created backup for university {uni_id}")
+        data = response.json()
+        filename = data.get("filename")
+        if filename:
+            try:
+                requests.put(
+                    f"{BASE_URL}/backups/{uni_id}/{filename}/meta",
+                    headers=headers,
+                    json={"title": "Seed backup", "description": description}
+                )
+            except Exception:
+                pass
+        return data
     else:
         print(f"  ✗ Failed to create backup: {response.status_code} - {response.text}")
         return None
 
-def restore_as_temp(token: str, backup_file: str, description: str):
-    """Restore backup as temporary university"""
+def restore_as_temp(token: str, uni_id: int, backup_file: str, description: str):
+    """Restore backup as temporary university using current API."""
     headers = {"Authorization": f"Bearer {token}"}
-    response = requests.post(f"{BASE_URL}/backups/restore/temp",
+    response = requests.post(
+        f"{BASE_URL}/backups/{uni_id}/{backup_file}/restore",
         headers=headers,
-        json={
-            "backup_file": backup_file,
-            "description": description
-        }
+        params={"to_temp": "true"}
     )
     if response.status_code == 200:
         print(f"  ✓ Restored as temporary university: {description}")
@@ -219,13 +252,18 @@ def populate_university(token: str, uni_num: int):
     print(f"Creating University {uni_num}")
     print(f"{'='*60}")
     
-    # Create university
-    uni = create_university(
-        token,
-        name=f"Test University {uni_num}",
-        code=f"UNI{uni_num}",
-        description=f"Complete test university number {uni_num}"
-    )
+    # Create or reuse university
+    code = f"UNI{uni_num}"
+    uni = find_university(token, code)
+    if uni:
+        print(f"✓ Using existing university: {uni['name']} ({code})")
+    else:
+        uni = create_university(
+            token,
+            name=f"Test University {uni_num}",
+            code=code,
+            description=f"Complete test university number {uni_num}"
+        )
     if not uni:
         return None
     
@@ -324,53 +362,61 @@ def populate_university(token: str, uni_num: int):
                 {"title": "Week 3: Advanced Topics", "days": 7, "is_active": False},
             ]
             
+            created_lectures = []
             for lec in lectures:
                 lecture_date = (base_date + timedelta(days=lec["days"])).strftime("%Y-%m-%d")
-                create_lecture(
+                lec_obj = create_lecture(
                     token, uni_id, faculty_id, subject_id,
                     title=lec["title"],
                     date=lecture_date,
                     is_active=lec["is_active"]
                 )
+                if lec_obj:
+                    created_lectures.append(lec_obj)
+
+            # For each student, add a couple of private notes to the first two lectures
+            for student in students:
+                s_token = login(student["email"], "Student123!")
+                if not s_token:
+                    continue
+                for lect in created_lectures[:2]:
+                    create_lecture_note(
+                        s_token, uni_id, faculty_id, subject_id, lect["id"],
+                        content=f"Notes by {student['name']} for {lect['title']}"
+                    )
     
     return uni
 
 def main():
     print("Starting test university creation...")
-    print("Attempting to connect without authentication first...")
-    
-    # For testing, we'll use direct API calls without authentication
-    # The script assumes root user exists and can authenticate
-    
-    # Try to create universities directly (root access)
-    print("\nNote: This script requires root access to the API.")
-    print("Make sure the backend is running on http://localhost:8000")
-    print("\nIf you need authentication, please update ROOT_EMAIL and ROOT_PASSWORD")
-    
-    # Token would be obtained via login
-    # For now, let's assume we can work without token (root init script scenario)
-    # Or you can login first:
-    
-    # token = login(ROOT_EMAIL, ROOT_PASSWORD)
-    # if not token:
-    #     print("Failed to authenticate. Exiting.")
-    #     sys.exit(1)
-    
-    # For direct testing, we'll use None and rely on test fixtures
-    # In production, you'd use the token
-    token = None  # Will be added via headers when needed
-    
-    print("\n" + "="*60)
-    print("THIS SCRIPT CREATES TEST DATA VIA API CALLS")
-    print("For actual testing, run this from within the backend container")
-    print("or use the Python test client directly")
-    print("="*60)
-    
-    # Instead, let's create a test client version
-    print("\nTo use this script:")
-    print("1. Ensure backend is running (docker-compose up)")
-    print("2. Run from within backend container or with proper authentication")
-    print("\nAlternatively, use the test_setup.py script that uses TestClient")
+    print("Authenticating as root...")
+
+    token = login(ROOT_EMAIL, ROOT_PASSWORD)
+    if not token:
+        print("Failed to authenticate. Check backend is running and credentials match docker-compose.")
+        sys.exit(1)
+
+    # Create and populate UNI1
+    uni1 = populate_university(token, 1)
+    if not uni1:
+        print("Failed to setup UNI1")
+
+    # Create and populate UNI2
+    uni2 = populate_university(token, 2)
+    if not uni2:
+        print("Failed to setup UNI2")
+
+    # Optionally create a backup for UNI2 and restore as temp (comment out if not needed)
+    try:
+        if uni2:
+            backup = create_backup(token, uni2["id"], "Seed backup for UNI2")
+            filename = backup.get("filename") if backup else None
+            if filename:
+                restore_as_temp(token, uni2["id"], filename, "Temporary UNI2 from backup")
+    except Exception as e:
+        print(f"Skipping backup/restore: {e}")
+
+    print("\nDone. You can verify with: python scripts/show_test_universities.py")
 
 if __name__ == "__main__":
     main()

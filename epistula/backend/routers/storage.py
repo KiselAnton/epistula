@@ -6,7 +6,7 @@ from minio.error import S3Error
 from middleware.auth import get_current_user
 from utils.models import UserDB
 import uuid
-from datetime import datetime
+from datetime import datetime, UTC
 
 router = APIRouter(prefix="/storage", tags=["storage"])
 
@@ -110,7 +110,7 @@ async def upload_to_storage(
     safe_folder = "/".join(p for p in folder.split("/") if p and p not in ("..", ".")) or "uploads"
 
     # Build object name: uploads/YYYY/MM/uuid.ext
-    now = datetime.utcnow()
+    now = datetime.now(UTC)
     key = f"{safe_folder}/{now.year:04d}/{now.month:02d}/{uuid.uuid4().hex}.{ext}"
 
     try:

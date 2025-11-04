@@ -4,7 +4,7 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useRouter } from 'next/router';
-import SelectUniversity from '../select-university';
+import SelectUniversity from '../../pages/select-university';
 
 // Mock Next.js router
 jest.mock('next/router', () => ({

@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { ensureAuthenticated, navigateToUniversity, SELECTORS, TIMEOUTS } from './helpers';
 
 /**
  * E2E tests for user management workflows
@@ -7,18 +8,8 @@ import { test, expect } from '@playwright/test';
 
 test.describe('User Management', () => {
   test.beforeEach(async ({ page }) => {
-    // Login as root
-    await page.goto('http://localhost:3000/');
-    await page.fill('input[type="email"]', 'root@localhost.localdomain');
-    await page.fill('input[type="password"]', 'changeme123');
-    await page.click('button[type="submit"]');
-    
-    // Wait for navigation to dashboard
-    await page.waitForURL('**/dashboard');
-    
-    // Navigate to first university
-    await page.click('text=University 1');
-    await page.waitForURL('**/university/1');
+    await ensureAuthenticated(page);
+    await navigateToUniversity(page);
   });
 
   test('creates a new professor user', async ({ page }) => {

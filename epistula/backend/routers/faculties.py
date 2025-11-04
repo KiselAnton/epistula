@@ -75,14 +75,49 @@ def list_faculties(
     
     # Query faculties from university schema
     schema_name = uni.schema_name
-    query = text(f"""
-        SELECT id, university_id, name, short_name, code, description, 
-               logo_url, created_at, is_active
-        FROM {schema_name}.faculties
-        ORDER BY name ASC
-    """)
     
-    result = db.execute(query)
+    # Check user role for this university
+    user_role = db.query(UserUniversityRoleDB).filter(
+        UserUniversityRoleDB.user_id == current_user.id,
+        UserUniversityRoleDB.university_id == university_id
+    ).first()
+    
+    # Professors should only see faculties they're assigned to
+    if user_role and user_role.role == "professor":
+        query = text(f"""
+            SELECT f.id, f.university_id, f.name, f.short_name, f.code, f.description, 
+                   f.logo_url, f.created_at, f.is_active
+            FROM {schema_name}.faculties f
+            INNER JOIN {schema_name}.faculty_professors fp 
+                ON f.id = fp.faculty_id
+            WHERE fp.professor_id = :professor_id 
+                AND fp.is_active = TRUE
+            ORDER BY f.name ASC
+        """)
+        result = db.execute(query, {"professor_id": current_user.id})
+    # Students should only see faculties where they have at least one enrolled subject
+    elif user_role and user_role.role == "student":
+        query = text(f"""
+            SELECT DISTINCT f.id, f.university_id, f.name, f.short_name, f.code, f.description,
+                            f.logo_url, f.created_at, f.is_active
+            FROM {schema_name}.faculties f
+            JOIN {schema_name}.subjects s ON s.faculty_id = f.id
+            JOIN {schema_name}.subject_students ss ON ss.subject_id = s.id
+            WHERE ss.student_id = :student_id
+            ORDER BY f.name ASC
+        """)
+        result = db.execute(query, {"student_id": current_user.id})
+    else:
+        # Root and uni_admin can see all faculties
+        query = text(f"""
+            SELECT id, university_id, name, short_name, code, description, 
+                   logo_url, created_at, is_active
+            FROM {schema_name}.faculties
+            ORDER BY name ASC
+        """)
+        result = db.execute(query)
+        result = db.execute(query)
+    
     faculties: List[Faculty] = []
 
     # Support both real SQLAlchemy Result (iterable) and test doubles

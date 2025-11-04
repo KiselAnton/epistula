@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { ensureAuthenticated, navigateToUniversity, navigateToSubject, SELECTORS, TIMEOUTS } from './helpers';
 
 /**
  * E2E tests for lecture CRUD operations
@@ -7,40 +8,13 @@ import { test, expect } from '@playwright/test';
 
 test.describe('Lecture Management', () => {
   test.beforeEach(async ({ page }) => {
-    // Login as root
-    await page.goto('http://localhost:3000/');
-    await page.fill('input[type="email"]', 'root@localhost.localdomain');
-    await page.fill('input[type="password"]', 'changeme123');
-    await page.click('button[type="submit"]');
-    
-    // Wait for navigation to dashboard
-    await page.waitForURL('**/dashboard');
-    
-    // Navigate to first university
-    await page.click('text=University 1');
-    await page.waitForURL('**/university/1');
-    
-    // Navigate to Faculties
-    await page.click('text=Faculties');
-    await page.waitForURL('**/faculties');
-    
-    // Click on first faculty
-    const firstFaculty = page.locator('[class*="faculty"]').first();
-    await firstFaculty.click();
-    
-    // Navigate to Subjects
-    await page.click('text=Subjects');
-    
-    // Click on first subject
-    const firstSubject = page.locator('[class*="subject"]').first();
-    await firstSubject.click();
-    
-    // Now we should be on the subject detail page with lectures
+    await ensureAuthenticated(page);
+    await navigateToSubject(page);
   });
 
   test('creates a new lecture', async ({ page }) => {
     // Look for "Create Lecture" or "Add Lecture" button
-    const createButton = page.locator('button:has-text("Create Lecture"), button:has-text("Add Lecture"), button:has-text("New Lecture")').first();
+    const createButton = page.locator(SELECTORS.CREATE_LECTURE_BTN).first();
     
     if (await createButton.isVisible({ timeout: 3000 })) {
       await createButton.click();
@@ -67,7 +41,7 @@ test.describe('Lecture Management', () => {
   });
 
   test('creates lecture with markdown content', async ({ page }) => {
-    const createButton = page.locator('button:has-text("Create Lecture"), button:has-text("Add Lecture")').first();
+    const createButton = page.locator(SELECTORS.CREATE_LECTURE_BTN).first();
     
     if (await createButton.isVisible({ timeout: 3000 })) {
       await createButton.click();

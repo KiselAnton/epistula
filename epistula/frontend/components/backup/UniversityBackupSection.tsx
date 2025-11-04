@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import ConfirmModal from '../common/ConfirmModal';
 import DataTransferPanel from './DataTransferPanel';
 import styles from '../../styles/Backups.module.css';
 import btn from '../../styles/Buttons.module.css';
@@ -52,7 +53,15 @@ export default function UniversityBackupSection({
   const [restoringTempKey, setRestoringTempKey] = useState<string | null>(null);
   const [uploadingKey, setUploadingKey] = useState<string | null>(null);
   const [deletingKey, setDeletingKey] = useState<string | null>(null);
+  const [selected, setSelected] = useState<Record<string, boolean>>({});
+  const [deletingAll, setDeletingAll] = useState<boolean>(false);
+  const [deletingBulk, setDeletingBulk] = useState<boolean>(false);
   const [editingMeta, setEditingMeta] = useState<Record<string, { title: string; description: string; saving: boolean }>>({});
+
+  // unified confirm modal state
+  const [confirm, setConfirm] = useState<{ open: boolean; title?: string; message: string; onConfirm?: () => void }>({ open: false, message: '' });
+  const openConfirm = (message: string, onConfirm: () => void, title?: string) => setConfirm({ open: true, title, message, onConfirm });
+  const closeConfirm = () => setConfirm({ open: false, message: '' });
 
   const backend = useMemo(() => getBackendUrl(), []);
   // Persist collapsed/expanded per university id
@@ -142,7 +151,6 @@ export default function UniversityBackupSection({
   };
 
   const handleCreateBackup = async () => {
-    if (!confirm(`Create a new backup for "${universityName}" now?`)) return;
     setCreatingBackup(true);
     try {
       const token = localStorage.getItem('token');
@@ -165,7 +173,6 @@ export default function UniversityBackupSection({
   };
 
   const handlePromoteTemp = async () => {
-    if (!confirm(`⚠️ Promote TEMP → LIVE for "${universityName}"?\n\nA safety backup will be created automatically.`)) return;
     setPromoting(true);
     try {
       const token = localStorage.getItem('token');
@@ -189,7 +196,6 @@ export default function UniversityBackupSection({
   };
 
   const handleDeleteTemp = async () => {
-    if (!confirm(`Delete temporary schema for "${universityName}"?`)) return;
     setDeletingTemp(true);
     try {
       const token = localStorage.getItem('token');
@@ -212,8 +218,6 @@ export default function UniversityBackupSection({
   };
 
   const handleRestore = async (backupName: string, toTemp: boolean) => {
-    const label = toTemp ? 'temporary (safe)' : 'LIVE (dangerous)';
-    if (!confirm(`Restore ${label} for "${universityName}" from backup:\n${backupName}?`)) return;
     const key = `${universityId}-${backupName}`;
     toTemp ? setRestoringTempKey(key) : setRestoringKey(key);
     try {
@@ -260,7 +264,6 @@ export default function UniversityBackupSection({
   };
 
   const handleDeleteBackup = async (backupName: string) => {
-    if (!confirm(`Delete backup ${backupName}? This will remove local file and MinIO object (if any).`)) return;
     const key = `${universityId}-${backupName}`;
     setDeletingKey(key);
     try {
@@ -280,6 +283,53 @@ export default function UniversityBackupSection({
       alert(`❌ ${e?.message || 'Deletion failed'}`);
     } finally {
       setDeletingKey(null);
+    }
+  };
+
+  const handleDeleteAll = async () => {
+    setDeletingAll(true);
+    try {
+      const token = localStorage.getItem('token');
+      const resp = await fetch(`${backend}/api/v1/backups/${universityId}/manage/delete-all?delete_from_minio=true`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!resp.ok) {
+        const data = await resp.json().catch(() => ({} as any));
+        throw new Error(data.detail || 'Failed to delete all backups');
+      }
+      await fetchBackups();
+      setSelected({});
+      onChanged?.();
+    } catch (e: any) {
+      alert(`❌ ${e?.message || 'Failed to delete all'}`);
+    } finally {
+      setDeletingAll(false);
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    const names = Object.keys(selected).filter((k) => selected[k]);
+    if (names.length === 0) return;
+    setDeletingBulk(true);
+    try {
+      const token = localStorage.getItem('token');
+      const resp = await fetch(`${backend}/api/v1/backups/${universityId}/manage/bulk-delete`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ filenames: names, delete_from_minio: true }),
+      });
+      if (!resp.ok) {
+        const data = await resp.json().catch(() => ({} as any));
+        throw new Error(data.detail || 'Failed to delete selected');
+      }
+      await fetchBackups();
+      setSelected({});
+      onChanged?.();
+    } catch (e: any) {
+      alert(`❌ ${e?.message || 'Failed to delete selected'}`);
+    } finally {
+      setDeletingBulk(false);
     }
   };
 
@@ -350,6 +400,13 @@ export default function UniversityBackupSection({
 
   return (
     <div className={styles.universitySection}>
+      <ConfirmModal
+        open={confirm.open}
+        title={confirm.title || 'Please confirm'}
+        message={confirm.message}
+        onCancel={closeConfirm}
+        onConfirm={() => { const fn = confirm.onConfirm; closeConfirm(); fn && fn(); }}
+      />
       <div className={styles.universityHeader}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flex: 1 }}>
           <button
@@ -373,15 +430,15 @@ export default function UniversityBackupSection({
         <div style={{ display: 'flex', gap: '0.5rem' }}>
           {hasTemp && (
             <>
-              <button onClick={handlePromoteTemp} disabled={promoting} className={`${btn.btn} ${btn.btnSuccess}`} title="Promote temporary schema to production">
+              <button onClick={() => openConfirm(`⚠️ Promote TEMP → LIVE for "${universityName}"?\n\nA safety backup will be created automatically.`, () => handlePromoteTemp(), 'Promote to Live')} disabled={promoting} className={`${btn.btn} ${btn.btnSuccess}`} title="Promote temporary schema to production">
                 {promoting ? '⏳ Promoting...' : '✅ Promote to Live'}
               </button>
-              <button onClick={handleDeleteTemp} disabled={deletingTemp} className={`${btn.btn} ${btn.btnDanger}`} title="Delete temporary schema">
+              <button onClick={() => openConfirm(`Delete temporary schema for "${universityName}"?`, () => handleDeleteTemp(), 'Delete Temporary Schema')} disabled={deletingTemp} className={`${btn.btn} ${btn.btnDanger}`} title="Delete temporary schema">
                 {deletingTemp ? '⏳ Deleting...' : '🗑️ Discard Temp'}
               </button>
             </>
           )}
-          <button onClick={handleCreateBackup} disabled={creatingBackup} className={`${btn.btn} ${btn.btnOutlineLight}`} title="Create a new backup immediately">
+          <button onClick={() => openConfirm(`Create a new backup for "${universityName}" now?`, () => handleCreateBackup(), 'Create Backup')} disabled={creatingBackup} className={`${btn.btn} ${btn.btnOutlineLight}`} title="Create a new backup immediately">
             {creatingBackup ? '⏳ Creating...' : '💾 Backup Now'}
           </button>
         </div>
@@ -433,9 +490,30 @@ export default function UniversityBackupSection({
                 <p style={{ margin: '0.25rem 0 0 0', fontSize: 13 }}>Tip: Use &quot;Backup Now&quot; to create one, or check the Backups page for a global overview.</p>
               </div>
             ) : (
+              <>
+              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.5rem 0' }}>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <button onClick={fetchBackups} className={`${btn.btn} ${btn.btnSecondary}`}>Refresh</button>
+                  <button onClick={() => openConfirm(`Delete ALL backups for "${universityName}"?`, () => handleDeleteAll(), 'Delete All Backups')} disabled={deletingAll || backups.length === 0} className={`${btn.btn} ${btn.btnDanger}`}>{deletingAll ? 'Deleting…' : '🗑️ Remove All'}</button>
+                  <button onClick={() => { const count = Object.values(selected).filter(Boolean).length; if (count>0) openConfirm(`Delete ${count} selected backups?`, () => handleBulkDelete(), 'Delete Selected Backups'); }} disabled={deletingBulk || Object.values(selected).every((v) => !v)} className={`${btn.btn} ${btn.btnDanger}`}>{deletingBulk ? 'Deleting…' : '🗑️ Delete Selected'}</button>
+                </div>
+              </div>
               <table>
                 <thead>
                   <tr>
+                    <th>
+                      <input
+                        type="checkbox"
+                        aria-label="Select all"
+                        checked={backups.length > 0 && backups.every((b) => selected[b.name])}
+                        onChange={(e) => {
+                          const v = e.target.checked;
+                          const m: Record<string, boolean> = {};
+                          backups.forEach((b) => (m[b.name] = v));
+                          setSelected(m);
+                        }}
+                      />
+                    </th>
                     <th>Backup</th>
                     <th>Created</th>
                     <th>Size</th>
@@ -453,6 +531,14 @@ export default function UniversityBackupSection({
 
                     return (
                       <tr key={backup.name}>
+                        <td>
+                          <input
+                            type="checkbox"
+                            aria-label={`Select ${backup.name}`}
+                            checked={!!selected[backup.name]}
+                            onChange={(e) => setSelected((prev) => ({ ...prev, [backup.name]: e.target.checked }))}
+                          />
+                        </td>
                         <td className={styles.backupName}>
                           <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                             <div style={{ fontWeight: 600 }}>{backup.title?.trim() ? backup.title : '(no title)'}</div>
@@ -513,7 +599,7 @@ export default function UniversityBackupSection({
                         </td>
                         <td className={styles.actions}>
                           <button
-                            onClick={() => handleRestore(backup.name, true)}
+                            onClick={() => openConfirm(`Restore temporary (safe) for "${universityName}" from backup:\n${backup.name}?`, () => handleRestore(backup.name, true), 'Restore to Temp')}
                             disabled={isRestoringToTemp || !!restoringTempKey}
                             className={`${btn.btn} ${btn.btnWarning}`}
                             title="Restore to temporary schema for validation (safe)"
@@ -521,7 +607,7 @@ export default function UniversityBackupSection({
                             {isRestoringToTemp ? 'Restoring...' : '🔁 Restore to Temp'}
                           </button>
                           <button
-                            onClick={() => handleRestore(backup.name, false)}
+                            onClick={() => openConfirm(`Restore LIVE (dangerous) for "${universityName}" from backup:\n${backup.name}?`, () => handleRestore(backup.name, false), 'Restore to Live')}
                             disabled={isRestoring || !!restoringKey}
                             className={`${btn.btn} ${btn.btnDanger}`}
                             title="Restore directly to production (REPLACES LIVE DATA!)"
@@ -534,7 +620,7 @@ export default function UniversityBackupSection({
                             </button>
                           )}
                           <button
-                            onClick={() => handleDeleteBackup(backup.name)}
+                            onClick={() => openConfirm(`Delete backup ${backup.name}? This will remove local file and MinIO object (if any).`, () => handleDeleteBackup(backup.name), 'Delete Backup')}
                             disabled={isDeleting || !!deletingKey}
                             className={`${btn.btn} ${btn.btnDanger}`}
                             title="Delete backup file (and MinIO object if present)"
@@ -547,6 +633,7 @@ export default function UniversityBackupSection({
                   })}
                 </tbody>
               </table>
+              </>
             )}
           </div>
         </>

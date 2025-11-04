@@ -35,6 +35,10 @@ export function useLectures(
         { headers: { 'Authorization': `Bearer ${token}` } }
       );
 
+      if (response.status === 401) {
+        handleUnauthorized();
+        return;
+      }
       if (!response.ok) throw new Error('Failed to fetch lectures');
 
       const data = await response.json();
@@ -77,6 +81,10 @@ export function useLectures(
         }
       );
 
+      if (response.status === 401) {
+        handleUnauthorized();
+        return;
+      }
       if (!response.ok) throw new Error('Failed to delete lecture');
 
       await loadLectures();
@@ -109,6 +117,10 @@ export function useLectures(
         }
       );
 
+      if (response.status === 401) {
+        handleUnauthorized();
+        return;
+      }
       if (!response.ok) throw new Error('Failed to update lecture visibility');
       await loadLectures();
     } catch (error) {
@@ -139,6 +151,10 @@ export function useLectures(
         }
       );
 
+      if (response.status === 401) {
+        handleUnauthorized();
+        throw new Error('Unauthorized');
+      }
       if (!response.ok) {
         const error = await response.json();
         throw new Error(error.detail || 'Failed to create lecture');

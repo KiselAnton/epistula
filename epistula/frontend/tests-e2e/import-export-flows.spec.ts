@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test';
 import * as path from 'path';
 import * as fs from 'fs';
+import { ensureAuthenticated, navigateToUniversity, navigateToSubject as helperNavigateToSubject, navigateToFaculty as helperNavigateToFaculty } from './helpers';
 
 /**
  * E2E tests for complete import/export workflows
@@ -9,28 +10,32 @@ import * as fs from 'fs';
 
 test.describe('Import/Export Workflows', () => {
   test.beforeEach(async ({ page }) => {
-    // Login as root
-    await page.goto('http://localhost:3000/');
-    await page.fill('input[type="email"]', 'root@localhost.localdomain');
-    await page.fill('input[type="password"]', 'changeme123');
-    await page.click('button[type="submit"]');
-    
-    // Wait for navigation to dashboard
-    await page.waitForURL('**/dashboard');
-    
-    // Navigate to first university
-    await page.click('text=University 1');
-    await page.waitForURL('**/university/1');
+    await ensureAuthenticated(page);
+    await navigateToUniversity(page);
   });
 
   test.describe('Export Workflows', () => {
     test('exports subject lectures successfully', async ({ page }) => {
-      // Navigate to subject
-      await page.click('text=Faculties');
-      await page.waitForTimeout(500);
+      // From university page, navigate to faculties using "Manage All" button
+      const manageBtn = page.locator('button:has-text("Manage All"), button:has-text("Manage Faculties")').first();
+      if (await manageBtn.count()) {
+        await manageBtn.click();
+      } else {
+        const m = page.url().match(/\/university\/(\d+)/);
+        if (m) {
+          await page.goto(`http://localhost:3000/university/${m[1]}/faculties`);
+        }
+      }
+      await page.waitForURL('**/university/**/faculties');
       await page.locator('[class*="faculty"]').first().click();
-      await page.click('text=Subjects');
-      await page.waitForTimeout(500);
+      await page.waitForURL('**/university/**/faculty/**');
+
+      // Navigate to subjects
+      const subjectsLink = page.locator('a:has-text("Subjects"), button:has-text("Manage Subjects")').first();
+      if (await subjectsLink.count()) {
+        await subjectsLink.click();
+        await page.waitForTimeout(500);
+      }
       await page.locator('[class*="subject"]').first().click();
       
       // Click export lectures button
@@ -52,10 +57,19 @@ test.describe('Import/Export Workflows', () => {
     });
 
     test('exports subject professors successfully', async ({ page }) => {
-      // Navigate to subject
-      await page.click('text=Faculties');
-      await page.waitForTimeout(500);
+      // From university page, navigate to faculties using "Manage All" button
+      const manageBtn = page.locator('button:has-text("Manage All"), button:has-text("Manage Faculties")').first();
+      if (await manageBtn.count()) {
+        await manageBtn.click();
+      } else {
+        const m = page.url().match(/\/university\/(\d+)/);
+        if (m) {
+          await page.goto(`http://localhost:3000/university/${m[1]}/faculties`);
+        }
+      }
+      await page.waitForURL('**/university/**/faculties');
       await page.locator('[class*="faculty"]').first().click();
+      await page.waitForURL('**/university/**/faculty/**');
       await page.click('text=Subjects');
       await page.waitForTimeout(500);
       await page.locator('[class*="subject"]').first().click();

@@ -42,23 +42,69 @@ def list_subjects(
     # Ensure optional columns exist
     ensure_subject_logo_column(db, schema_name)
     
-    # Query subjects
-    query = text(f"""
-        SELECT 
-            s.id,
-            s.faculty_id,
-            s.name,
-            s.code,
-            s.description,
-            s.created_at,
-            s.is_active,
-            s.logo_url
-        FROM {schema_name}.subjects s
-        WHERE s.faculty_id = :faculty_id
-        ORDER BY s.code ASC
-    """)
+    # Check user role for this university
+    user_role = db.query(UserUniversityRoleDB).filter(
+        UserUniversityRoleDB.user_id == current_user.id,
+        UserUniversityRoleDB.university_id == university_id
+    ).first()
     
-    result = db.execute(query, {"faculty_id": faculty_id})
+    # Professors should only see subjects in faculties they're assigned to
+    if user_role and user_role.role == "professor":
+        query = text(f"""
+            SELECT 
+                s.id,
+                s.faculty_id,
+                s.name,
+                s.code,
+                s.description,
+                s.created_at,
+                s.is_active,
+                s.logo_url
+            FROM {schema_name}.subjects s
+            INNER JOIN {schema_name}.faculty_professors fp 
+                ON s.faculty_id = fp.faculty_id
+            WHERE s.faculty_id = :faculty_id
+                AND fp.professor_id = :professor_id
+                AND fp.is_active = TRUE
+            ORDER BY s.code ASC
+        """)
+        result = db.execute(query, {"faculty_id": faculty_id, "professor_id": current_user.id})
+    # Students should only see subjects they are enrolled to
+    elif user_role and user_role.role == "student":
+        query = text(f"""
+            SELECT 
+                s.id,
+                s.faculty_id,
+                s.name,
+                s.code,
+                s.description,
+                s.created_at,
+                s.is_active,
+                s.logo_url
+            FROM {schema_name}.subjects s
+            JOIN {schema_name}.subject_students ss ON ss.subject_id = s.id
+            WHERE s.faculty_id = :faculty_id
+              AND ss.student_id = :student_id
+            ORDER BY s.code ASC
+        """)
+        result = db.execute(query, {"faculty_id": faculty_id, "student_id": current_user.id})
+    else:
+        # Root and uni_admin can see all subjects
+        query = text(f"""
+            SELECT 
+                s.id,
+                s.faculty_id,
+                s.name,
+                s.code,
+                s.description,
+                s.created_at,
+                s.is_active,
+                s.logo_url
+            FROM {schema_name}.subjects s
+            WHERE s.faculty_id = :faculty_id
+            ORDER BY s.code ASC
+        """)
+        result = db.execute(query, {"faculty_id": faculty_id})
     subjects = []
     
     for row in result:

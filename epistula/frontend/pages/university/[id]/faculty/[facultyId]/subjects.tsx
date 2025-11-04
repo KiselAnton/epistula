@@ -37,6 +37,8 @@ export default function SubjectsPage() {
   const [university, setUniversity] = useState<University | null>(null);
   const [faculty, setFaculty] = useState<Faculty | null>(null);
   const [subjects, setSubjects] = useState<Subject[]>([]);
+  const [search, setSearch] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -48,6 +50,7 @@ export default function SubjectsPage() {
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const logoInputRef = useRef<HTMLInputElement | null>(null);
+  const [fav, setFav] = useState<Record<number, true>>({});
 
   const [formData, setFormData] = useState({
     name: '',
@@ -158,6 +161,13 @@ export default function SubjectsPage() {
     }
   };
 
+  // Debounce search input and reset pagination
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(search.trim().toLowerCase()), 250);
+    return () => clearTimeout(t);
+  }, [search]);
+  useEffect(() => { setCurrentPage(1); }, [debouncedSearch]);
+
   const handleDelete = async (subjectId: number) => {
     try {
       const token = localStorage.getItem('token');
@@ -232,6 +242,11 @@ export default function SubjectsPage() {
         }
 
         await fetchSubjects();
+        // Load favorites for this faculty
+        try {
+          const raw = localStorage.getItem(`fav:subjects:uni_${id}:faculty_${facultyId}`);
+          if (raw) setFav(JSON.parse(raw));
+        } catch {}
         setLoading(false);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'An error occurred');
@@ -248,10 +263,7 @@ export default function SubjectsPage() {
         <Head>
           <title>Epistula -- Subjects</title>
         </Head>
-        <MainLayout breadcrumbs={[
-          { label: 'Universities', href: '/universities' },
-          'Loading...'
-        ]}>
+        <MainLayout breadcrumbs={['Loading...']}>
           <div className={styles.container}>
             <p>Loading subjects...</p>
           </div>
@@ -262,8 +274,30 @@ export default function SubjectsPage() {
 
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-  const currentSubjects = subjects.slice(indexOfFirstItem, indexOfLastItem);
-  const totalPages = Math.ceil(subjects.length / itemsPerPage);
+  const filtered = subjects.filter(s => {
+    if (!debouncedSearch) return true;
+    const hay = `${s.name} ${s.code} ${s.description ?? ''}`.toLowerCase();
+    return hay.includes(debouncedSearch);
+  });
+  const sortWithFav = (list: Subject[]) => {
+    return [...list].sort((a, b) => {
+      const af = fav[a.id] ? 1 : 0;
+      const bf = fav[b.id] ? 1 : 0;
+      if (af !== bf) return bf - af;
+      return a.name.localeCompare(b.name);
+    });
+  };
+  const sortedFiltered = sortWithFav(filtered);
+  const currentSubjects = sortedFiltered.slice(indexOfFirstItem, indexOfLastItem);
+  const totalPages = Math.ceil(filtered.length / itemsPerPage) || 1;
+  const toggleFav = (sid: number) => {
+    setFav((prev) => {
+      const next = { ...prev } as Record<number, true>;
+      if (next[sid]) delete next[sid]; else next[sid] = true;
+      try { localStorage.setItem(`fav:subjects:uni_${id}:faculty_${facultyId}`, JSON.stringify(next)); } catch {}
+      return next;
+    });
+  };
 
   return (
     <>
@@ -271,29 +305,35 @@ export default function SubjectsPage() {
         <title>Epistula -- {faculty?.name} Subjects</title>
       </Head>
       <MainLayout breadcrumbs={[
-        { label: 'Universities', href: '/universities' },
         { label: university?.name || 'University', href: `/university/${id}` },
-        { label: 'Faculties', href: `/university/${id}/faculties` },
-        { label: faculty?.name || 'Faculty', href: `/university/${id}/faculty/${facultyId}` },
-        'Subjects'
+        { label: faculty?.name || 'Faculty', href: `/university/${id}/faculty/${facultyId}` }
       ]}>
         <div className={styles.container}>
           <div className={styles.header}>
             <h1>Subjects - {faculty?.name}</h1>
-            <button onClick={() => setShowCreateModal(true)} className={styles.createButton}>
-              + Create New Subject
-            </button>
-            <button onClick={() => setShowImport(true)} className={`${buttons.btn} ${buttons.btnSecondary}`} style={{ marginLeft: '0.5rem' }}>
-              ⬆️ Import Subject
-            </button>
+            <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+              <input
+                aria-label="Search subjects"
+                placeholder="Search…"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                style={{ padding:'0.5rem 0.75rem', border:'1px solid #ccc', borderRadius:6, minWidth:220 }}
+              />
+              <button onClick={() => setShowCreateModal(true)} className={styles.createButton}>
+                + Create New Subject
+              </button>
+              <button onClick={() => setShowImport(true)} className={`${buttons.btn} ${buttons.btnSecondary}`} style={{ marginLeft: '0.5rem' }}>
+                ⬆️ Import Subject
+              </button>
+            </div>
           </div>
 
           {error && <div className={styles.error}>{error}</div>}
 
-          {subjects.length === 0 ? (
+          {filtered.length === 0 ? (
             <div className={styles.emptyState}>
               <span className={styles.emptyIcon}>📚</span>
-              <p>No subjects yet</p>
+              <p>{debouncedSearch ? 'No subjects match this search' : 'No subjects yet'}</p>
               <button onClick={() => setShowCreateModal(true)} className={styles.createButton}>
                 Create your first subject
               </button>
@@ -332,6 +372,14 @@ export default function SubjectsPage() {
                         }}>
                           {subject.name}
                         </h3>
+                        <button
+                          aria-label={`Favorite ${subject.name}`}
+                          title={fav[subject.id] ? 'Unfavorite' : 'Favorite'}
+                          onClick={(e) => { e.stopPropagation(); toggleFav(subject.id); }}
+                          style={{ background:'transparent', border:'none', cursor:'pointer', fontSize:'1.1rem', marginLeft: '0.25rem' }}
+                        >
+                          {fav[subject.id] ? '⭐' : '☆'}
+                        </button>
                         <p style={{
                           margin: '0.25rem 0 0 0',
                           fontSize: '0.85rem',

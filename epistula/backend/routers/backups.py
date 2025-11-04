@@ -269,6 +269,11 @@ class BackupMetaPayload(BaseModel):
     description: str | None = None
 
 
+class BulkDeletePayload(BaseModel):
+    filenames: List[str]
+    delete_from_minio: bool = True
+
+
 @router.get("/{university_id}/{backup_name}/meta")
 def get_backup_meta(
     university_id: int,
@@ -549,6 +554,9 @@ def ensure_temp_university_registry(
         raise HTTPException(status_code=500, detail=f"Failed to ensure temp university entry: {e}")
 
 
+ 
+
+
 @router.delete("/{university_id}/{backup_name}")
 def delete_backup_endpoint(
     university_id: int,
@@ -581,3 +589,88 @@ def delete_backup_endpoint(
     except Exception as e:
         logger.error(f"[DELETE] Failed to delete backup {backup_name} for uni {university_id}: {e}", exc_info=True)
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+
+
+@router.delete("/{university_id}/manage/delete-all")
+def delete_all_backups_endpoint(
+    university_id: int,
+    delete_from_minio: bool = True,
+    db: Session = Depends(get_db),
+    current_user: UserDB = Depends(get_current_user),
+):
+    """Delete all backups for a university.
+
+    Returns a summary and per-file results. Requires root or uni_admin.
+    """
+    _ensure_can_manage(db, current_user, university_id)
+
+    entries = list_backups(university_id)
+    results = []
+    errors = 0
+    for e in entries:
+        try:
+            res = delete_backup_file(university_id, e.name, delete_from_minio=delete_from_minio)
+            results.append(res)
+        except Exception as ex:
+            errors += 1
+            results.append({
+                "filename": e.name,
+                "error": str(ex),
+                "deleted_local": False,
+                "deleted_minio": False,
+            })
+    return {
+        "university_id": university_id,
+        "requested": len(entries),
+        "errors": errors,
+        "results": results,
+    }
+
+
+@router.delete("/{university_id}/manage/bulk-delete")
+def bulk_delete_backups_endpoint(
+    university_id: int,
+    payload: BulkDeletePayload,
+    db: Session = Depends(get_db),
+    current_user: UserDB = Depends(get_current_user),
+):
+    """Delete selected backups for a university given a list of filenames."""
+    _ensure_can_manage(db, current_user, university_id)
+
+    results = []
+    errors = 0
+    for name in payload.filenames:
+        if not str(name).endswith(".sql.gz"):
+            results.append({
+                "filename": name,
+                "error": "Invalid backup filename",
+                "deleted_local": False,
+                "deleted_minio": False,
+            })
+            errors += 1
+            continue
+        try:
+            res = delete_backup_file(university_id, name, delete_from_minio=payload.delete_from_minio)
+            results.append(res)
+        except FileNotFoundError:
+            results.append({
+                "filename": name,
+                "error": "Backup not found",
+                "deleted_local": False,
+                "deleted_minio": False,
+            })
+            errors += 1
+        except Exception as ex:
+            results.append({
+                "filename": name,
+                "error": str(ex),
+                "deleted_local": False,
+                "deleted_minio": False,
+            })
+            errors += 1
+    return {
+        "university_id": university_id,
+        "requested": len(payload.filenames),
+        "errors": errors,
+        "results": results,
+    }

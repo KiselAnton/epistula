@@ -87,7 +87,7 @@ def list_lectures(
     
     schema_name = uni.schema_name
     
-    # Check if subject exists
+    # Check if subject exists and professor has access
     check_query = text(f"""
         SELECT id FROM {schema_name}.subjects 
         WHERE id = :subject_id AND faculty_id = :faculty_id
@@ -98,6 +98,28 @@ def list_lectures(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Subject with ID {subject_id} not found"
         )
+    
+    # Check if professor has access to this faculty
+    if not current_user.is_root:
+        user_role = db.execute(text("""
+            SELECT role FROM public.user_university_roles
+            WHERE user_id = :user_id AND university_id = :university_id AND is_active = TRUE
+        """), {"user_id": current_user.id, "university_id": university_id}).fetchone()
+        
+        # If user is a professor, verify they're assigned to this faculty
+        if user_role and user_role[0] == 'professor':
+            faculty_access = db.execute(text(f"""
+                SELECT 1 FROM {schema_name}.faculty_professors
+                WHERE professor_id = :professor_id 
+                    AND faculty_id = :faculty_id 
+                    AND is_active = TRUE
+            """), {"professor_id": current_user.id, "faculty_id": faculty_id}).fetchone()
+            
+            if not faculty_access:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="You don't have access to this faculty"
+                )
     
     # Determine visibility: admins/root and assigned professors see all; others only published
     show_all = False

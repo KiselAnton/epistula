@@ -237,6 +237,12 @@ export default function MainLayout({ children, breadcrumbs = ['Dashboard'] }: Ma
               {!collapsed && <span>Universities</span>}
             </Link>
           )}
+          {primaryUniId && (
+            <Link href={`/university/${primaryUniId}/my/notes`} className={`${styles.navItem} ${router.asPath.startsWith(`/university/${primaryUniId}/my/notes`) ? styles.navItemActive : ''}`}>
+              <span className={styles.navIcon}>📝</span>
+              {!collapsed && <span>My Notes</span>}
+            </Link>
+          )}
           {isRoot && (
             <Link href="/backups" className={`${styles.navItem} ${router.pathname === '/backups' ? styles.navItemActive : ''}`}>
               <span className={styles.navIcon}>💾</span>

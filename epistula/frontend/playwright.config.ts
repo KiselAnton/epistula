@@ -14,6 +14,7 @@ export default defineConfig({
   },
   // Perform login and test data seeding once before the suite (can be disabled via env)
   globalSetup: './tests-e2e/global-setup.ts',
+  globalTeardown: './tests-e2e/global-teardown.ts',
   webServer: {
     command: 'npm run dev',
     url: `http://localhost:${PORT}`,

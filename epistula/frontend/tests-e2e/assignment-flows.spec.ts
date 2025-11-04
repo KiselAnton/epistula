@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { ensureAuthenticated, navigateToUniversity, navigateToFaculty, navigateToSubject, TIMEOUTS, SELECTORS } from './helpers';
 
 /**
  * E2E tests for assignment workflows
@@ -7,34 +8,18 @@ import { test, expect } from '@playwright/test';
 
 test.describe('Professor and Student Assignments', () => {
   test.beforeEach(async ({ page }) => {
-    // Login as root
-    await page.goto('http://localhost:3000/');
-    await page.fill('input[type="email"]', 'root@localhost.localdomain');
-    await page.fill('input[type="password"]', 'changeme123');
-    await page.click('button[type="submit"]');
-    
-    // Wait for navigation to dashboard
-    await page.waitForURL('**/dashboard');
-    
-    // Navigate to first university
-    await page.click('text=University 1');
-    await page.waitForURL('**/university/1');
+    await ensureAuthenticated(page);
+    await navigateToUniversity(page);
   });
 
   test.describe('Faculty Assignments', () => {
     test.beforeEach(async ({ page }) => {
-      // Navigate to Faculties
-      await page.click('text=Faculties');
-      await page.waitForURL('**/faculties');
-      
-      // Click on first faculty
-      const firstFaculty = page.locator('[class*="faculty"]').first();
-      await firstFaculty.click();
+      await navigateToFaculty(page);
     });
 
     test('assigns professor to faculty', async ({ page }) => {
       // Look for "Assign Professor" or "Add Professor" button
-      const assignButton = page.locator('button:has-text("Assign Professor"), button:has-text("Add Professor")').first();
+      const assignButton = page.locator(SELECTORS.ASSIGN_PROFESSOR_BTN).first();
       
       if (await assignButton.isVisible({ timeout: 3000 })) {
         await assignButton.click();
@@ -67,7 +52,7 @@ test.describe('Professor and Student Assignments', () => {
 
     test('assigns student to faculty', async ({ page }) => {
       // Look for "Assign Student" or "Add Student" button
-      const assignButton = page.locator('button:has-text("Assign Student"), button:has-text("Add Student")').first();
+      const assignButton = page.locator(SELECTORS.ASSIGN_STUDENT_BTN).first();
       
       if (await assignButton.isVisible({ timeout: 3000 })) {
         await assignButton.click();
@@ -145,23 +130,12 @@ test.describe('Professor and Student Assignments', () => {
 
   test.describe('Subject Assignments', () => {
     test.beforeEach(async ({ page }) => {
-      // Navigate to Faculties -> Subject
-      await page.click('text=Faculties');
-      await page.waitForTimeout(500);
-      
-      const firstFaculty = page.locator('[class*="faculty"]').first();
-      await firstFaculty.click();
-      
-      await page.click('text=Subjects');
-      await page.waitForTimeout(500);
-      
-      const firstSubject = page.locator('[class*="subject"]').first();
-      await firstSubject.click();
+      await navigateToSubject(page);
     });
 
     test('assigns professor to subject', async ({ page }) => {
       // Look for professor assignment section
-      const assignButton = page.locator('button:has-text("Assign Professor"), button:has-text("Add Professor")').first();
+      const assignButton = page.locator(SELECTORS.ASSIGN_PROFESSOR_BTN).first();
       
       if (await assignButton.isVisible({ timeout: 3000 })) {
         await assignButton.click();
@@ -182,7 +156,7 @@ test.describe('Professor and Student Assignments', () => {
 
     test('enrolls student in subject', async ({ page }) => {
       // Look for student enrollment section
-      const enrollButton = page.locator('button:has-text("Enroll Student"), button:has-text("Add Student")').first();
+      const enrollButton = page.locator(SELECTORS.ASSIGN_STUDENT_BTN).first();
       
       if (await enrollButton.isVisible({ timeout: 3000 })) {
         await enrollButton.click();
@@ -247,7 +221,7 @@ test.describe('Professor and Student Assignments', () => {
 
     test('prevents duplicate professor assignment', async ({ page }) => {
       // Try to assign same professor twice
-      const assignButton = page.locator('button:has-text("Assign Professor"), button:has-text("Add Professor")').first();
+      const assignButton = page.locator(SELECTORS.ASSIGN_PROFESSOR_BTN).first();
       
       if (await assignButton.isVisible({ timeout: 3000 })) {
         // First assignment
@@ -272,7 +246,7 @@ test.describe('Professor and Student Assignments', () => {
 
     test('prevents duplicate student enrollment', async ({ page }) => {
       // Try to enroll same student twice
-      const enrollButton = page.locator('button:has-text("Enroll Student"), button:has-text("Add Student")').first();
+      const enrollButton = page.locator(SELECTORS.ASSIGN_STUDENT_BTN).first();
       
       if (await enrollButton.isVisible({ timeout: 3000 })) {
         // First enrollment
@@ -302,17 +276,10 @@ test.describe('Professor and Student Assignments', () => {
       // before being assigned to subjects
       
       // Navigate to subject
-      await page.click('text=Faculties');
-      await page.waitForTimeout(500);
-      const firstFaculty = page.locator('[class*="faculty"]').first();
-      await firstFaculty.click();
-      await page.click('text=Subjects');
-      await page.waitForTimeout(500);
-      const firstSubject = page.locator('[class*="subject"]').first();
-      await firstSubject.click();
+      await navigateToSubject(page);
       
       // Try to assign professor not in faculty
-      const assignButton = page.locator('button:has-text("Assign Professor")').first();
+      const assignButton = page.locator(SELECTORS.ASSIGN_PROFESSOR_BTN).first();
       if (await assignButton.isVisible({ timeout: 2000 })) {
         // The select dropdown should only show professors who are faculty members
         // or there should be validation preventing non-faculty assignment
@@ -329,10 +296,7 @@ test.describe('Professor and Student Assignments', () => {
 
     test('shows correct assignment counts', async ({ page }) => {
       // Navigate to faculty
-      await page.click('text=Faculties');
-      await page.waitForTimeout(500);
-      const firstFaculty = page.locator('[class*="faculty"]').first();
-      await firstFaculty.click();
+      await navigateToFaculty(page);
       
       // Look for counts display
       const professorCount = page.locator('text=/\\d+\\s+professors?/i');
@@ -348,10 +312,7 @@ test.describe('Professor and Student Assignments', () => {
 
   test.describe('Bulk Operations', () => {
     test('bulk assigns multiple students', async ({ page }) => {
-      await page.click('text=Faculties');
-      await page.waitForTimeout(500);
-      const firstFaculty = page.locator('[class*="faculty"]').first();
-      await firstFaculty.click();
+      await navigateToFaculty(page);
       
       // Look for bulk assign feature
       const bulkButton = page.locator('button:has-text("Bulk Assign"), button:has-text("Import Students")').first();

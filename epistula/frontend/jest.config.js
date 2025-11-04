@@ -18,6 +18,11 @@ const customJestConfig = {
   ],
   // Exclude E2E tests (Playwright) from Jest
   testPathIgnorePatterns: ['/node_modules/', '/tests-e2e/'],
+  transformIgnorePatterns: [
+    '/node_modules/(?!(prosemirror-[^/]+|@blocknote/[^/]+)/)',
+  ],
+  // Use native V8 coverage to avoid babel-plugin-istanbul/test-exclude incompatibilities
+  coverageProvider: 'v8',
   collectCoverageFrom: [
     'components/**/*.{js,jsx,ts,tsx}',
     'utils/**/*.{js,jsx,ts,tsx}',

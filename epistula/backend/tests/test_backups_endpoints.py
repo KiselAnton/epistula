@@ -766,3 +766,75 @@ def test_get_backup_meta_returns_nulls_when_absent(client, monkeypatch, tmp_path
         assert body["description"] is None
     finally:
         app_main.app.dependency_overrides.clear()
+
+
+def test_delete_all_backups_success(client, monkeypatch):
+    import routers.backups as backups_router
+
+    monkeypatch.setattr(backups_router, "_ensure_can_manage", lambda db, user, unid: None)
+
+    class _Entry:
+        def __init__(self, name):
+            self.name = name
+            self.size_bytes = 0
+            self.created_at = _dt.datetime(2024,1,1)
+            self.in_minio = False
+            self.title = None
+            self.description = None
+
+    monkeypatch.setattr(backups_router, "list_backups", lambda uid: [_Entry("a.sql.gz"), _Entry("b.sql.gz")])
+    monkeypatch.setattr(backups_router, "delete_backup_file", lambda uid, name, delete_from_minio=True: {
+        "university_id": uid,
+        "filename": name,
+        "deleted_local": True,
+        "deleted_minio": delete_from_minio,
+    })
+
+    class _Sess: pass
+    import utils.database as db_mod
+    import main as app_main
+    def _override_db():
+        yield _Sess()
+    app_main.app.dependency_overrides[db_mod.get_db] = _override_db
+
+    try:
+        r = client.delete("/api/v1/backups/99/manage/delete-all", params={"delete_from_minio": "false"})
+        assert r.status_code == 200
+        body = r.json()
+        assert body["requested"] == 2
+        assert body["errors"] == 0
+        assert len(body["results"]) == 2
+        assert body["results"][0]["deleted_minio"] is False
+    finally:
+        app_main.app.dependency_overrides.clear()
+
+
+def test_bulk_delete_selected_success_and_not_found(client, monkeypatch):
+    import routers.backups as backups_router
+    monkeypatch.setattr(backups_router, "_ensure_can_manage", lambda db, user, unid: None)
+
+    def _delete(uid, name, delete_from_minio=True):
+        if name == "missing.sql.gz":
+            raise FileNotFoundError("missing")
+        return {"university_id": uid, "filename": name, "deleted_local": True, "deleted_minio": delete_from_minio}
+    monkeypatch.setattr(backups_router, "delete_backup_file", _delete)
+
+    class _Sess: pass
+    import utils.database as db_mod
+    import main as app_main
+    def _override_db():
+        yield _Sess()
+    app_main.app.dependency_overrides[db_mod.get_db] = _override_db
+
+    try:
+        r = client.request("DELETE", "/api/v1/backups/5/manage/bulk-delete", json={"filenames": ["ok1.sql.gz", "missing.sql.gz", "bad.txt"], "delete_from_minio": True})
+        assert r.status_code == 200
+        body = r.json()
+        assert body["requested"] == 3
+        # Two errors: missing and bad.txt invalid
+        assert body["errors"] == 2
+        # Ensure results include error entries
+        names = [x["filename"] for x in body["results"]]
+        assert "ok1.sql.gz" in names and "missing.sql.gz" in names and "bad.txt" in names
+    finally:
+        app_main.app.dependency_overrides.clear()

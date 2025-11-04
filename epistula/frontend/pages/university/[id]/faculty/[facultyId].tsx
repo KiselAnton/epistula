@@ -28,6 +28,7 @@ export default function FacultyPage() {
   const [_descDraft, setDescDraft] = useState<string>('');
   const [_savingDesc, _setSavingDesc] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [isStudent, setIsStudent] = useState(false);
 
   console.log('FacultyPage render - id:', id, 'facultyId:', facultyId);
 
@@ -89,6 +90,15 @@ export default function FacultyPage() {
           if (uni) setUniversity(uni);
         }
 
+        // Derive user role
+        try {
+          const userRaw = localStorage.getItem('user');
+          if (userRaw) {
+            const usr = JSON.parse(userRaw);
+            setIsStudent(usr?.role === 'student');
+          }
+        } catch {}
+
         // Fetch faculties
         const facultiesResponse = await fetch(`${getBackendUrl()}/api/v1/faculties/${id}`, {
           headers: { 'Authorization': `Bearer ${token}` }
@@ -131,10 +141,7 @@ export default function FacultyPage() {
         <Head>
           <title>Epistula -- Faculty</title>
         </Head>
-        <MainLayout breadcrumbs={[
-          { label: 'Universities', href: '/universities' },
-          'Loading...'
-        ]}>
+        <MainLayout breadcrumbs={['Loading...']}>
           <div style={{ padding: '2rem', textAlign: 'center' }}>
             <p>Loading faculty...</p>
           </div>
@@ -149,10 +156,7 @@ export default function FacultyPage() {
         <Head>
           <title>Epistula -- Error</title>
         </Head>
-        <MainLayout breadcrumbs={[
-          { label: 'Universities', href: '/universities' },
-          'Error'
-        ]}>
+        <MainLayout breadcrumbs={['Error']}>
           <div style={{ padding: '2rem' }}>
             <h1>Error</h1>
             <p style={{ color: '#dc3545' }}>{error || 'Faculty not found'}</p>
@@ -171,9 +175,7 @@ export default function FacultyPage() {
         <title>Epistula -- {faculty.name}</title>
       </Head>
       <MainLayout breadcrumbs={[
-        { label: 'Universities', href: '/universities' },
         { label: university.name, href: `/university/${id}` },
-        { label: 'Faculties', href: `/university/${id}/faculties` },
         faculty.name
       ]}>
         <div style={{ padding: '2rem' }}>
@@ -189,6 +191,7 @@ export default function FacultyPage() {
               universityId={id as string}
               onLogoUpdate={(updatedFaculty) => setFaculty(updatedFaculty)}
             />
+            {!isStudent && (
             <div style={{ marginTop: '0.75rem' }}>
               <button onClick={() => setShowEditModal(true)} style={{ padding: '0.5rem 1rem', background: '#007bff', color: 'white', border: 'none', borderRadius: 6, cursor: 'pointer' }}>✏️ Edit</button>
               <button
@@ -211,6 +214,7 @@ export default function FacultyPage() {
                 ⬇️ Export
               </button>
             </div>
+            )}
 
             {/* Description - moved above subjects section */}
             {faculty.description && (
@@ -231,24 +235,28 @@ export default function FacultyPage() {
             />
 
             {/* Faculty Members (Professors) Section */}
-            <div style={{ marginTop: '2rem' }}>
-              <FacultyMembersSection
-                professors={professors}
-                universityId={id as string}
-                onAddProfessor={openAddProfessorModal}
-                onRemoveProfessor={handleRemoveProfessor}
-                removingProfessor={removingProfessor}
-              />
-            </div>
+            {!isStudent && (
+              <div style={{ marginTop: '2rem' }}>
+                <FacultyMembersSection
+                  professors={professors}
+                  universityId={id as string}
+                  onAddProfessor={openAddProfessorModal}
+                  onRemoveProfessor={handleRemoveProfessor}
+                  removingProfessor={removingProfessor}
+                />
+              </div>
+            )}
 
             {/* Faculty Students Section */}
-            <FacultyStudentsSection
-              students={students}
-              universityId={id as string}
-              onAddStudent={() => setShowCreateStudentWizard(true)}
-              onRemoveStudent={handleRemoveStudent}
-              removingStudent={removingStudent}
-            />
+            {!isStudent && (
+              <FacultyStudentsSection
+                students={students}
+                universityId={id as string}
+                onAddStudent={() => setShowCreateStudentWizard(true)}
+                onRemoveStudent={handleRemoveStudent}
+                removingStudent={removingStudent}
+              />
+            )}
 
             <div style={{ marginTop: '2rem', display: 'flex', gap: '1rem' }}>
               <button
@@ -288,13 +296,15 @@ export default function FacultyPage() {
           onCreated={refreshMembers}
         />
       </MainLayout>
-      <EditFacultyModal 
-        isOpen={showEditModal}
-        onClose={() => setShowEditModal(false)}
-        universityId={id as string}
-        faculty={faculty}
-        onUpdated={(f) => { setFaculty(f); setDescDraft(f.description || ''); }}
-      />
+      {!isStudent && (
+        <EditFacultyModal 
+          isOpen={showEditModal}
+          onClose={() => setShowEditModal(false)}
+          universityId={id as string}
+          faculty={faculty}
+          onUpdated={(f) => { setFaculty(f); setDescDraft(f.description || ''); }}
+        />
+      )}
     </>
   );
 }

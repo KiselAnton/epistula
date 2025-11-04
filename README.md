@@ -89,8 +89,7 @@ cd /path/to/epistula
 - MinIO Console: http://localhost:9001
 
 4. **Default Login:**
-- Email: `root@localhost.localdomain`
-- Password: `root` ⚠️ **Change in production!**
+- Password: `changeme123` ⚠️ **Change in production!**
 
 ## 🔧 Development Workflow
 
@@ -226,10 +225,7 @@ Full API docs: http://localhost:8000/docs
 
 Before deploying to production:
 
-- [ ] Change root password (env: `EPISTULA_ROOT_PASSWORD`)
-- [ ] Configure CORS origins (env: `EPISTULA_CORS_ORIGINS`)
-- [ ] Set up HTTPS/TLS
-- [ ] Configure MinIO access keys
+- [ ] Change root password (env: `ROOT_PASSWORD`)
 - [ ] Enable database backups
 - [ ] Set up monitoring/logging
 - [ ] Review security settings

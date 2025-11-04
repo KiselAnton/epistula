@@ -39,6 +39,8 @@ export default function FacultiesPage() {
   const { id } = router.query;
   const [university, setUniversity] = useState<University | null>(null);
   const [faculties, setFaculties] = useState<Faculty[]>([]);
+  const [search, setSearch] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -50,6 +52,7 @@ export default function FacultiesPage() {
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const logoInputRef = useRef<HTMLInputElement | null>(null);
+  const [fav, setFav] = useState<Record<number, true>>({});
 
   const [formData, setFormData] = useState({
     name: '',
@@ -136,7 +139,19 @@ export default function FacultiesPage() {
     if (!id) return;
     fetchUniversity();
     fetchFaculties();
+    // Load favorites for this university
+    try {
+      const raw = localStorage.getItem(`fav:faculties:uni_${id}`);
+      if (raw) setFav(JSON.parse(raw));
+    } catch {}
   }, [id, fetchUniversity, fetchFaculties]);
+
+  // Debounce search input and reset pagination
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(search.trim().toLowerCase()), 250);
+    return () => clearTimeout(t);
+  }, [search]);
+  useEffect(() => { setCurrentPage(1); }, [debouncedSearch]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -260,10 +275,7 @@ export default function FacultiesPage() {
         <Head>
           <title>Epistula -- Faculties</title>
         </Head>
-        <MainLayout breadcrumbs={[
-          { label: 'Universities', href: '/universities' },
-          'Loading...'
-        ]}>
+        <MainLayout breadcrumbs={['Loading...']}>
           <div style={{ padding: '2rem', textAlign: 'center' }}>
             <p>Loading...</p>
           </div>
@@ -274,8 +286,30 @@ export default function FacultiesPage() {
 
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-  const currentFaculties = faculties.slice(indexOfFirstItem, indexOfLastItem);
-  const totalPages = Math.ceil(faculties.length / itemsPerPage);
+  const filtered = faculties.filter(f => {
+    if (!debouncedSearch) return true;
+    const hay = `${f.name} ${f.short_name} ${f.code} ${f.description ?? ''}`.toLowerCase();
+    return hay.includes(debouncedSearch);
+  });
+  const totalPages = Math.ceil(filtered.length / itemsPerPage) || 1;
+  const sortWithFav = (list: Faculty[]) => {
+    return [...list].sort((a, b) => {
+      const af = fav[a.id] ? 1 : 0;
+      const bf = fav[b.id] ? 1 : 0;
+      if (af !== bf) return bf - af;
+      return a.name.localeCompare(b.name);
+    });
+  };
+  const sortedFiltered = sortWithFav(filtered);
+  const currentSorted = sortedFiltered.slice(indexOfFirstItem, indexOfLastItem);
+  const toggleFav = (fid: number) => {
+    setFav((prev) => {
+      const next = { ...prev } as Record<number, true>;
+      if (next[fid]) delete next[fid]; else next[fid] = true;
+      try { localStorage.setItem(`fav:faculties:uni_${id}`, JSON.stringify(next)); } catch {}
+      return next;
+    });
+  };
 
   return (
     <>
@@ -283,14 +317,19 @@ export default function FacultiesPage() {
         <title>Epistula -- {university.name} Faculties</title>
       </Head>
       <MainLayout breadcrumbs={[
-        { label: 'Universities', href: '/universities' },
-        { label: university.name, href: `/university/${university.id}` },
-        'Faculties'
+        { label: university.name, href: `/university/${university.id}` }
       ]}>
         <div className={styles.container}>
           <div className={styles.header}>
             <h1>Faculties - {university.name}</h1>
-            <div style={{ display: 'flex', gap: '0.5rem' }}>
+            <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+              <input
+                aria-label="Search faculties"
+                placeholder="Search…"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                style={{ padding:'0.5rem 0.75rem', border:'1px solid #ccc', borderRadius:6, minWidth:220 }}
+              />
               <button onClick={() => setShowCreateModal(true)} className={styles.createButton}>
                 + Create New Faculty
               </button>
@@ -303,12 +342,12 @@ export default function FacultiesPage() {
           {error && <div className={styles.error}>{error}</div>}
 
           <div className={styles.cardsContainer}>
-            {currentFaculties.length === 0 ? (
+            {currentSorted.length === 0 ? (
               <div className={styles.noData}>
-                No faculties found. Create your first one!
+                No faculties found{debouncedSearch ? ' for this search.' : '. Create your first one!'}
               </div>
             ) : (
-              currentFaculties.map((faculty) => (
+              currentSorted.map((faculty) => (
                 <div 
                   key={faculty.id} 
                   className={styles.facultyCard}
@@ -339,8 +378,16 @@ export default function FacultiesPage() {
                           <span style={{ fontSize: '1.8rem' }}>🎓</span>
                         )}
                       </div>
-                      <div>
+                      <div style={{ display:'flex', alignItems:'center', gap:'0.5rem' }}>
                         <h3 style={{ margin: 0 }}>{faculty.name}</h3>
+                        <button
+                          aria-label={`Favorite ${faculty.name}`}
+                          title={fav[faculty.id] ? 'Unfavorite' : 'Favorite'}
+                          onClick={(e) => { e.stopPropagation(); toggleFav(faculty.id); }}
+                          style={{ background:'transparent', border:'none', cursor:'pointer', fontSize:'1.1rem' }}
+                        >
+                          {fav[faculty.id] ? '⭐' : '☆'}
+                        </button>
                         <span className={styles.cardCode}>{faculty.code}</span>
                       </div>
                     </div>
