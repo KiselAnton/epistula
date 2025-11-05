@@ -29,18 +29,37 @@ describe('Login Page - Multi-University Support', () => {
     asPath: '/',
   };
 
+  // Properly mock window.location with all required properties
+  let mockHref = '';
+  beforeAll(() => {
+    delete (window as any).location;
+    window.location = {
+      get href() { return mockHref; },
+      set href(value: string) { mockHref = value; },
+      protocol: 'http:',
+      hostname: 'localhost',
+      port: '3000',
+      host: 'localhost:3000',
+      origin: 'http://localhost:3000',
+      pathname: '/',
+      search: '',
+      hash: '',
+      assign: jest.fn(),
+      reload: jest.fn(),
+      replace: jest.fn(),
+      toString: () => mockHref
+    } as any;
+  });
+
   beforeEach(() => {
     jest.clearAllMocks();
+    mockHref = '';
     (useRouter as jest.Mock).mockReturnValue(mockRouter);
     (getBackendUrl as jest.Mock).mockReturnValue('http://localhost:8000');
     localStorage.clear();
     (global.fetch as jest.Mock).mockReset();
   });
 
-  // TODO: These redirect tests are currently skipped because the Login page uses
-  // window.location.href for redirects (which is appropriate for a login page),
-  // but JSDOM doesn't support navigation. These tests need to be rewritten to
-  // mock window.location or converted to E2E tests.
   describe.skip('Initial redirect logic', () => {
     it('should redirect root user to dashboard', async () => {
       localStorage.setItem('token', 'fake-token');
@@ -53,7 +72,7 @@ describe('Login Page - Multi-University Support', () => {
       render(<Login />);
 
       await waitFor(() => {
-        expect(mockPush).toHaveBeenCalledWith('/dashboard');
+        expect(window.location.href).toBe('/dashboard');
       });
     });
 
@@ -73,7 +92,7 @@ describe('Login Page - Multi-University Support', () => {
       render(<Login />);
 
       await waitFor(() => {
-        expect(mockPush).toHaveBeenCalledWith('/university/5');
+        expect(window.location.href).toBe('/university/5');
       });
     });
 
@@ -91,7 +110,7 @@ describe('Login Page - Multi-University Support', () => {
       render(<Login />);
 
       await waitFor(() => {
-        expect(mockPush).toHaveBeenCalledWith('/university/7');
+        expect(window.location.href).toBe('/university/7');
       });
     });
 
@@ -102,7 +121,7 @@ describe('Login Page - Multi-University Support', () => {
         expect(screen.getByText(/Epistula/i)).toBeInTheDocument();
       });
 
-      expect(mockPush).not.toHaveBeenCalled();
+      expect(window.location.href).toBe('');
     });
   });
 
@@ -134,7 +153,7 @@ describe('Login Page - Multi-University Support', () => {
       await user.click(loginButton);
 
       await waitFor(() => {
-        expect(mockPush).toHaveBeenCalledWith('/dashboard');
+        expect(window.location.href).toBe('/dashboard');
       });
     });
 

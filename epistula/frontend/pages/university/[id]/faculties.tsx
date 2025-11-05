@@ -8,7 +8,7 @@ import styles from '../../../styles/Faculties.module.css';
 import { exportFacultyFull } from '../../../utils/dataTransfer.api';
 import ImportFacultyWizard from '../../../components/faculty/ImportFacultyWizard';
 import buttons from '../../../styles/Buttons.module.css';
-import MarkdownEditor from '../../../components/common/MarkdownEditor';
+import WysiwygMarkdownEditor from '../../../components/common/WysiwygMarkdownEditor';
 import { getBackendUrl } from '../../../lib/config';
 
 interface Faculty {
@@ -505,7 +505,7 @@ export default function FacultiesPage() {
 
                 <div className={styles.formGroup}>
                   <label>Description (Markdown, optional)</label>
-                  <MarkdownEditor
+                  <WysiwygMarkdownEditor
                     value={formData.description}
                     onChange={(v) => setFormData({ ...formData, description: v })}
                     onSave={() => { if (!creating) handleSubmit(new Event('submit') as any); }}

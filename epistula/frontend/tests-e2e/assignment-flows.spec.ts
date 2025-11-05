@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { ensureAuthenticated, navigateToUniversity, navigateToFaculty, navigateToSubject, TIMEOUTS, SELECTORS } from './helpers';
+import { ensureAuthenticated, navigateToUniversity, navigateToFaculty, navigateToSubject, SELECTORS } from './helpers';
 
 /**
  * E2E tests for assignment workflows
@@ -297,16 +297,17 @@ test.describe('Professor and Student Assignments', () => {
     test('shows correct assignment counts', async ({ page }) => {
       // Navigate to faculty
       await navigateToFaculty(page);
-      
-      // Look for counts display
-      const professorCount = page.locator('text=/\\d+\\s+professors?/i');
-      const studentCount = page.locator('text=/\\d+\\s+students?/i');
-      
-      const hasProfCount = await professorCount.isVisible({ timeout: 2000 });
-      const hasStudCount = await studentCount.isVisible({ timeout: 2000 });
-      
-      // At least one count should be visible
-      expect(hasProfCount || hasStudCount).toBeTruthy();
+
+  // Look for counts display - Faculty Members section shows professor count with parenthesized numbers
+  // Example: "Faculty Members (3)" or "Students (5)"
+  const facultyMembersHeading = page.locator('h2', { hasText: /Faculty Members \(\d+\)/ });
+  const studentsHeading = page.locator('h2', { hasText: /Students \(\d+\)/ });
+
+  const hasMembersCount = await facultyMembersHeading.isVisible({ timeout: 3000 });
+  const hasStudCount = await studentsHeading.isVisible({ timeout: 3000 });
+
+  // At least one count heading should be visible
+  expect(hasMembersCount || hasStudCount).toBeTruthy();
     });
   });
 

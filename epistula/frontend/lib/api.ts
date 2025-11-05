@@ -182,7 +182,7 @@ export function prefetch(endpoint: string, options: FetchOptions = {}): void {
   }
 
   prefetchTimer = setTimeout(() => {
-    prefetchQueue.forEach((key) => {
+    prefetchQueue.forEach(() => {
       cachedFetch(endpoint, options).catch(() => {
         // Silently fail prefetch attempts
       });

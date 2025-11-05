@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { getBackendUrl } from '../../lib/config';
 import buttons from '../../styles/Buttons.module.css';
-import MarkdownEditor from '../common/MarkdownEditor';
+import WysiwygMarkdownEditor from '../common/WysiwygMarkdownEditor';
 
 interface LectureNoteEditorProps {
   universityId: string;
@@ -62,10 +62,12 @@ export default function LectureNoteEditor({ universityId, facultyId, subjectId, 
     return () => { cancelled = true; };
   }, [open, universityId, facultyId, subjectId, lectureId]);
 
-  // Remove <video>/<audio> tags from markdown prior to saving
+  // Defensive: remove <video>/<audio> tags from markdown prior to saving
+  // BlockNote already restricts these for students, but keep sanitization as a safety net.
   const sanitizeMarkdown = (src: string) =>
-    src.replace(/<\s*(video|audio)[^>]*>[\s\S]*?<\s*\/\s*\1\s*>/gi, '')
-       .replace(/<\s*(source|track)[^>]*>/gi, '');
+    src
+      .replace(/<\s*(video|audio)[^>]*>[\s\S]*?<\s*\/\s*\1\s*>/gi, '')
+      .replace(/<\s*(source|track)[^>]*>/gi, '');
 
   const handleSave = async () => {
     setSaving(true);
@@ -116,12 +118,13 @@ export default function LectureNoteEditor({ universityId, facultyId, subjectId, 
       </div>
       {open && (
         <div style={{ marginTop: '0.75rem' }}>
-          <MarkdownEditor
+          <WysiwygMarkdownEditor
             value={content}
             onChange={setContent}
             onSave={handleSave}
             isSaving={saving}
-            placeholder="Write your private note here… Markdown is supported (videos/audios are not rendered)."
+            placeholder="Write your private note here…"
+            userRole="student"
           />
           <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem', alignItems: 'center' }}>
             <button onClick={handleSave} disabled={saving} className={`${buttons.btn} ${buttons.btnPrimary}`}>

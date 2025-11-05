@@ -305,28 +305,68 @@ def create_lecture(
     faculty_id: int,
     subject_id: int,
     title: str,
-    date: str,
-    is_active: bool = True
+    description: Optional[str] = None,
+    content: Optional[str] = None,
 ) -> Optional[Dict[str, Any]]:
-    """Create a lecture"""
+    """Create a lecture (unpublished by default). Optionally include content (markdown)."""
+    payload: Dict[str, Any] = {
+        "title": title,
+        "description": description or f"Lecture about {title}",
+    }
+    if content:
+        payload["content"] = content
+
     response = api_request(
         "POST",
         f"/subjects/{uni_id}/{faculty_id}/{subject_id}/lectures",
         token,
-        json_data={
-            "title": title,
-            "description": f"Lecture about {title}",
-            "lecture_date": date,
-            "is_active": is_active
-        }
+        json_data=payload
     )
     if response and response.status_code == 201:
-        status = "published" if is_active else "draft"
-        print(f"      ✓ Created lecture ({status}): {title}")
+        print(f"      ✓ Created lecture (draft): {title}")
         return response.json()
     else:
         error_msg = response.text if response else "No response"
         print(f"      ✗ Failed to create lecture {title}: {error_msg}")
+        return None
+
+
+def update_lecture(
+    token: str,
+    uni_id: int,
+    faculty_id: int,
+    subject_id: int,
+    lecture_id: int,
+    *,
+    title: Optional[str] = None,
+    description: Optional[str] = None,
+    is_active: Optional[bool] = None,
+) -> Optional[Dict[str, Any]]:
+    """Update a lecture fields (including publish state via is_active)."""
+    json_data: Dict[str, Any] = {}
+    if title is not None:
+        json_data["title"] = title
+    if description is not None:
+        json_data["description"] = description
+    if is_active is not None:
+        json_data["is_active"] = is_active
+
+    if not json_data:
+        return None
+
+    response = api_request(
+        "PATCH",
+        f"/subjects/{uni_id}/{faculty_id}/{subject_id}/lectures/{lecture_id}",
+        token,
+        json_data=json_data
+    )
+    if response and response.status_code == 200:
+        state = "published" if (is_active is True) else ("unpublished" if (is_active is False) else "updated")
+        print(f"      ✓ Lecture {lecture_id} {state}")
+        return response.json()
+    else:
+        error_msg = response.text if response else "No response"
+        print(f"      ✗ Failed to update lecture {lecture_id}: {error_msg}")
         return None
 
 

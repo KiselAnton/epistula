@@ -4,7 +4,7 @@ import Head from 'next/head';
 import MainLayout from '../components/layout/MainLayout';
 import SafeImage from '../components/common/SafeImage';
 import MarkdownDisplay from '../components/common/MarkdownDisplay';
-import MarkdownEditor from '../components/common/MarkdownEditor';
+import WysiwygMarkdownEditor from '../components/common/WysiwygMarkdownEditor';
 import styles from '../styles/Universities.module.css';
 import { getBackendUrl } from '../lib/config';
 
@@ -444,7 +444,7 @@ export default function Universities() {
 
                 <div className={styles.formGroup}>
                   <label htmlFor="description">Description (Markdown, optional)</label>
-                  <MarkdownEditor
+                  <WysiwygMarkdownEditor
                     value={formData.description}
                     onChange={(v) => setFormData({ ...formData, description: v })}
                     onSave={handleCreateUniversity}

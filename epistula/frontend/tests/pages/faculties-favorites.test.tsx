@@ -3,6 +3,7 @@ import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import '@testing-library/jest-dom';
 
 jest.mock('../../lib/config', () => ({ getBackendUrl: () => 'http://localhost:8000' }));
+jest.mock('../../components/common/WysiwygMarkdownEditor', () => ({ __esModule: true, default: () => null }));
 
 const mockRouter = { query: { id: '1' }, push: jest.fn(), replace: jest.fn(), pathname: '/university/[id]/faculties', asPath: '/university/1/faculties' };
 jest.mock('next/router', () => ({

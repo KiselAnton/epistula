@@ -1,8 +1,9 @@
 import React from 'react';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import '@testing-library/jest-dom';
 
 jest.mock('../../lib/config', () => ({ getBackendUrl: () => 'http://localhost:8000' }));
+jest.mock('../../components/common/WysiwygMarkdownEditor', () => ({ __esModule: true, default: () => null }));
 
 const mockRouter = { query: { id: '1', facultyId: '10' }, push: jest.fn(), pathname: '/university/[id]/faculty/[facultyId]/subjects', asPath: '/university/1/faculty/10/subjects' };
 jest.mock('next/router', () => ({
@@ -46,11 +47,18 @@ describe('Subjects search', () => {
 
     await screen.findByText('Subjects - Science');
     const input = screen.getByLabelText('Search subjects');
-    fireEvent.change(input, { target: { value: 'chem' } });
+    
+    await act(async () => {
+      fireEvent.change(input, { target: { value: 'chem' } });
+      // Wait for debounce timeout (250ms) plus a bit extra
+      await new Promise(r => setTimeout(r, 350));
+    });
 
-  expect(await screen.findByText('Chemistry')).toBeInTheDocument();
-  // Wait for debounced search to apply and non-matching item to disappear
-  await new Promise(r => setTimeout(r, 300));
-  expect(screen.queryByText('Physics')).toBeNull();
+    expect(await screen.findByText('Chemistry')).toBeInTheDocument();
+    
+    // Verify non-matching item is filtered out
+    await waitFor(() => {
+      expect(screen.queryByText('Physics')).toBeNull();
+    });
   });
 });

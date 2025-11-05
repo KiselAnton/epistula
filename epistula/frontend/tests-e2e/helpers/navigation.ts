@@ -1,4 +1,4 @@
-import { Page, expect } from '@playwright/test';
+import { Page } from '@playwright/test';
 import { SELECTORS, TEST_DATA, TIMEOUTS, URL_PATTERNS } from './constants';
 
 /**
@@ -10,7 +10,7 @@ export async function navigateToUniversities(page: Page): Promise<void> {
 }
 
 /**
- * Navigate to specific university or the E2E test university
+ * Navigate to a specific university detail page
  * @param page - Playwright page object
  * @param universityName - Optional name (defaults to E2E University)
  */
@@ -23,6 +23,11 @@ export async function navigateToUniversity(
   if (!currentUrl.includes('/universities')) {
     await navigateToUniversities(page);
   }
+  
+  // Search for the university to filter the list (handles pagination)
+  const searchBox = page.locator('input[placeholder*="Search"], input[aria-label*="Search"]');
+  await searchBox.fill(universityName);
+  await page.waitForTimeout(500); // Wait for search debounce
   
   // Click the university card by name
   await page.click(`${SELECTORS.UNIVERSITY_CARD}:has-text("${universityName}")`);
@@ -102,47 +107,34 @@ export async function navigateToSubject(
   if (!currentUrl.match(/\/faculty\/\d+$/)) {
     await navigateToFaculty(page);
   }
-  
-  // Wait for page content to load
-  try {
-    await page.waitForLoadState('networkidle', { timeout: TIMEOUTS.LONG });
-  } catch {
-    // Network might not be idle, but content may be ready anyway
-    await page.waitForTimeout(TIMEOUTS.DEFAULT);
+
+  // Wait for the Subjects section heading to appear
+  const subjectsHeading = page.locator('xpath=//h2[contains(normalize-space(.), "Subjects")]');
+  await subjectsHeading.waitFor({ state: 'visible', timeout: TIMEOUTS.MEDIUM });
+
+  // Find the grid of subject cards that follows the heading
+  const subjectsGrid = page.locator(
+    'xpath=//h2[contains(normalize-space(.), "Subjects")]/following::div[contains(@style, "display: grid")][1]'
+  );
+  await subjectsGrid.waitFor({ state: 'visible', timeout: TIMEOUTS.MEDIUM });
+
+  // Prefer clicking the entire card container to ensure the onClick handler fires
+  const subjectCards = subjectsGrid.locator('div:has(h3)');
+  const count = await subjectCards.count();
+  if (count === 0) {
+    throw new Error('No subjects found in Subjects section. Ensure seed created a subject.');
   }
-  
-  // Subjects section has an h2 with text starting with "Subjects"
-  // Wait for that header to be visible to confirm subjects section loaded
-  await page.waitForSelector('h2', { state: 'visible', timeout: TIMEOUTS.NAVIGATION });
-  await page.waitForTimeout(TIMEOUTS.SHORT); // Give subjects grid time to render
-  
-  // Subject cards are clickable divs in a grid. Each has an h3 with the subject name.
-  // Get all h3 elements and filter to find subject names
-  const allH3s = await page.locator('h3').all();
-  const subjectH3s: typeof allH3s = [];
-  
-  for (const h3 of allH3s) {
-    const text = await h3.textContent();
-    // Skip headings: "Subjects", "Professors", "Students", etc.
-    // Subject names are usually simple text without these keywords
-    if (text && !text.includes('Subjects') && !text.includes('Professor') && !text.includes('Student') && !text.includes('Members') && text.length > 2) {
-      subjectH3s.push(h3);
-    }
+  if (index >= count) {
+    throw new Error(`Subject at index ${index} not found (only ${count} subjects available)`);
   }
-  
-  if (subjectH3s.length > index) {
-    // The h3 is nested inside divs. Find the clickable card div by going up to a div with cursor:pointer style
-    const targetH3 = subjectH3s[index];
-    // Get the text to confirm which subject we're clicking
-    const subjectName = await targetH3.textContent();
-    
-    // Find the clickable parent div - it should have style containing "cursor: pointer"
-    // Use a more reliable method: click the h3 itself, as the click should bubble up to the parent onClick
-    await targetH3.click({ force: true });
-    await page.waitForURL(URL_PATTERNS.SUBJECT_DETAIL, { timeout: TIMEOUTS.NAVIGATION });
-  } else {
-    throw new Error(`Subject at index ${index} not found (only ${subjectH3s.length} subjects available). Check if subjects exist in test data.`);
-  }
+
+  await Promise.all([
+    page.waitForURL(URL_PATTERNS.SUBJECT_DETAIL, { timeout: TIMEOUTS.NAVIGATION }),
+    subjectCards.nth(index).click(),
+  ]);
+
+  // Extra safety: wait for a subject-detail unique element
+  await page.waitForSelector('button:has-text("Back to Subjects"), button:has-text("My Notes")', { timeout: TIMEOUTS.MEDIUM });
 }
 
 /**

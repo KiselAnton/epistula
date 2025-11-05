@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 import * as path from 'path';
 import * as fs from 'fs';
-import { ensureAuthenticated, navigateToUniversity, navigateToSubject as helperNavigateToSubject, navigateToFaculty as helperNavigateToFaculty } from './helpers';
+import { ensureAuthenticated, navigateToUniversity, navigateToFaculty, navigateToSubject } from './helpers';
 
 /**
  * E2E tests for complete import/export workflows
@@ -16,27 +16,8 @@ test.describe('Import/Export Workflows', () => {
 
   test.describe('Export Workflows', () => {
     test('exports subject lectures successfully', async ({ page }) => {
-      // From university page, navigate to faculties using "Manage All" button
-      const manageBtn = page.locator('button:has-text("Manage All"), button:has-text("Manage Faculties")').first();
-      if (await manageBtn.count()) {
-        await manageBtn.click();
-      } else {
-        const m = page.url().match(/\/university\/(\d+)/);
-        if (m) {
-          await page.goto(`http://localhost:3000/university/${m[1]}/faculties`);
-        }
-      }
-      await page.waitForURL('**/university/**/faculties');
-      await page.locator('[class*="faculty"]').first().click();
-      await page.waitForURL('**/university/**/faculty/**');
-
-      // Navigate to subjects
-      const subjectsLink = page.locator('a:has-text("Subjects"), button:has-text("Manage Subjects")').first();
-      if (await subjectsLink.count()) {
-        await subjectsLink.click();
-        await page.waitForTimeout(500);
-      }
-      await page.locator('[class*="subject"]').first().click();
+      // Use navigation helpers
+      await navigateToSubject(page);
       
       // Click export lectures button
       const exportButton = page.locator('button:has-text("Export Lectures")').first();
@@ -57,22 +38,8 @@ test.describe('Import/Export Workflows', () => {
     });
 
     test('exports subject professors successfully', async ({ page }) => {
-      // From university page, navigate to faculties using "Manage All" button
-      const manageBtn = page.locator('button:has-text("Manage All"), button:has-text("Manage Faculties")').first();
-      if (await manageBtn.count()) {
-        await manageBtn.click();
-      } else {
-        const m = page.url().match(/\/university\/(\d+)/);
-        if (m) {
-          await page.goto(`http://localhost:3000/university/${m[1]}/faculties`);
-        }
-      }
-      await page.waitForURL('**/university/**/faculties');
-      await page.locator('[class*="faculty"]').first().click();
-      await page.waitForURL('**/university/**/faculty/**');
-      await page.click('text=Subjects');
-      await page.waitForTimeout(500);
-      await page.locator('[class*="subject"]').first().click();
+      // Use navigation helpers
+      await navigateToSubject(page);
       
       // Click export professors button
       const exportButton = page.locator('button:has-text("Export Professors")').first();
@@ -90,13 +57,8 @@ test.describe('Import/Export Workflows', () => {
     });
 
     test('exports subject students successfully', async ({ page }) => {
-      // Navigate to subject
-      await page.click('text=Faculties');
-      await page.waitForTimeout(500);
-      await page.locator('[class*="faculty"]').first().click();
-      await page.click('text=Subjects');
-      await page.waitForTimeout(500);
-      await page.locator('[class*="subject"]').first().click();
+      // Use navigation helpers
+      await navigateToSubject(page);
       
       // Click export students button
       const exportButton = page.locator('button:has-text("Export Students")').first();
@@ -114,13 +76,11 @@ test.describe('Import/Export Workflows', () => {
     });
 
     test('exports faculty data successfully', async ({ page }) => {
-      // Navigate to faculty
-      await page.click('text=Faculties');
-      await page.waitForTimeout(500);
-      await page.locator('[class*="faculty"]').first().click();
+      // Use navigation helpers
+      await navigateToFaculty(page);
       
       // Look for export faculty button
-      const exportButton = page.locator('button:has-text("Export Faculty"), button:has-text("Export")').first();
+      const exportButton = page.locator('button:has-text("Export")').first();
       
       if (await exportButton.isVisible({ timeout: 3000 })) {
         const [download] = await Promise.all([
@@ -150,13 +110,8 @@ test.describe('Import/Export Workflows', () => {
   test.describe('Import Workflows', () => {
 
     test('imports lectures with merge strategy', async ({ page }) => {
-      // Navigate to subject
-      await page.click('text=Faculties');
-      await page.waitForTimeout(500);
-      await page.locator('[class*="faculty"]').first().click();
-      await page.click('text=Subjects');
-      await page.waitForTimeout(500);
-      await page.locator('[class*="subject"]').first().click();
+      // Use navigation helpers
+      await navigateToSubject(page);
       
       // Click import lectures button
       const importButton = page.locator('button:has-text("Import Lectures")').first();
@@ -173,7 +128,7 @@ test.describe('Import/Export Workflows', () => {
           columns: ['id', 'title', 'lecture_number']
         };
         
-        const filePath = createTestImportFile(testData, 'test_lectures.json');
+  const filePath = createTestImportFile(testData, 'test_lectures.json');
         
         // Upload file
         const fileInput = page.locator('input[type="file"]');
@@ -189,21 +144,22 @@ test.describe('Import/Export Workflows', () => {
             await strategySelect.first().selectOption('merge');
           }
           
-          // Click import/apply button
-          const applyButton = page.locator('button:has-text("Import"), button:has-text("Apply")');
-          if (await applyButton.isVisible({ timeout: 2000 })) {
-            await applyButton.click();
-            
-            // Wait for import to complete
-            await page.waitForTimeout(2000);
-            
-            // Look for success message
-            const successMessage = page.locator('text=/imported|success|complete/i');
-            await expect(successMessage).toBeVisible({ timeout: 5000 });
-          }
+          // Proceed through wizard: Review & Import, then confirm Import in modal
+          const lecturesModal = page.locator('div', { has: page.locator('h2:has-text("Import Lecture")') }).first();
+          await lecturesModal.getByRole('button', { name: 'Review & Import →' }).click();
+          await page.waitForTimeout(300); // brief UI settle
+          const confirmBtn = lecturesModal.getByRole('button', { name: /Import Lecture/ });
+          await confirmBtn.click();
+          
+          // Wait for import to complete
+          await page.waitForTimeout(2000);
+          
+          // Look for success message
+          const successMessage = page.locator('text=/imported|success|complete/i');
+          await expect(successMessage).toBeVisible({ timeout: 5000 });
         }
-        
-        // Cleanup
+
+        // Cleanup for created file
         if (fs.existsSync(filePath)) {
           fs.unlinkSync(filePath);
         }
@@ -211,13 +167,8 @@ test.describe('Import/Export Workflows', () => {
     });
 
     test('imports with skip strategy', async ({ page }) => {
-      // Navigate to subject
-      await page.click('text=Faculties');
-      await page.waitForTimeout(500);
-      await page.locator('[class*="faculty"]').first().click();
-      await page.click('text=Subjects');
-      await page.waitForTimeout(500);
-      await page.locator('[class*="subject"]').first().click();
+      // Use navigation helpers
+      await navigateToSubject(page);
       
       const importButton = page.locator('button:has-text("Import Professors")').first();
       
@@ -243,11 +194,11 @@ test.describe('Import/Export Workflows', () => {
             await strategySelect.first().selectOption('skip');
           }
           
-          const applyButton = page.locator('button:has-text("Import"), button:has-text("Apply")');
-          if (await applyButton.isVisible({ timeout: 2000 })) {
-            await applyButton.click();
-            await page.waitForTimeout(2000);
-          }
+          const profModal = page.locator('div', { has: page.locator('h2:has-text("Import Subject Professors")') }).first();
+          await profModal.getByRole('button', { name: 'Review & Import →' }).click();
+          await page.waitForTimeout(300);
+          await profModal.getByRole('button', { name: 'Import Professors' }).click();
+          await page.waitForTimeout(2000);
         }
         
         if (fs.existsSync(filePath)) {
@@ -257,13 +208,8 @@ test.describe('Import/Export Workflows', () => {
     });
 
     test('imports with overwrite strategy', async ({ page }) => {
-      // Navigate to subject
-      await page.click('text=Faculties');
-      await page.waitForTimeout(500);
-      await page.locator('[class*="faculty"]').first().click();
-      await page.click('text=Subjects');
-      await page.waitForTimeout(500);
-      await page.locator('[class*="subject"]').first().click();
+      // Use navigation helpers
+      await navigateToSubject(page);
       
       const importButton = page.locator('button:has-text("Import Lectures")').first();
       
@@ -303,13 +249,8 @@ test.describe('Import/Export Workflows', () => {
     });
 
     test('shows preview before importing', async ({ page }) => {
-      // Navigate to subject
-      await page.click('text=Faculties');
-      await page.waitForTimeout(500);
-      await page.locator('[class*="faculty"]').first().click();
-      await page.click('text=Subjects');
-      await page.waitForTimeout(500);
-      await page.locator('[class*="subject"]').first().click();
+      // Use navigation helpers
+      await navigateToSubject(page);
       
       const importButton = page.locator('button:has-text("Import Lectures")').first();
       
@@ -348,13 +289,8 @@ test.describe('Import/Export Workflows', () => {
     });
 
     test('handles invalid JSON file', async ({ page }) => {
-      // Navigate to subject
-      await page.click('text=Faculties');
-      await page.waitForTimeout(500);
-      await page.locator('[class*="faculty"]').first().click();
-      await page.click('text=Subjects');
-      await page.waitForTimeout(500);
-      await page.locator('[class*="subject"]').first().click();
+      // Use navigation helpers
+      await navigateToSubject(page);
       
       const importButton = page.locator('button:has-text("Import Lectures")').first();
       
@@ -386,13 +322,8 @@ test.describe('Import/Export Workflows', () => {
     });
 
     test('handles empty import file', async ({ page }) => {
-      // Navigate to subject
-      await page.click('text=Faculties');
-      await page.waitForTimeout(500);
-      await page.locator('[class*="faculty"]').first().click();
-      await page.click('text=Subjects');
-      await page.waitForTimeout(500);
-      await page.locator('[class*="subject"]').first().click();
+      // Use navigation helpers
+      await navigateToSubject(page);
       
       const importButton = page.locator('button:has-text("Import Lectures")').first();
       
@@ -424,13 +355,8 @@ test.describe('Import/Export Workflows', () => {
     });
 
     test('allows canceling import operation', async ({ page }) => {
-      // Navigate to subject
-      await page.click('text=Faculties');
-      await page.waitForTimeout(500);
-      await page.locator('[class*="faculty"]').first().click();
-      await page.click('text=Subjects');
-      await page.waitForTimeout(500);
-      await page.locator('[class*="subject"]').first().click();
+      // Use navigation helpers
+      await navigateToSubject(page);
       
       const importButton = page.locator('button:has-text("Import Lectures")').first();
       
@@ -455,13 +381,8 @@ test.describe('Import/Export Workflows', () => {
       // This is tested in data-transfer-persistence.spec.ts
       // Verify strategy applies to all rows when "apply to all" is used
       
-      // Navigate to subject
-      await page.click('text=Faculties');
-      await page.waitForTimeout(500);
-      await page.locator('[class*="faculty"]').first().click();
-      await page.click('text=Subjects');
-      await page.waitForTimeout(500);
-      await page.locator('[class*="subject"]').first().click();
+  // Use navigation helpers
+  await navigateToSubject(page);
       
       const importButton = page.locator('button:has-text("Import Lectures")').first();
       
@@ -482,13 +403,8 @@ test.describe('Import/Export Workflows', () => {
       // This is tested in data-transfer-strategy.spec.ts
       // Verify each row can have its own strategy
       
-      // Navigate to subject
-      await page.click('text=Faculties');
-      await page.waitForTimeout(500);
-      await page.locator('[class*="faculty"]').first().click();
-      await page.click('text=Subjects');
-      await page.waitForTimeout(500);
-      await page.locator('[class*="subject"]').first().click();
+  // Use navigation helpers
+  await navigateToSubject(page);
       
       const importButton = page.locator('button:has-text("Import Lectures")').first();
       
@@ -501,13 +417,8 @@ test.describe('Import/Export Workflows', () => {
 
   test.describe('Error Handling', () => {
     test('displays import errors clearly', async ({ page }) => {
-      // Navigate to subject and try to import with validation errors
-      await page.click('text=Faculties');
-      await page.waitForTimeout(500);
-      await page.locator('[class*="faculty"]').first().click();
-      await page.click('text=Subjects');
-      await page.waitForTimeout(500);
-      await page.locator('[class*="subject"]').first().click();
+  // Navigate to subject to test import errors
+  await navigateToSubject(page);
       
       const importButton = page.locator('button:has-text("Import Lectures")').first();
       
@@ -546,3 +457,4 @@ test.describe('Import/Export Workflows', () => {
     });
   });
 });
+

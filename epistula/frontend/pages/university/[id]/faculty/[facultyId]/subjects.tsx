@@ -6,7 +6,7 @@ import MarkdownDisplay from '../../../../../components/common/MarkdownDisplay';
 import styles from '../../../../../styles/Faculties.module.css';
 import buttons from '../../../../../styles/Buttons.module.css';
 import ImportSubjectWizard from '../../../../../components/subject/ImportSubjectWizard';
-import MarkdownEditor from '../../../../../components/common/MarkdownEditor';
+import WysiwygMarkdownEditor from '../../../../../components/common/WysiwygMarkdownEditor';
 import { getBackendUrl } from '../../../../../lib/config';
 
 interface Subject {
@@ -489,7 +489,7 @@ export default function SubjectsPage() {
 
                 <div className={styles.formGroup}>
                   <label>Description (Markdown, optional)</label>
-                  <MarkdownEditor
+                  <WysiwygMarkdownEditor
                     value={formData.description}
                     onChange={(v) => setFormData({ ...formData, description: v })}
                     onSave={() => { /* submit via form button */ }}

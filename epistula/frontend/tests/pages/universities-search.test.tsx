@@ -3,6 +3,7 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
 
 jest.mock('../../lib/config', () => ({ getBackendUrl: () => 'http://localhost:8000' }));
+jest.mock('../../components/common/WysiwygMarkdownEditor', () => ({ __esModule: true, default: () => null }));
 
 const mockRouter = { query: {}, push: jest.fn(), pathname: '/universities', asPath: '/universities' };
 jest.mock('next/router', () => ({

@@ -1,6 +1,18 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import LectureNoteEditor from '../components/subject/LectureNoteEditor';
 
+// Mock the BlockNotes-based editor to a simple input that calls onChange
+jest.mock('../components/common/WysiwygMarkdownEditor', () => ({
+  __esModule: true,
+  default: ({ value, onChange }: { value: string; onChange: (v: string) => void }) => (
+    <input
+      data-testid="mock-wysiwyg-input"
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+    />
+  )
+}));
+
 // Helpers
 function mockFetchOnce(status: number, body: any) {
   (global.fetch as jest.Mock).mockResolvedValueOnce({
@@ -36,15 +48,15 @@ test('LectureNoteEditor loads 404 and shows empty state', async () => {
   );
 
   // Initially closed
-  expect(screen.queryByPlaceholderText(/Write your private note/i)).not.toBeInTheDocument();
+  expect(screen.queryByRole('button', { name: /save note/i })).not.toBeInTheDocument();
 
   // Open editor
   fireEvent.click(screen.getByRole('button', { name: /my note/i }));
 
-  // Wait for textarea to appear and be empty
-  const textarea = screen.getByPlaceholderText(/Write your private note/i) as HTMLTextAreaElement;
-  await waitFor(() => expect(textarea.value).toBe(''));
-  expect(textarea.value).toBe('');
+  // Wait for open state and empty content
+  await screen.findByText(/No note yet\. Create one below\./i);
+  const input = await screen.findByTestId('mock-wysiwyg-input');
+  expect((input as HTMLInputElement).value).toBe('');
 });
 
 test('LectureNoteEditor saves successfully (sanitizes media tags)', async () => {
@@ -69,8 +81,8 @@ test('LectureNoteEditor saves successfully (sanitizes media tags)', async () => 
   );
 
   fireEvent.click(screen.getByRole('button', { name: /my note/i }));
-  await screen.findByPlaceholderText(/Write your private note/i);
-  fireEvent.change(screen.getByPlaceholderText(/Write your private note/i), { target: { value: 'Hello note <video src="x.mp4"></video>' } });
+  const input = await screen.findByTestId('mock-wysiwyg-input');
+  fireEvent.change(input, { target: { value: 'Hello note <video src="x.mp4"></video>' } });
 
   fireEvent.click(screen.getByRole('button', { name: /save note/i }));
 

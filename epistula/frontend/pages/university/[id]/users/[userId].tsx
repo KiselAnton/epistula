@@ -5,7 +5,7 @@ import Head from 'next/head';
 import MainLayout from '../../../../components/layout/MainLayout';
 import { getBackendUrl } from '../../../../lib/config';
 import AssignToSubjectModal from '../../../../components/users/AssignToSubjectModal';
-import MarkdownEditor from '../../../../components/common/MarkdownEditor';
+import WysiwygMarkdownEditor from '../../../../components/common/WysiwygMarkdownEditor';
 
 interface University {
   id: number;
@@ -402,7 +402,7 @@ export default function UserDetailPage() {
                     </div>
                     <div style={{ gridColumn: '1 / span 2' }}>
                       <label style={{ display: 'block', fontSize: '0.9rem', color: '#555', marginBottom: '0.5rem' }}>Bio (Markdown)</label>
-                      <MarkdownEditor
+                      <WysiwygMarkdownEditor
                         value={profile.bio || ''}
                         onChange={(v) => setProfile({ ...profile, bio: v })}
                         onSave={async () => {
@@ -424,6 +424,7 @@ export default function UserDetailPage() {
                         }}
                         isSaving={profileSaving}
                         placeholder="Add a professional bio, research interests, office hours..."
+                        userRole={user.role}
                       />
                     </div>
                   </>

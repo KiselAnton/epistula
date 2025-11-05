@@ -35,8 +35,11 @@ test.describe('Faculties create modal UI (optional)', () => {
     // Markdown editor should be present (implementation may vary; check for editable element or just proceed to file input)
     // Just verify we reached the create form successfully
 
-    const fileInputs = page.locator('input[type="file"][accept*="image"]');
-    await expect(fileInputs).toHaveCount(2); // 1 for logo, 1 for markdown editor
+  const fileInputs = page.locator('input[type="file"][accept*="image"]');
+  await expect(fileInputs).toHaveCount(1); // only the logo input remains; editor is BlockNote
+
+  // Verify BlockNote editor presence via a contenteditable element
+  await expect(page.locator('[contenteditable="true"]').first()).toBeVisible();
 
     await expect(page.getByRole('button', { name: /Create Faculty/i })).toBeVisible();
   });

@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { ensureAuthenticated, navigateToUniversity, navigateToSubject, SELECTORS, TIMEOUTS } from './helpers';
+import { ensureAuthenticated, navigateToSubject, SELECTORS } from './helpers';
 
 /**
  * E2E tests for lecture CRUD operations
@@ -15,10 +15,11 @@ test.describe('Lecture Management', () => {
   test('creates a new lecture', async ({ page }) => {
     // Look for "Create Lecture" or "Add Lecture" button
     const createButton = page.locator(SELECTORS.CREATE_LECTURE_BTN).first();
-    
+
     if (await createButton.isVisible({ timeout: 3000 })) {
       await createButton.click();
-      
+      await page.waitForSelector('input[name="title"], input[placeholder*="title"]', { state: 'visible', timeout: 5000 });
+
       // Fill in lecture form
       await page.fill('input[name="title"], input[placeholder*="title"]', 'Introduction to Testing');
       
@@ -42,10 +43,11 @@ test.describe('Lecture Management', () => {
 
   test('creates lecture with markdown content', async ({ page }) => {
     const createButton = page.locator(SELECTORS.CREATE_LECTURE_BTN).first();
-    
+
     if (await createButton.isVisible({ timeout: 3000 })) {
       await createButton.click();
-      
+      await page.waitForSelector('input[name="title"]', { state: 'visible', timeout: 5000 });
+
       await page.fill('input[name="title"]', 'Lecture with Content');
       
       // Look for markdown editor or content field
@@ -67,6 +69,7 @@ test.describe('Lecture Management', () => {
     
     if (count > 0) {
       await editButtons.first().click();
+      await page.waitForSelector('input[name="title"]', { state: 'visible', timeout: 5000 });
       
       // Update title
       const titleInput = page.locator('input[name="title"]');
@@ -94,6 +97,7 @@ test.describe('Lecture Management', () => {
     
     if (await createButton.isVisible({ timeout: 3000 })) {
       await createButton.click();
+      await page.waitForSelector('input[name="title"]', { state: 'visible', timeout: 5000 });
       
       const testTitle = `Delete Me Lecture ${Date.now()}`;
       await page.fill('input[name="title"]', testTitle);

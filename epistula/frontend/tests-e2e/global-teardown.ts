@@ -1,35 +1,8 @@
-import { request, FullConfig } from '@playwright/test';
-import fs from 'fs';
-import path from 'path';
+import { FullConfig } from '@playwright/test';
 
 export default async function globalTeardown(_config: FullConfig) {
-  try {
-    const authDir = path.join(process.cwd(), 'tests-e2e', '.auth');
-    const idsPath = path.join(authDir, 'ids.json');
-    if (!fs.existsSync(idsPath)) return;
-
-    const ids = JSON.parse(fs.readFileSync(idsPath, 'utf-8')) as { universityId?: number };
-    if (!ids?.universityId) return;
-
-    const backendBase = process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_BACKEND_URL || process.env.BACKEND_URL || 'http://localhost:8000';
-    const rootEmail = process.env.EPISTULA_ROOT_EMAIL || process.env.NEXT_PUBLIC_ROOT_EMAIL || 'root@localhost.localdomain';
-    const rootPassword = process.env.EPISTULA_ROOT_PASSWORD || 'changeme123';
-
-    const api = await request.newContext({ baseURL: backendBase });
-    const loginResp = await api.post('/api/v1/auth/login', { data: { email: rootEmail, password: rootPassword } });
-    if (!loginResp.ok()) {
-      await api.dispose();
-      return;
-    }
-    const { access_token } = await loginResp.json();
-
-    // Delete the seeded university
-    await api.delete(`/api/v1/universities/${ids.universityId}`, {
-      headers: { Authorization: `Bearer ${access_token}` },
-    });
-
-    await api.dispose();
-  } catch {
-    // Best effort teardown
-  }
+  // DO NOT delete E2E University - it should persist between test runs
+  // Tests rely on a stable E2E environment with ID 3311
+  // If cleanup is needed, manually delete via: npx tsx scripts/setup-e2e-data.ts --cleanup
+  console.log('[E2E Teardown] Skipping E2E University cleanup - data persists for next run');
 }

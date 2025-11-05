@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { ensureAuthenticated, navigateToUniversity, SELECTORS, TIMEOUTS } from './helpers';
+import { ensureAuthenticated, navigateToUniversity } from './helpers';
 
 /**
  * E2E tests for user management workflows
@@ -16,12 +16,13 @@ test.describe('User Management', () => {
     // Navigate to Users page
     await page.click('text=Users');
     await page.waitForURL('**/users');
-    
-    // Click Create User button
-    await page.click('button:has-text("Create User")');
-    
-    // Fill in user form
-    await page.fill('input[name="name"]', 'Test Professor');
+
+  // Click Create User button and wait for modal
+  await page.click('button:has-text("Create User")');
+  await page.waitForSelector('input[name="name"]', { state: 'visible', timeout: 5000 });
+
+  // Fill in user form
+  await page.fill('input[name="name"]', 'Test Professor');
     await page.fill('input[name="email"]', `prof-${Date.now()}@test.com`);
     await page.fill('input[name="password"]', 'testpassword123');
     
@@ -39,12 +40,13 @@ test.describe('User Management', () => {
     // Navigate to Users page
     await page.click('text=Users');
     await page.waitForURL('**/users');
-    
-    // Click Create User button
-    await page.click('button:has-text("Create User")');
-    
-    // Fill in user form
-    await page.fill('input[name="name"]', 'Test Student');
+
+  // Click Create User button and wait for modal
+  await page.click('button:has-text("Create User")');
+  await page.waitForSelector('input[name="name"]', { state: 'visible', timeout: 5000 });
+
+  // Fill in user form
+  await page.fill('input[name="name"]', 'Test Student');
     await page.fill('input[name="email"]', `student-${Date.now()}@test.com`);
     await page.fill('input[name="password"]', 'testpassword123');
     
@@ -91,11 +93,12 @@ test.describe('User Management', () => {
     // Navigate to Users page
     await page.click('text=Users');
     await page.waitForURL('**/users');
-    
-    // Create a user to delete
-    await page.click('button:has-text("Create User")');
-    const testEmail = `delete-me-${Date.now()}@test.com`;
-    await page.fill('input[name="name"]', 'Delete Me User');
+
+  // Create a user to delete
+  await page.click('button:has-text("Create User")');
+  await page.waitForSelector('input[name="name"]', { state: 'visible', timeout: 5000 });
+  const testEmail = `delete-me-${Date.now()}@test.com`;
+  await page.fill('input[name="name"]', 'Delete Me User');
     await page.fill('input[name="email"]', testEmail);
     await page.fill('input[name="password"]', 'password123');
     await page.selectOption('select[name="role"]', 'professor');
@@ -209,12 +212,13 @@ test.describe('User Management', () => {
     // Navigate to Users page
     await page.click('text=Users');
     await page.waitForURL('**/users');
-    
-    const duplicateEmail = `duplicate-${Date.now()}@test.com`;
-    
-    // Create first user
-    await page.click('button:has-text("Create User")');
-    await page.fill('input[name="name"]', 'First User');
+
+  const duplicateEmail = `duplicate-${Date.now()}@test.com`;
+
+  // Create first user
+  await page.click('button:has-text("Create User")');
+  await page.waitForSelector('input[name="name"]', { state: 'visible', timeout: 5000 });
+  await page.fill('input[name="name"]', 'First User');
     await page.fill('input[name="email"]', duplicateEmail);
     await page.fill('input[name="password"]', 'password123');
     await page.selectOption('select[name="role"]', 'professor');

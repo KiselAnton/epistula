@@ -4,11 +4,11 @@ import { SELECTORS, TEST_CREDENTIALS, TIMEOUTS } from './constants';
 /**
  * Login helper
  * @param page - Playwright page object
- * @param credentials - Optional credentials (defaults to TEST_ADMIN)
+ * @param credentials - Optional credentials (defaults to ROOT)
  */
 export async function login(
   page: Page,
-  credentials = TEST_CREDENTIALS.ADMIN
+  credentials = TEST_CREDENTIALS.ROOT
 ): Promise<void> {
   // Only go to login page if not already there
   if (!page.url().includes('http://localhost:3000')) {
@@ -31,7 +31,7 @@ export async function login(
  */
 export async function ensureAuthenticated(
   page: Page,
-  credentials = TEST_CREDENTIALS.ADMIN
+  credentials = TEST_CREDENTIALS.ROOT
 ): Promise<void> {
   // Start by going to root if page is blank or not yet navigated
   if (!page.url() || page.url() === 'about:blank') {
