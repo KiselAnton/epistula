@@ -6,6 +6,7 @@ const BASE_URL = process.env.EPISTULA_E2E_BASE_URL || `http://localhost:${PORT}`
 export default defineConfig({
   testDir: 'tests-e2e',
   timeout: 30_000,
+  workers: 4, // Limit parallel workers to prevent database connection pool exhaustion
   use: {
     baseURL: BASE_URL,
     trace: 'on-first-retry',

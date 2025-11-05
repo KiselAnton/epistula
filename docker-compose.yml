@@ -92,6 +92,9 @@ services:
       DB_NAME: epistula
       DB_USER: epistula_user
       DB_PASSWORD: ${DB_PASSWORD:-change_me_in_production}
+      # Database connection pool settings (increased for E2E tests with parallel workers)
+      DB_POOL_SIZE: ${DB_POOL_SIZE:-10}
+      DB_MAX_OVERFLOW: ${DB_MAX_OVERFLOW:-20}
       
       # MinIO connection
       MINIO_ENDPOINT: minio:9000
