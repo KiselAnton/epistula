@@ -63,6 +63,15 @@ test.describe('Lecture Management', () => {
   });
 
   test('edits an existing lecture', async ({ page }) => {
+    // First create a lecture to ensure we have something to edit
+    await page.click('button:has-text("Create Lecture"), button:has-text("Add Lecture"), button:has-text("New Lecture")');
+    await page.waitForSelector('input[name="title"]', { state: 'visible', timeout: 5000 });
+    await page.fill('input[name="title"]', 'Lecture to Edit');
+    await page.fill('input[name="scheduled_at"]', '2025-12-01T10:00');
+    await page.fill('input[name="duration_minutes"]', '60');
+    await page.click('button[type="submit"]:has-text("Create")');
+    await page.waitForTimeout(1000);
+
     // Find first lecture edit button
     const editButtons = page.locator('button:has-text("Edit"), button[aria-label*="Edit"]');
     const count = await editButtons.count();
@@ -253,7 +262,7 @@ test.describe('Lecture Management', () => {
 
   test('handles empty lecture list gracefully', async ({ page }) => {
     // Try to find "No lectures" message or similar
-    const emptyMessage = page.locator('text=/no lectures|empty|create your first/i');
+    const emptyMessage = page.locator('text=/no lectures|empty|create your first|not created yet/i');
     
     // Either there are lectures or there's an empty state message
     const lectures = page.locator('[class*="lecture"]');

@@ -350,6 +350,7 @@ export default function FacultiesPage() {
               currentSorted.map((faculty) => (
                 <div 
                   key={faculty.id} 
+                  data-testid="faculty-card"
                   className={styles.facultyCard}
                   onClick={() => router.push(`/university/${id}/faculty/${faculty.id}`)}
                 >

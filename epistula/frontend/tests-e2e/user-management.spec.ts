@@ -17,13 +17,15 @@ test.describe('User Management', () => {
     await page.click('text=Users');
     await page.waitForURL('**/users');
 
+    const testEmail = `prof-${Date.now()}@test.com`;
+
   // Click Create User button and wait for modal
   await page.click('button:has-text("Create User")');
   await page.waitForSelector('input[name="name"]', { state: 'visible', timeout: 5000 });
 
   // Fill in user form
   await page.fill('input[name="name"]', 'Test Professor');
-    await page.fill('input[name="email"]', `prof-${Date.now()}@test.com`);
+    await page.fill('input[name="email"]', testEmail);
     await page.fill('input[name="password"]', 'testpassword123');
     
     // Select professor role
@@ -32,8 +34,8 @@ test.describe('User Management', () => {
     // Submit form
     await page.click('button[type="submit"]:has-text("Create")');
     
-    // Verify success message or user appears in list
-    await expect(page.locator('text=Test Professor')).toBeVisible({ timeout: 5000 });
+    // Verify user appears in list by checking for the unique email
+    await expect(page.locator(`text=${testEmail}`)).toBeVisible({ timeout: 5000 });
   });
 
   test('creates a new student user with faculty assignment', async ({ page }) => {

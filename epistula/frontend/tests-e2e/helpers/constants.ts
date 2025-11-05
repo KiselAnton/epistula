@@ -26,7 +26,7 @@ export const SELECTORS = {
   
   // Cards and lists
   UNIVERSITY_CARD: '[class*="universityCard"]',
-  FACULTY_CARD: '[class*="facultyCard"]',
+  FACULTY_CARD: '[data-testid="faculty-card"]',
   SUBJECT_CARD: '[class*="subjectCard"], [class*="subject"]',
   
   // Buttons

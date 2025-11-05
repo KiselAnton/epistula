@@ -308,9 +308,9 @@ test.describe('Import/Export Workflows', () => {
           await fileInput.setInputFiles(filePath);
           await page.waitForTimeout(1000);
           
-          // Look for error message
+          // Look for error message - either in error class or generic text
           const modalOverlay = page.locator('[class*="modalOverlay"]').last();
-          const errorMessage = modalOverlay.getByText(/invalid|error|failed|parse/i);
+          const errorMessage = modalOverlay.locator('[class*="error"], .error, div:has-text("parse"), div:has-text("Invalid")').first();
           await expect(errorMessage).toBeVisible({ timeout: 3000 });
         }
         

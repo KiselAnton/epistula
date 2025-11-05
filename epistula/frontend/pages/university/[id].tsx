@@ -558,6 +558,7 @@ export default function UniversityPage() {
                   {faculties.slice(0, 6).map((faculty) => (
                     <div
                       key={faculty.id}
+                      data-testid="faculty-card"
                       onClick={() => router.push(`/university/${university.id}/faculty/${faculty.id}`)}
                       style={{
                         background: 'white',

@@ -299,9 +299,9 @@ test.describe('Professor and Student Assignments', () => {
       await navigateToFaculty(page);
 
   // Look for counts display - Faculty Members section shows professor count with parenthesized numbers
-  // Example: "Faculty Members (3)" or "Students (5)"
+  // Example: "Faculty Members (3)" or "Faculty Students (5)"
   const facultyMembersHeading = page.locator('h2', { hasText: /Faculty Members \(\d+\)/ });
-  const studentsHeading = page.locator('h2', { hasText: /Students \(\d+\)/ });
+  const studentsHeading = page.locator('h2', { hasText: /Faculty Students \(\d+\)/ });
 
   const hasMembersCount = await facultyMembersHeading.isVisible({ timeout: 3000 });
   const hasStudCount = await studentsHeading.isVisible({ timeout: 3000 });
