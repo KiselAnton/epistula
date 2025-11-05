@@ -36,7 +36,9 @@ class MyLectureNoteItem(BaseModel):
     id: int
     lecture_id: int
     subject_id: int
+    faculty_id: int
     title: str
+    subject_name: str
     subject_code: Optional[str] = None
     content: str
     updated_at: datetime
@@ -181,7 +183,7 @@ def list_my_notes(
 
     # Join notes with lectures and subjects for metadata
     result = db.execute(text(f"""
-        SELECT ln.id, ln.lecture_id, l.subject_id, l.title, s.code, ln.content, ln.updated_at
+        SELECT ln.id, ln.lecture_id, l.subject_id, s.faculty_id, l.title, s.name, s.code, ln.content, ln.updated_at
         FROM {schema}.lecture_notes ln
         JOIN {schema}.lectures l ON l.id = ln.lecture_id
         JOIN {schema}.subjects s ON s.id = l.subject_id
@@ -192,6 +194,6 @@ def list_my_notes(
     items: List[MyLectureNoteItem] = []
     for row in result:
         items.append(MyLectureNoteItem(
-            id=row[0], lecture_id=row[1], subject_id=row[2], title=row[3], subject_code=row[4], content=row[5], updated_at=row[6]
+            id=row[0], lecture_id=row[1], subject_id=row[2], faculty_id=row[3], title=row[4], subject_name=row[5], subject_code=row[6], content=row[7], updated_at=row[8]
         ))
     return items

@@ -184,8 +184,9 @@ def test_list_my_notes_happy_path(client, set_user):
 
     now = _dt.datetime.now(_dt.timezone.utc)
     rows = [
-        (1, 11, 3, "Lec 1", "SUB1", "C1", now),
-        (2, 12, 3, "Lec 2", "SUB1", "C2", now),
+        # id, lecture_id, subject_id, faculty_id, title, subject_name, subject_code, content, updated_at
+        (1, 11, 3, 5, "Lec 1", "Subject One", "SUB1", "C1", now),
+        (2, 12, 3, 5, "Lec 2", "Subject One", "SUB1", "C2", now),
     ]
     sess = _make_session_for_notes_flow(
         uni_id=3,
@@ -203,8 +204,15 @@ def test_list_my_notes_happy_path(client, set_user):
         assert isinstance(body, list)
         assert len(body) == 2
         assert body[0]["lecture_id"] == 11
+        assert body[0]["subject_id"] == 3
+        assert body[0]["faculty_id"] == 5
         assert body[0]["title"] == "Lec 1"
+        assert body[0]["subject_name"] == "Subject One"
         assert body[0]["subject_code"] == "SUB1"
+        assert body[0]["content"] == "C1"
+        assert body[1]["lecture_id"] == 12
+        assert body[1]["faculty_id"] == 5
+        assert body[1]["subject_name"] == "Subject One"
     finally:
         app_main.app.dependency_overrides.clear()
 

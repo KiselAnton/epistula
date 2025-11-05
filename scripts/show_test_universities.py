@@ -1,45 +1,29 @@
 """
 Display the two test universities (UNI1 and UNI2) created for testing.
 
-This version talks to the running backend via HTTP using root credentials,
-so it works without importing backend code or installing dependencies.
+This version uses shared helpers from test_university_helpers.py to reduce
+code duplication and improve maintainability.
 """
-import os
-import requests
-
-BASE_URL = os.getenv("API_BASE_URL", "http://localhost:8000/api/v1")
-ROOT_EMAIL = os.getenv("ROOT_EMAIL", "root@localhost.localdomain")
-ROOT_PASSWORD = os.getenv("ROOT_PASSWORD", "changeme123")
-
-
-def login(email: str, password: str) -> str | None:
-    try:
-        r = requests.post(f"{BASE_URL}/auth/login", json={"email": email, "password": password}, timeout=10)
-        if r.status_code == 200:
-            return r.json().get("access_token")
-        print(f"Login failed: {r.status_code} {r.text}")
-    except Exception as e:
-        print(f"Login error: {e}")
-    return None
-
-
-def get(url: str, token: str):
-    return requests.get(url, headers={"Authorization": f"Bearer {token}"}, timeout=15)
+from test_university_helpers import (
+    # Constants
+    ROOT_EMAIL, ROOT_PASSWORD, TEST_UNIVERSITY_CODES, DEFAULT_ADMIN_PASSWORD,
+    DEFAULT_PROFESSOR_PASSWORD, DEFAULT_STUDENT_PASSWORD,
+    # Functions
+    login, get_universities, get_faculties, get_subjects, get_temp_status
+)
 
 
 def main():
     token = login(ROOT_EMAIL, ROOT_PASSWORD)
     if not token:
-        print("Cannot proceed without token. Is backend running at", BASE_URL, "?")
+        print("Cannot proceed without token. Is backend running?")
         return
 
     # Get all universities
-    resp = get(f"{BASE_URL}/universities/", token)
-    resp.raise_for_status()
-    universities = resp.json()
+    universities = get_universities(token)
 
-    # Filter for UNI1 and UNI2
-    test_unis = [u for u in universities if u.get('code') in ['UNI1', 'UNI2', 'UNI2_TEMP']]
+    # Filter for test universities
+    test_unis = [u for u in universities if u.get('code') in TEST_UNIVERSITY_CODES + ['UNI2_TEMP']]
 
     print("\n" + "=" * 70)
     print(" Test Universities Created")
@@ -58,15 +42,13 @@ def main():
             uni_id = uni['id']
 
             # Get faculties
-            faculties_resp = get(f"{BASE_URL}/faculties/{uni_id}", token)
-            faculties = faculties_resp.json() if faculties_resp.status_code == 200 else []
+            faculties = get_faculties(token, uni_id)
 
-            # Get subjects
+            # Get subjects count
             subjects_count = 0
             for faculty in faculties:
-                subjects_resp = get(f"{BASE_URL}/subjects/{uni_id}/{faculty['id']}", token)
-                if subjects_resp.status_code == 200:
-                    subjects_count += len(subjects_resp.json())
+                subjects = get_subjects(token, uni_id, faculty['id'])
+                subjects_count += len(subjects)
 
             print(f"\n  📚 Data Summary:")
             print(f"     Faculties: {len(faculties)}")
@@ -86,34 +68,32 @@ def main():
         print("=" * 70)
 
         # Check temp status
-        temp_status_resp = get(f"{BASE_URL}/backups/{uni2['id']}/temp-status", token)
-        if temp_status_resp.status_code == 200:
-            temp_status = temp_status_resp.json()
-            if temp_status.get('has_temp_schema'):
-                print(f"\n✅ Temporary schema exists: {temp_status['temp_schema_name']}")
-                print(f"   Created from backup restore")
-                print(f"   Registered as university ID: {temp_status.get('temp_university_id', 'N/A')}")
-                print(f"\n   To promote temp to production:")
-                print(f"   POST /api/v1/backups/{uni2['id']}/promote-temp")
-            else:
-                print("\n❌ No temporary schema found")
+        temp_status = get_temp_status(token, uni2['id'])
+        if temp_status and temp_status.get('has_temp_schema'):
+            print(f"\n✅ Temporary schema exists: {temp_status['temp_schema_name']}")
+            print(f"   Created from backup restore")
+            print(f"   Registered as university ID: {temp_status.get('temp_university_id', 'N/A')}")
+            print(f"\n   To promote temp to production:")
+            print(f"   POST /api/v1/backups/{uni2['id']}/promote-temp")
+        else:
+            print("\n❌ No temporary schema found")
 
     print("\n" + "=" * 70)
     print(" Test User Credentials")
     print("=" * 70)
     print("\nFor University 1 (UNI1) and University 2 (UNI2):")
     print("\n  Admin users:")
-    print("    admin.cs1@uni[1|2].edu / Admin123!")
-    print("    admin.math1@uni[1|2].edu / Admin123!")
-    print("    admin.eng1@uni[1|2].edu / Admin123!")
+    print(f"    admin.cs1@uni[1|2].edu / {DEFAULT_ADMIN_PASSWORD}")
+    print(f"    admin.math1@uni[1|2].edu / {DEFAULT_ADMIN_PASSWORD}")
+    print(f"    admin.eng1@uni[1|2].edu / {DEFAULT_ADMIN_PASSWORD}")
     print("\n  Professor users:")
-    print("    prof1.cs1@uni[1|2].edu / Prof123!")
-    print("    prof2.cs1@uni[1|2].edu / Prof123!")
+    print(f"    prof1.cs1@uni[1|2].edu / {DEFAULT_PROFESSOR_PASSWORD}")
+    print(f"    prof2.cs1@uni[1|2].edu / {DEFAULT_PROFESSOR_PASSWORD}")
     print("    (similar for math1, eng1)")
     print("\n  Student users:")
-    print("    student1.cs1@uni[1|2].edu / Student123!")
-    print("    student2.cs1@uni[1|2].edu / Student123!")
-    print("    student3.cs1@uni[1|2].edu / Student123!")
+    print(f"    student1.cs1@uni[1|2].edu / {DEFAULT_STUDENT_PASSWORD}")
+    print(f"    student2.cs1@uni[1|2].edu / {DEFAULT_STUDENT_PASSWORD}")
+    print(f"    student3.cs1@uni[1|2].edu / {DEFAULT_STUDENT_PASSWORD}")
     print("    (similar for math1, eng1)")
 
     print("\n" + "=" * 70 + "\n")

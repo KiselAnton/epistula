@@ -8,9 +8,10 @@ import { getBackendUrl } from '../../../../lib/config';
 interface MyNoteItem {
   lecture_id: number;
   subject_id: number;
+  faculty_id: number;
   subject_name: string;
   subject_code: string;
-  lecture_title: string;
+  title: string;  // Changed from lecture_title to match backend
   content: string;
   updated_at: string;
 }
@@ -69,17 +70,36 @@ export default function MyNotesPage() {
               notes.length > 0 ? (
                 <div style={{ display: 'grid', gap: '1rem' }}>
                   {notes.map((n) => (
-                    <div key={`${n.subject_id}-${n.lecture_id}`} style={{ border: '1px solid #e0e0e0', borderRadius: 8, padding: '1rem' }}>
+                    <div 
+                      key={`${n.subject_id}-${n.lecture_id}`} 
+                      onClick={() => router.push(`/university/${id}/faculty/${n.faculty_id}/subject/${n.subject_id}#lecture-${n.lecture_id}`)}
+                      style={{ 
+                        border: '1px solid #e0e0e0', 
+                        borderRadius: 8, 
+                        padding: '1rem',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s',
+                        background: 'white'
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.1)';
+                        e.currentTarget.style.borderColor = '#007bff';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.boxShadow = 'none';
+                        e.currentTarget.style.borderColor = '#e0e0e0';
+                      }}
+                    >
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                         <span style={{ fontSize: '1.25rem' }}>📚</span>
-                        <div>
-                          <div style={{ fontWeight: 600 }}>{n.lecture_title}</div>
+                        <div style={{ flex: 1 }}>
+                          <div style={{ fontWeight: 600, color: '#007bff' }}>{n.title}</div>
                           <div style={{ color: '#666', fontSize: '0.9rem' }}>{n.subject_name} ({n.subject_code})</div>
                         </div>
-                        <div style={{ marginLeft: 'auto', color: '#999', fontSize: '0.85rem' }}>Updated {new Date(n.updated_at).toLocaleString()}</div>
+                        <div style={{ color: '#999', fontSize: '0.85rem' }}>Updated {new Date(n.updated_at).toLocaleString()}</div>
                       </div>
-                      <div style={{ marginTop: '0.5rem' }}>
-                        <MarkdownDisplay content={n.content} />
+                      <div style={{ marginTop: '0.5rem', paddingLeft: '2rem' }}>
+                        <MarkdownDisplay content={n.content} variant="compact" />
                       </div>
                     </div>
                   ))}
