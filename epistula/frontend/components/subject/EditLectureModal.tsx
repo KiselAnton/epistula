@@ -119,6 +119,7 @@ export default function EditLectureModal({ isOpen, lecture, universityId, facult
           <div>
             <label style={{ display: 'block', fontWeight: 600, marginBottom: 6 }}>Title</label>
             <input
+              name="title"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="Lecture title"
@@ -143,6 +144,7 @@ export default function EditLectureModal({ isOpen, lecture, universityId, facult
               <label style={{ display: 'block', fontWeight: 600, marginBottom: 6 }}>Scheduled at</label>
               <input
                 type="datetime-local"
+                name="scheduled_at"
                 value={scheduledAt}
                 onChange={(e) => setScheduledAt(e.target.value)}
                 style={{ width: '100%', padding: '0.6rem 0.75rem', border: '1px solid #ced4da', borderRadius: 8 }}
@@ -152,6 +154,7 @@ export default function EditLectureModal({ isOpen, lecture, universityId, facult
               <label style={{ display: 'block', fontWeight: 600, marginBottom: 6 }}>Duration (minutes)</label>
               <input
                 type="number"
+                name="duration_minutes"
                 min={0}
                 value={durationMinutes}
                 onChange={(e) => {
@@ -166,7 +169,7 @@ export default function EditLectureModal({ isOpen, lecture, universityId, facult
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-            <input id="lecture-published" type="checkbox" checked={isActive} onChange={(e) => setIsActive(e.target.checked)} />
+            <input id="lecture-published" name="is_active" type="checkbox" checked={isActive} onChange={(e) => setIsActive(e.target.checked)} />
             <label htmlFor="lecture-published">Published</label>
           </div>
         </div>

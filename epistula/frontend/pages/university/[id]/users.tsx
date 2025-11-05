@@ -155,8 +155,10 @@ export default function UniversityUsersPage() {
         }
       }
 
-      const createdUser = await response.json();
-      setUsers([...users, createdUser]);
+  const createdUser = await response.json();
+  setUsers([...users, createdUser]);
+  // Also update filtered list so the new user appears immediately
+  setFilteredUsers([...filteredUsers, createdUser]);
       setShowCreateModal(false);
       setNewUser({ email: '', name: '', password: '', role: 'student', faculty_id: undefined });
       setCreating(false);
@@ -858,6 +860,7 @@ export default function UniversityUsersPage() {
                   </label>
                   <input
                     type="text"
+                    name="name"
                     value={newUser.name}
                     onChange={(e) => setNewUser({ ...newUser, name: e.target.value })}
                     required
@@ -877,6 +880,7 @@ export default function UniversityUsersPage() {
                   </label>
                   <input
                     type="email"
+                    name="email"
                     value={newUser.email}
                     onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
                     required
@@ -896,6 +900,7 @@ export default function UniversityUsersPage() {
                   </label>
                   <input
                     type="password"
+                    name="password"
                     value={newUser.password}
                     onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}
                     required
@@ -916,6 +921,7 @@ export default function UniversityUsersPage() {
                     Role *
                   </label>
                   <select
+                    name="role"
                     value={newUser.role}
                     onChange={(e) => setNewUser({ ...newUser, role: e.target.value as UserRole, faculty_id: undefined })}
                     style={{
@@ -938,6 +944,7 @@ export default function UniversityUsersPage() {
                       Faculty *
                     </label>
                     <select
+                      name="faculty_id"
                       value={newUser.faculty_id || ''}
                       onChange={(e) => setNewUser({ ...newUser, faculty_id: e.target.value ? parseInt(e.target.value) : undefined })}
                       required

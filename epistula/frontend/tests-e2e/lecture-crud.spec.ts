@@ -180,11 +180,12 @@ test.describe('Lecture Management', () => {
       // Try to submit without title
       await page.click('button[type="submit"]:has-text("Create"), button:has-text("Save")');
       
-      // Look for validation errors
-      const errors = page.locator('[class*="error"], [role="alert"], text=/required|cannot be empty/i');
-      const errorCount = await errors.count();
+  // Look for validation errors
+  const cssErrors = page.locator('[class*="error"], [role="alert"]');
+  const hasCssErrors = (await cssErrors.count()) > 0;
+  const hasTextError = await page.getByText(/required|cannot be empty/i).first().isVisible().catch(() => false);
       
-      expect(errorCount).toBeGreaterThan(0);
+  expect(hasCssErrors || hasTextError).toBeTruthy();
     }
   });
 

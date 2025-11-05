@@ -127,6 +127,7 @@ export default function CreateLectureModal({ isOpen, onClose, onCreate }: Create
             </label>
             <input
               type="text"
+              name="title"
               value={formData.title}
               onChange={(e) => setFormData({ ...formData, title: e.target.value })}
               disabled={creating}
@@ -148,6 +149,7 @@ export default function CreateLectureModal({ isOpen, onClose, onCreate }: Create
               Description
             </label>
             <textarea
+              name="description"
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
               disabled={creating}
@@ -173,6 +175,7 @@ export default function CreateLectureModal({ isOpen, onClose, onCreate }: Create
               </label>
               <input
                 type="datetime-local"
+                name="scheduled_at"
                 value={formData.scheduled_at || ''}
                 onChange={(e) => setFormData({ ...formData, scheduled_at: e.target.value || null })}
                 disabled={creating}
@@ -193,6 +196,7 @@ export default function CreateLectureModal({ isOpen, onClose, onCreate }: Create
               </label>
               <input
                 type="number"
+                name="duration_minutes"
                 value={formData.duration_minutes || ''}
                 onChange={(e) => setFormData({ ...formData, duration_minutes: e.target.value ? parseInt(e.target.value) : null })}
                 disabled={creating}

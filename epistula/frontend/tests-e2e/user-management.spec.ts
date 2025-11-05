@@ -109,11 +109,13 @@ test.describe('User Management', () => {
     
     // Find and click delete button for our test user
     const userRow = page.locator(`tr:has-text("${testEmail}")`);
+    // Handle native confirm() dialog
+    page.once('dialog', async (d) => { await d.accept(); });
     await userRow.locator('button:has-text("Delete")').click();
     
-    // Confirm deletion (if there's a confirmation dialog)
+    // If there is any in-UI confirm button, click it as well (noop if not present)
     const confirmButton = page.locator('button:has-text("Confirm"), button:has-text("Yes"), button:has-text("Delete")').last();
-    if (await confirmButton.isVisible({ timeout: 2000 })) {
+    if (await confirmButton.isVisible({ timeout: 1000 }).catch(() => false)) {
       await confirmButton.click();
     }
     
