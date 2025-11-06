@@ -1,0 +1,128 @@
+.container {
+  margin-top: 2rem;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.manageButton {
+  padding: 0.5rem 1rem;
+  background: #007bff;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1rem;
+}
+
+.card {
+  background: white;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 1.5rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.card:hover {
+  border-color: #007bff;
+  box-shadow: 0 4px 12px rgba(0,123,255,0.15);
+  transform: translateY(-2px);
+}
+
+.cardHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: start;
+  margin-bottom: 0.5rem;
+}
+
+.cardTitle {
+  margin: 0;
+  font-size: 1.1rem;
+  color: #007bff;
+}
+
+.cardActions {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.exportButton {
+  padding: 0.25rem 0.5rem;
+  background: #17a2b8;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.8rem;
+}
+
+.badgeActive {
+  padding: 0.25rem 0.5rem;
+  background: #28a745;
+  color: white;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.badgeHidden {
+  padding: 0.25rem 0.5rem;
+  background: #6c757d;
+  color: white;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.description {
+  color: #666;
+  font-size: 0.85rem;
+  margin: 0.5rem 0;
+}
+
+.info {
+  color: #666;
+  font-size: 0.9rem;
+  margin: 0.5rem 0 0 0;
+  line-height: 1.4;
+}
+
+.emptyState {
+  text-align: center;
+  padding: 3rem 1rem;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border: 1px dashed #dee2e6;
+}
+
+.emptyIcon {
+  font-size: 3rem;
+  display: block;
+  margin-bottom: 1rem;
+}
+
+.emptyText {
+  color: #6c757d;
+  margin: 0;
+}
+
+.emptyHint {
+  color: #6c757d;
+  margin: 0.5rem 0 0 0;
+  font-size: 0.9rem;
+}

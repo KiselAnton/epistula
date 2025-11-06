@@ -1,4 +1,5 @@
 import { User } from '../../types';
+import styles from './AddMemberModal.module.css';
 
 interface AddMemberModalProps {
   isOpen: boolean;
@@ -20,38 +21,13 @@ export default function AddMemberModal({
   if (!isOpen) return null;
 
   return (
-    <div style={{
-      position: 'fixed',
-      top: 0,
-      left: 0,
-      right: 0,
-      bottom: 0,
-      background: 'rgba(0, 0, 0, 0.5)',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      zIndex: 1000
-    }}>
-      <div style={{
-        background: 'white',
-        borderRadius: '12px',
-        padding: '2rem',
-        maxWidth: '600px',
-        width: '90%',
-        maxHeight: '80vh',
-        overflow: 'auto'
-      }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-          <h2 style={{ margin: 0 }}>{title}</h2>
+    <div className={styles.overlay}>
+      <div className={styles.modal}>
+        <div className={styles.header}>
+          <h2 className={styles.title}>{title}</h2>
           <button
             onClick={onClose}
-            style={{
-              background: 'none',
-              border: 'none',
-              fontSize: '1.5rem',
-              cursor: 'pointer',
-              color: '#6c757d'
-            }}
+            className={styles.closeButton}
           >
             ×
           </button>
@@ -59,42 +35,24 @@ export default function AddMemberModal({
 
         {availableUsers.length > 0 ? (
           <div>
-            <p style={{ color: '#666', marginBottom: '1rem' }}>
+            <p className={styles.description}>
               Select a user to assign to this faculty:
             </p>
-            <div style={{
-              border: '1px solid #e0e0e0',
-              borderRadius: '8px',
-              overflow: 'hidden'
-            }}>
-              {availableUsers.map((user, index) => (
+            <div className={styles.userList}>
+              {availableUsers.map((user) => (
                 <div
                   key={user.id}
-                  style={{
-                    padding: '1rem',
-                    borderBottom: index < availableUsers.length - 1 ? '1px solid #e0e0e0' : 'none',
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center'
-                  }}
+                  className={styles.userCard}
                 >
                   <div>
-                    <div style={{ fontWeight: 500, marginBottom: '0.25rem' }}>{user.name}</div>
-                    <div style={{ fontSize: '0.9rem', color: '#666' }}>{user.email}</div>
+                    <div className={styles.userName}>{user.name}</div>
+                    <div className={styles.userEmail}>{user.email}</div>
                   </div>
                   <button
                     onClick={() => onAssign(user.id)}
                     disabled={isAssigning}
-                    style={{
-                      padding: '0.5rem 1rem',
-                      background: '#28a745',
-                      color: 'white',
-                      border: 'none',
-                      borderRadius: '6px',
-                      cursor: isAssigning ? 'not-allowed' : 'pointer',
-                      fontSize: '0.9rem',
-                      opacity: isAssigning ? 0.6 : 1
-                    }}
+                    className={styles.assignButton}
+                    style={{ opacity: isAssigning ? 0.6 : 1 }}
                   >
                     {isAssigning ? 'Assigning...' : 'Assign'}
                   </button>
@@ -103,13 +61,8 @@ export default function AddMemberModal({
             </div>
           </div>
         ) : (
-          <div style={{
-            padding: '2rem',
-            textAlign: 'center',
-            background: '#f8f9fa',
-            borderRadius: '8px'
-          }}>
-            <p style={{ color: '#6c757d', margin: 0 }}>
+          <div className={styles.emptyState}>
+            <p className={styles.emptyStateText}>
               No available users to assign. All users are already assigned to this faculty.
             </p>
           </div>

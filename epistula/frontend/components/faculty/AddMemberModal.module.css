@@ -1,0 +1,98 @@
+.overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal {
+  background: white;
+  border-radius: 12px;
+  padding: 2rem;
+  max-width: 600px;
+  width: 90%;
+  max-height: 80vh;
+  overflow: auto;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.title {
+  margin: 0;
+}
+
+.closeButton {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: #6c757d;
+}
+
+.description {
+  color: #666;
+  margin-bottom: 1rem;
+}
+
+.userList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+}
+
+.userCard {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+}
+
+.userName {
+  font-weight: 500;
+  margin-bottom: 0.25rem;
+}
+
+.userEmail {
+  font-size: 0.9rem;
+  color: #666;
+}
+
+.assignButton {
+  padding: 0.5rem 1rem;
+  background: #007bff;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.assignButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.emptyState {
+  text-align: center;
+  padding: 2rem;
+  color: #6c757d;
+}
+
+.emptyStateText {
+  color: #6c757d;
+  margin: 0;
+}

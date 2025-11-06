@@ -5,6 +5,7 @@ import WysiwygMarkdownEditor from '../common/WysiwygMarkdownEditor';
 import { getCurrentUserRole } from '../../utils/auth';
 import buttons from '../../styles/Buttons.module.css';
 import modalStyles from '../../styles/Modal.module.css';
+import styles from '../modal/SharedModal.module.css';
 
 interface EditLectureModalProps {
   isOpen: boolean;
@@ -108,27 +109,27 @@ export default function EditLectureModal({ isOpen, lecture, universityId, facult
   if (!isOpen || !lecture) return null;
 
   return (
-    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
-      <div style={{ width: 'min(900px, 92vw)', maxHeight: '90vh', overflow: 'auto', background: 'white', borderRadius: 12, padding: '1.25rem', boxShadow: '0 10px 30px rgba(0,0,0,0.2)' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
-          <h2 style={{ margin: 0 }}>Edit Lecture</h2>
+    <div className={styles.overlay}>
+      <div className={styles.modal} style={{ width: 'min(900px, 92vw)', maxHeight: '90vh', overflow: 'auto' }}>
+        <div className={styles.header}>
+          <h2 className={styles.title}>Edit Lecture</h2>
           <button onClick={onClose} className={modalStyles.closeButton}>✖</button>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '1rem' }}>
+        <div className={styles.formGrid}>
           <div>
-            <label style={{ display: 'block', fontWeight: 600, marginBottom: 6 }}>Title</label>
+            <label className={styles.fieldLabelText}>Title</label>
             <input
               name="title"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="Lecture title"
-              style={{ width: '100%', padding: '0.6rem 0.75rem', border: '1px solid #ced4da', borderRadius: 8 }}
+              className={styles.input}
             />
           </div>
 
           <div>
-            <label style={{ display: 'block', fontWeight: 600, marginBottom: 6 }}>Description (Markdown)</label>
+            <label className={styles.fieldLabelText}>Description (Markdown)</label>
             <WysiwygMarkdownEditor
               value={description}
               onChange={setDescription}
@@ -139,19 +140,19 @@ export default function EditLectureModal({ isOpen, lecture, universityId, facult
             />
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+          <div className={styles.formGrid}>
             <div>
-              <label style={{ display: 'block', fontWeight: 600, marginBottom: 6 }}>Scheduled at</label>
+              <label className={styles.fieldLabelText}>Scheduled at</label>
               <input
                 type="datetime-local"
                 name="scheduled_at"
                 value={scheduledAt}
                 onChange={(e) => setScheduledAt(e.target.value)}
-                style={{ width: '100%', padding: '0.6rem 0.75rem', border: '1px solid #ced4da', borderRadius: 8 }}
+                className={styles.input}
               />
             </div>
             <div>
-              <label style={{ display: 'block', fontWeight: 600, marginBottom: 6 }}>Duration (minutes)</label>
+              <label className={styles.fieldLabelText}>Duration (minutes)</label>
               <input
                 type="number"
                 name="duration_minutes"
@@ -163,7 +164,7 @@ export default function EditLectureModal({ isOpen, lecture, universityId, facult
                   else setDurationMinutes(Math.max(0, parseInt(v, 10) || 0));
                 }}
                 placeholder="e.g. 90"
-                style={{ width: '100%', padding: '0.6rem 0.75rem', border: '1px solid #ced4da', borderRadius: 8 }}
+                className={styles.input}
               />
             </div>
           </div>
@@ -174,7 +175,7 @@ export default function EditLectureModal({ isOpen, lecture, universityId, facult
           </div>
         </div>
 
-        <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end', marginTop: '1rem' }}>
+        <div className={styles.footer}>
           <button onClick={onClose} className={`${buttons.btn} ${buttons.btnSecondary}`}>Cancel</button>
           <button onClick={handleSave} disabled={!canSave || saving} className={`${buttons.btn} ${buttons.btnPrimary}`}>
             {saving ? 'Saving…' : 'Save changes'}

@@ -2,6 +2,7 @@ import { useRouter } from 'next/router';
 import { Subject } from '../../types';
 import { exportEntities } from '../../utils/dataTransfer.api';
 import MarkdownDisplay from '../common/MarkdownDisplay';
+import styles from './SubjectsSection.module.css';
 
 interface SubjectsSectionProps {
   subjects: Subject[];
@@ -16,22 +17,13 @@ export default function SubjectsSection({ subjects, universityId, facultyId, isT
   const isStudent = user?.role === 'student';
 
   return (
-    <div style={{ marginTop: '2rem' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+    <div className={styles.container}>
+      <div className={styles.header}>
         <h2>Subjects ({subjects.length})</h2>
         {!isStudent && (
         <button
           onClick={() => router.push(`/university/${universityId}/faculty/${facultyId}/subjects`)}
-          style={{
-            padding: '0.5rem 1rem',
-            background: '#007bff',
-            color: 'white',
-            border: 'none',
-            borderRadius: '6px',
-            cursor: 'pointer',
-            fontSize: '0.9rem',
-            fontWeight: 600
-          }}
+          className={styles.manageButton}
         >
           Manage Subjects
         </button>
@@ -39,36 +31,16 @@ export default function SubjectsSection({ subjects, universityId, facultyId, isT
       </div>
 
       {subjects.length > 0 ? (
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
-          gap: '1rem'
-        }}>
+        <div className={styles.grid}>
           {subjects.map((subject) => (
             <div
               key={subject.id}
               onClick={() => router.push(`/university/${universityId}/faculty/${facultyId}/subject/${subject.id}`)}
-              style={{
-                background: 'white',
-                border: '1px solid #e0e0e0',
-                borderRadius: '8px',
-                padding: '1.5rem',
-                cursor: 'pointer',
-                transition: 'all 0.2s',
-                boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.transform = 'translateY(-2px)';
-                e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.transform = 'translateY(0)';
-                e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.1)';
-              }}
+              className={styles.card}
             >
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '0.5rem' }}>
-                <h3 style={{ margin: 0, fontSize: '1.1rem', color: '#007bff' }}>{subject.name}</h3>
-                <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+              <div className={styles.cardHeader}>
+                <h3 className={styles.cardTitle}>{subject.name}</h3>
+                <div className={styles.cardActions}>
                   {!isStudent && (
                   <button
                     onClick={async (e) => {
@@ -91,28 +63,21 @@ export default function SubjectsSection({ subjects, universityId, facultyId, isT
                       }
                     }}
                     title="Export this subject"
-                    style={{ padding: '0.25rem 0.5rem', background: '#17a2b8', color: 'white', border: 'none', borderRadius: 4, cursor: 'pointer', fontSize: '0.8rem' }}
+                    className={styles.exportButton}
                   >
                     Export
                   </button>
                   )}
-                  <span style={{
-                  background: subject.is_active ? '#28a745' : '#dc3545',
-                  color: 'white',
-                  padding: '0.25rem 0.5rem',
-                  borderRadius: '4px',
-                  fontSize: '0.7rem',
-                  fontWeight: 600
-                }}>
-                  {subject.is_active ? 'Active' : 'Inactive'}
-                </span>
+                  <span className={subject.is_active ? styles.badgeActive : styles.badgeHidden}>
+                    {subject.is_active ? 'Active' : 'Inactive'}
+                  </span>
                 </div>
               </div>
-              <p style={{ color: '#666', fontSize: '0.85rem', margin: '0.5rem 0' }}>
+              <p className={styles.description}>
                 <strong>Code:</strong> {subject.code}
               </p>
               {subject.description && (
-                <div style={{ color: '#666', fontSize: '0.9rem', margin: '0.5rem 0 0 0', lineHeight: '1.4' }}>
+                <div className={styles.info}>
                   <MarkdownDisplay content={subject.description} variant="compact" />
                 </div>
               )}
@@ -120,16 +85,10 @@ export default function SubjectsSection({ subjects, universityId, facultyId, isT
           ))}
         </div>
       ) : (
-        <div style={{
-          padding: '3rem',
-          textAlign: 'center',
-          background: '#f8f9fa',
-          borderRadius: '8px',
-          border: '2px dashed #dee2e6'
-        }}>
-          <span style={{ fontSize: '3rem', display: 'block', marginBottom: '1rem' }}>📚</span>
-          <p style={{ color: '#6c757d', margin: 0 }}>No subjects created yet.</p>
-          <p style={{ color: '#6c757d', margin: '0.5rem 0 0 0', fontSize: '0.9rem' }}>
+        <div className={styles.emptyState}>
+          <span className={styles.emptyIcon}>📚</span>
+          <p className={styles.emptyText}>No subjects created yet.</p>
+          <p className={styles.emptyHint}>
             Click &ldquo;Manage Subjects&rdquo; to create your first subject.
           </p>
         </div>
