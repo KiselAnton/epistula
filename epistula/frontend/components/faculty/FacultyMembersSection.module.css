@@ -1,0 +1,35 @@
+/**
+ * Faculty Members Section styles
+ */
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.empty {
+  padding: 3rem;
+  text-align: center;
+  background: white;
+  border: 2px dashed #dee2e6;
+  border-radius: 8px;
+}
+
+.emptyIcon {
+  font-size: 3rem;
+  display: block;
+  margin-bottom: 1rem;
+}
+
+.emptyText {
+  color: #6c757d;
+  margin: 0;
+}
+
+.emptyHint {
+  color: #6c757d;
+  margin: 0.5rem 0 0 0;
+  font-size: 0.9rem;
+}

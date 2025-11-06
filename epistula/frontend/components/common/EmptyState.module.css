@@ -1,0 +1,43 @@
+/**
+ * Empty State component styles
+ */
+
+.container {
+  padding: 4rem 2rem;
+  text-align: center;
+  background: #f8f9fa;
+  border-radius: 12px;
+  border: 2px dashed #dee2e6;
+}
+
+.icon {
+  font-size: 4rem;
+  display: block;
+  margin-bottom: 1rem;
+}
+
+.title {
+  margin: 0 0 0.5rem 0;
+  color: #495057;
+}
+
+.description {
+  margin: 0 0 1.5rem 0;
+  color: #6c757d;
+}
+
+.button {
+  padding: 0.75rem 1.5rem;
+  background: #667eea;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: 600;
+  transition: background 0.2s;
+}
+
+.button:hover {
+  background: #5568d3;
+}

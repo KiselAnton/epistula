@@ -27,6 +27,21 @@
   border-right: none;
 }
 
+.toolbarGroupRight {
+  display: flex;
+  gap: 4px;
+  padding: 0 4px;
+  margin-left: auto;
+}
+
+.colorPickerWrapper {
+  position: relative;
+}
+
+.hiddenFileInput {
+  display: none;
+}
+
 .toolButton {
   padding: 6px 10px;
   font-size: 12px;

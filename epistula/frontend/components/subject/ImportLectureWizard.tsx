@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import styles from '../../styles/Faculties.module.css';
 import buttons from '../../styles/Buttons.module.css';
+import wizardStyles from './ImportLectureWizard.module.css';
 import { importEntities } from '../../utils/dataTransfer.api';
 
 interface ImportLectureWizardProps {
@@ -125,17 +126,17 @@ const ImportLectureWizard: React.FC<ImportLectureWizardProps> = ({ isOpen, onClo
           <button onClick={onClose} className={styles.closeButton} aria-label="Close">×</button>
         </div>
 
-        {err && <div className={styles.error} style={{ marginBottom: '1rem' }}>{err}</div>}
+        {err && <div className={`${styles.error} ${wizardStyles.errorWithMargin}`}>{err}</div>}
 
         {step === 1 && (
           <div>
             <p>Upload a JSON export of lectures.</p>
-            <ul style={{ marginTop: 0 }}>
+            <ul className={wizardStyles.uploadList}>
               <li>{`{ entity_type: 'lectures', data: [{ title, description?, order_number?, is_published? }, ...] }`}</li>
               <li>Single object fallback: {`{`}title: Intro, order_number: 1{`}`}</li>
             </ul>
             <input type="file" accept="application/json" onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFile(f); }} />
-            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '1rem' }}>
+            <div className={wizardStyles.buttonRow}>
               <button onClick={onClose} className={styles.cancelButton}>Cancel</button>
               <button onClick={() => setStep(2)} disabled={!canProceedToReview} className={styles.submitButton}>Continue →</button>
             </div>
@@ -160,12 +161,12 @@ const ImportLectureWizard: React.FC<ImportLectureWizardProps> = ({ isOpen, onClo
                 </div>
               </>
             ) : (
-              <div className={styles.formGroup}>
-                <label>Detected {lectures.length} lectures</label>
-                <div style={{ color: '#666' }}>They will be imported and attached to this subject.</div>
-              </div>
+                <div className={styles.formGroup}>
+                  <label>Detected {lectures.length} lectures</label>
+                  <div className={wizardStyles.note}>They will be imported and attached to this subject.</div>
+                </div>
             )}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '1rem' }}>
+            <div className={wizardStyles.navigationRow}>
               <button onClick={() => setStep(1)} className={styles.cancelButton}>← Back</button>
               <button onClick={() => setStep(3)} disabled={!canImport} className={styles.submitButton}>Review & Import →</button>
             </div>
@@ -182,7 +183,7 @@ const ImportLectureWizard: React.FC<ImportLectureWizardProps> = ({ isOpen, onClo
                 <option value="skip_existing">Skip existing (insert only new)</option>
               </select>
             </div>
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
+            <div className={wizardStyles.finalActions}>
               <button onClick={() => setStep(2)} className={styles.cancelButton}>← Back</button>
               <button onClick={doImport} disabled={!canImport} className={`${buttons.btn} ${buttons.btnSuccess}`}>{saving ? 'Importing…' : `Import Lecture${lectures.length !== 1 ? 's' : ''}`}</button>
             </div>

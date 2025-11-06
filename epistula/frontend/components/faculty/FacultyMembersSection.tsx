@@ -1,6 +1,7 @@
 import { FacultyProfessor } from '../../types';
 import UserListTable, { UserListItem } from '../common/UserListTable';
 import Button from '../common/Button';
+import styles from './FacultyMembersSection.module.css';
 
 interface FacultyMembersSectionProps {
   professors: FacultyProfessor[];
@@ -19,7 +20,7 @@ export default function FacultyMembersSection({
 }: FacultyMembersSectionProps) {
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+      <div className={styles.header}>
         <h2>Faculty Members ({professors.length})</h2>
         <Button variant="primary" onClick={onAddProfessor}>
           + Add Professor
@@ -49,16 +50,10 @@ export default function FacultyMembersSection({
           )}
         />
       ) : (
-        <div style={{
-          padding: '3rem',
-          textAlign: 'center',
-          background: '#f8f9fa',
-          borderRadius: '8px',
-          border: '2px dashed #dee2e6'
-        }}>
-          <span style={{ fontSize: '3rem', display: 'block', marginBottom: '1rem' }}>👨‍🏫</span>
-          <p style={{ color: '#6c757d', margin: 0 }}>No professors assigned to this faculty yet.</p>
-          <p style={{ color: '#6c757d', margin: '0.5rem 0 0 0', fontSize: '0.9rem' }}>
+        <div className={styles.empty}>
+          <span className={styles.emptyIcon}>👨‍🏫</span>
+          <p className={styles.emptyText}>No professors assigned to this faculty yet.</p>
+          <p className={styles.emptyHint}>
             Assign professors to allow them to create subjects in this faculty.
           </p>
         </div>

@@ -1,0 +1,65 @@
+/**
+ * Confirm Modal styles
+ */
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  display: grid;
+  place-items: center;
+  z-index: 1000;
+}
+
+.modal {
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2);
+  width: min(520px, 94vw);
+  padding: 1.25rem 1.25rem 1rem;
+  border: 1px solid #eee;
+}
+
+.title {
+  margin: 0 0 0.5rem 0;
+  font-size: 1.25rem;
+}
+
+.message {
+  margin-bottom: 1rem;
+  color: #333;
+  line-height: 1.45;
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
+.cancelButton {
+  padding: 0.5rem 0.9rem;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  background: #f8f9fa;
+  cursor: pointer;
+}
+
+.cancelButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.confirmButton {
+  padding: 0.5rem 0.9rem;
+  border-radius: 6px;
+  border: none;
+  background: #dc3545;
+  color: #fff;
+  cursor: pointer;
+}
+
+.confirmButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}

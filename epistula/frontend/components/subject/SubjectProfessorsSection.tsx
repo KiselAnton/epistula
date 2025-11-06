@@ -1,6 +1,7 @@
 import { SubjectProfessor } from '../../types';
 import UserListTable, { UserListItem } from '../common/UserListTable';
 import Button from '../common/Button';
+import styles from './SubjectProfessorsSection.module.css';
 
 interface SubjectProfessorsSectionProps {
   professors: SubjectProfessor[];
@@ -18,8 +19,8 @@ export default function SubjectProfessorsSection({
   removingProfessor
 }: SubjectProfessorsSectionProps) {
   return (
-    <div style={{ marginTop: '2rem' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+    <div className={styles.container}>
+      <div className={styles.header}>
         <h2>Teaching Professors ({professors.length})</h2>
         <Button variant="primary" onClick={onAddProfessor}>
           + Assign Professor
@@ -50,16 +51,10 @@ export default function SubjectProfessorsSection({
           )}
         />
       ) : (
-        <div style={{
-          padding: '3rem',
-          textAlign: 'center',
-          background: 'white',
-          border: '2px dashed #dee2e6',
-          borderRadius: '8px'
-        }}>
-          <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>👨‍🏫</div>
-          <p style={{ color: '#666', marginBottom: '0.5rem' }}>No professors assigned to this subject yet.</p>
-          <p style={{ color: '#999', fontSize: '0.9rem' }}>Assign professors to allow them to create lectures.</p>
+        <div className={styles.empty}>
+          <div className={styles.emptyIcon}>👨‍🏫</div>
+          <p className={styles.emptyText}>No professors assigned to this subject yet.</p>
+          <p className={styles.emptyHint}>Assign professors to allow them to create lectures.</p>
         </div>
       )}
     </div>

@@ -1,6 +1,7 @@
 import { FacultyStudent } from '../../types';
 import UserListTable, { UserListItem } from '../common/UserListTable';
 import Button from '../common/Button';
+import styles from './FacultyStudentsSection.module.css';
 
 interface FacultyStudentsSectionProps {
   students: FacultyStudent[];
@@ -18,8 +19,8 @@ export default function FacultyStudentsSection({
   removingStudent
 }: FacultyStudentsSectionProps) {
   return (
-    <div style={{ marginTop: '2rem' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+    <div className={styles.container}>
+      <div className={styles.header}>
         <h2>Faculty Students ({students.length})</h2>
         <Button variant="success" onClick={onAddStudent}>
           + Create Student
@@ -50,15 +51,9 @@ export default function FacultyStudentsSection({
           )}
         />
       ) : (
-        <div style={{
-          padding: '3rem',
-          textAlign: 'center',
-          background: '#f8f9fa',
-          borderRadius: '8px',
-          border: '2px dashed #dee2e6'
-        }}>
-          <span style={{ fontSize: '3rem', display: 'block', marginBottom: '1rem' }}>👥</span>
-          <p style={{ color: '#6c757d', margin: 0 }}>No students assigned to this faculty yet.</p>
+        <div className={styles.empty}>
+          <span className={styles.emptyIcon}>👥</span>
+          <p className={styles.emptyText}>No students assigned to this faculty yet.</p>
         </div>
       )}
     </div>

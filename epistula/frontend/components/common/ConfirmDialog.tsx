@@ -3,6 +3,7 @@
  */
 import React from 'react';
 import Modal from './Modal';
+import styles from './ConfirmDialog.module.css';
 
 interface ConfirmDialogProps {
   isOpen: boolean;
@@ -32,40 +33,16 @@ export default function ConfirmDialog({
       <div>
         <p>{message}</p>
         {children}
-        <div
-          style={{
-            display: 'flex',
-            gap: '1rem',
-            marginTop: '1.5rem',
-            justifyContent: 'flex-end',
-          }}
-        >
+        <div className={styles.actions}>
           <button
             onClick={onClose}
-            style={{
-              padding: '0.5rem 1.5rem',
-              background: '#6c757d',
-              color: 'white',
-              border: 'none',
-              borderRadius: '6px',
-              cursor: 'pointer',
-              fontSize: '1rem',
-            }}
+            className={styles.cancelButton}
           >
             {cancelText}
           </button>
           <button
             onClick={onConfirm}
-            style={{
-              padding: '0.5rem 1.5rem',
-              background: warning ? '#dc3545' : '#007bff',
-              color: 'white',
-              border: 'none',
-              borderRadius: '6px',
-              cursor: 'pointer',
-              fontSize: '1rem',
-              fontWeight: 600,
-            }}
+            className={`${styles.confirmButton} ${warning ? styles.confirmButtonWarning : styles.confirmButtonNormal}`}
           >
             {confirmText}
           </button>

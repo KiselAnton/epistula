@@ -10,6 +10,7 @@ interface SkeletonProps {
   height?: string | number;
   borderRadius?: string | number;
   style?: React.CSSProperties;
+  className?: string;
 }
 
 /**
@@ -19,17 +20,14 @@ export const Skeleton: React.FC<SkeletonProps> = ({
   width = '100%', 
   height = '20px', 
   borderRadius = '4px',
-  style = {}
+  style = {},
+  className = ''
 }) => {
+  const styleObj: React.CSSProperties = { width, height, borderRadius, ...style };
   return (
     <div
-      className={styles.skeleton}
-      style={{
-        width,
-        height,
-        borderRadius,
-        ...style,
-      }}
+      className={`${styles.skeleton} ${className}`.trim()}
+      style={styleObj}
     />
   );
 };
@@ -55,8 +53,8 @@ export const TableRowSkeleton: React.FC<{ columns: number }> = ({ columns }) => 
 export const CardSkeleton: React.FC = () => {
   return (
     <div className={styles.card}>
-      <Skeleton width="60%" height="24px" style={{ marginBottom: '1rem' }} />
-      <Skeleton width="100%" height="16px" style={{ marginBottom: '0.5rem' }} />
+      <Skeleton width="60%" height="24px" className={styles.titleSkeleton} />
+      <Skeleton width="100%" height="16px" className={styles.lineSkeleton} />
       <Skeleton width="80%" height="16px" />
     </div>
   );
@@ -72,7 +70,7 @@ export const UserListSkeleton: React.FC = () => {
         <div key={i} className={styles.userListItem}>
           <Skeleton width="40px" height="40px" borderRadius="50%" />
           <div className={styles.userContent}>
-            <Skeleton width="200px" height="18px" style={{ marginBottom: '0.5rem' }} />
+            <Skeleton width="200px" height="18px" className={styles.nameSkeleton} />
             <Skeleton width="150px" height="14px" />
           </div>
           <Skeleton width="80px" height="32px" borderRadius="16px" />
@@ -101,7 +99,7 @@ export const SubjectGridSkeleton: React.FC = () => {
 export const PageHeaderSkeleton: React.FC = () => {
   return (
     <div className={styles.pageHeader}>
-      <Skeleton width="300px" height="32px" style={{ marginBottom: '0.5rem' }} />
+      <Skeleton width="300px" height="32px" className={styles.titleSkeleton} />
       <Skeleton width="200px" height="20px" />
     </div>
   );

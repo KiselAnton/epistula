@@ -1,0 +1,34 @@
+/**
+ * Import Lecture Wizard styles
+ */
+
+.errorWithMargin {
+  margin-bottom: 1rem;
+}
+
+.uploadList {
+  margin-top: 0;
+}
+
+.buttonRow {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 1rem;
+}
+
+.note {
+  color: #666;
+}
+
+.navigationRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 1rem;
+}
+
+.finalActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}

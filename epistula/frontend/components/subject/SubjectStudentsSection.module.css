@@ -1,0 +1,42 @@
+/**
+ * Subject Students Section styles
+ */
+
+.container {
+  margin-top: 2rem;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.empty {
+  padding: 3rem;
+  text-align: center;
+  background: white;
+  border: 2px dashed #dee2e6;
+  border-radius: 8px;
+}
+
+.emptyIcon {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+}
+
+.emptyText {
+  color: #666;
+  margin-bottom: 0.5rem;
+}
+
+.emptyHint {
+  color: #999;
+  font-size: 0.9rem;
+}

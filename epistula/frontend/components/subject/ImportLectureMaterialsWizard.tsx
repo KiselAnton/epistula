@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import styles from '../../styles/Faculties.module.css';
 import buttons from '../../styles/Buttons.module.css';
+import wizardStyles from './ImportLectureMaterialsWizard.module.css';
 import { importEntities } from '../../utils/dataTransfer.api';
 
 interface ImportLectureMaterialsWizardProps {
@@ -91,16 +92,16 @@ const ImportLectureMaterialsWizard: React.FC<ImportLectureMaterialsWizardProps> 
           <h2>Import Lecture Materials</h2>
           <button onClick={onClose} className={styles.closeButton} aria-label="Close">×</button>
         </div>
-        {err && <div className={styles.error} style={{ marginBottom: '1rem' }}>{err}</div>}
+  {err && <div className={`${styles.error} ${wizardStyles.errorWithMargin}`}>{err}</div>}
         {step === 1 && (
           <div>
             <p>Upload a JSON export of lecture_materials.</p>
-            <ul style={{ marginTop: 0 }}>
+            <ul className={wizardStyles.uploadList}>
               <li>{`{ entity_type: 'lecture_materials', data: [{ title, content, material_type?, order_number? }, ...] }`}</li>
               <li>Single object fallback: {`{`}title: Slide 1, content: ellipsis{`}`}</li>
             </ul>
             <input type="file" accept="application/json" onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFile(f); }} />
-            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '1rem' }}>
+            <div className={wizardStyles.buttonRow}>
               <button onClick={onClose} className={styles.cancelButton}>Cancel</button>
               <button onClick={() => setStep(2)} disabled={!canProceedToReview} className={styles.submitButton}>Continue →</button>
             </div>
@@ -108,9 +109,9 @@ const ImportLectureMaterialsWizard: React.FC<ImportLectureMaterialsWizardProps> 
         )}
         {step === 2 && (
           <div>
-            <div style={{ maxHeight: '50vh', overflow: 'auto', border: '1px solid #eee', borderRadius: 8, padding: '0.5rem' }}>
+            <div className={wizardStyles.previewContainer}>
               {items.map((m, idx) => (
-                <div key={idx} style={{ display: 'grid', gridTemplateColumns: '1.5fr 2fr 1fr auto', gap: '0.5rem', alignItems: 'center', marginBottom: '0.5rem' }}>
+                <div key={idx} className={wizardStyles.materialRow}>
                   <input placeholder="Title" value={m.title} onChange={(e) => { const next = [...items]; next[idx] = { ...m, title: e.target.value }; setItems(next); }} />
                   <input placeholder="Content" value={m.content} onChange={(e) => { const next = [...items]; next[idx] = { ...m, content: e.target.value }; setItems(next); }} />
                   <input type="number" placeholder="Order #" value={m.order_number ?? ''} onChange={(e) => { const next = [...items]; next[idx] = { ...m, order_number: e.target.value ? Number(e.target.value) : null }; setItems(next); }} />
@@ -118,7 +119,7 @@ const ImportLectureMaterialsWizard: React.FC<ImportLectureMaterialsWizardProps> 
                 </div>
               ))}
             </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '1rem' }}>
+            <div className={wizardStyles.navigationRow}>
               <button onClick={() => setStep(1)} className={styles.cancelButton}>← Back</button>
               <button onClick={() => setStep(3)} disabled={!canImport} className={styles.submitButton}>Review & Import →</button>
             </div>
@@ -130,7 +131,7 @@ const ImportLectureMaterialsWizard: React.FC<ImportLectureMaterialsWizardProps> 
               <label>Import strategy</label>
               <div>Using merge strategy to update existing materials and add new ones.</div>
             </div>
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
+            <div className={wizardStyles.finalButtonRow}>
               <button onClick={() => setStep(2)} className={styles.cancelButton}>← Back</button>
               <button onClick={doImport} disabled={!canImport} className={`${buttons.btn} ${buttons.btnSuccess}`}>{saving ? 'Importing…' : 'Import Materials'}</button>
             </div>

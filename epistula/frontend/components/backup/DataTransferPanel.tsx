@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import styles from '../../styles/DataTransfer.module.css';
+import inlineStyles from './DataTransferPanelInline.module.css';
 import { applyToAll, getStrategyFor, loadStrategies, saveStrategies, StrategyMap, Strategy } from '../../utils/strategy';
 
 interface DataTransferProps {
@@ -241,9 +242,9 @@ export default function DataTransferPanel({ universityId, universityName, hasTem
           </div>
 
           {/* Apply-to-all control for power users */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap', margin: '0 0 0.75rem 0' }}>
-            <label htmlFor="apply-all-select" style={{ fontWeight: 600 }}>Apply strategy to all rows:</label>
-            <select id="apply-all-select" defaultValue="merge" style={{ padding: '0.35rem 0.5rem', borderRadius: 6, border: '1px solid #cfd8ff' }}>
+          <div className={inlineStyles.applyAllRow}>
+            <label htmlFor="apply-all-select" className={inlineStyles.applyAllLabel}>Apply strategy to all rows:</label>
+            <select id="apply-all-select" defaultValue="merge" className={inlineStyles.applyAllSelect}>
               <option value="merge">Merge (recommended)</option>
               <option value="replace">Replace</option>
               <option value="skip_existing">Skip existing</option>
@@ -307,7 +308,7 @@ export default function DataTransferPanel({ universityId, universityName, hasTem
                                   [entity.key]: e.target.value as 'replace' | 'merge' | 'skip_existing',
                                 }))
                               }
-                              style={{ padding: '0.25rem 0.4rem', borderRadius: 6, border: '1px solid #cfd8ff' }}
+                              className={inlineStyles.strategySelect}
                               title="Choose how imports handle existing items for this entity"
                             >
                               <option value="merge">Merge (recommended)</option>

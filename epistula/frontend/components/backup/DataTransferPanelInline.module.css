@@ -1,0 +1,27 @@
+/**
+ * Data Transfer Panel additional styles for inline replacements
+ */
+
+.applyAllRow {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin: 0 0 0.75rem 0;
+}
+
+.applyAllLabel {
+  font-weight: 600;
+}
+
+.applyAllSelect {
+  padding: 0.35rem 0.5rem;
+  border-radius: 6px;
+  border: 1px solid #cfd8ff;
+}
+
+.strategySelect {
+  padding: 0.25rem 0.4rem;
+  border-radius: 6px;
+  border: 1px solid #cfd8ff;
+}

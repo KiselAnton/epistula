@@ -153,7 +153,7 @@ export default function MarkdownEditor({ value, onChange, onSave, isSaving, plac
         ref={imageInputRef} 
         type="file" 
         accept="image/png,image/jpeg,image/jpg,image/gif,image/webp,image/svg+xml"
-        style={{ display: 'none' }} 
+        className={styles.hiddenFileInput} 
         onChange={async (e) => {
           const f = e.target.files?.[0];
           if (!f) return;
@@ -172,7 +172,7 @@ export default function MarkdownEditor({ value, onChange, onSave, isSaving, plac
         ref={fileInputRef} 
         type="file" 
         accept=".pdf,.txt,.md,.docx,.xlsx,.pptx,.csv"
-        style={{ display: 'none' }} 
+        className={styles.hiddenFileInput} 
         onChange={async (e) => {
           const f = e.target.files?.[0];
           if (!f) return;
@@ -223,7 +223,7 @@ export default function MarkdownEditor({ value, onChange, onSave, isSaving, plac
               <button type="button" className={styles.toolButton} title="Italic" onClick={() => insertAtCursor('_italic_')}><em>I</em></button>
               <button type="button" className={styles.toolButton} title="Underline" onClick={() => insertAtCursor('<u>underline</u>')}><u>U</u></button>
               <button type="button" className={styles.toolButton} title="Strikethrough" onClick={() => insertAtCursor('~~strike~~')}><s>S</s></button>
-              <div style={{ position: 'relative' }}>
+              <div className={styles.colorPickerWrapper}>
                 <button 
                   type="button" 
                   className={styles.toolButton} 
@@ -283,7 +283,7 @@ export default function MarkdownEditor({ value, onChange, onSave, isSaving, plac
         )}
 
         {/* Save Button (always visible) */}
-        <div className={styles.toolbarGroup} style={{ marginLeft: 'auto' }}>
+        <div className={styles.toolbarGroupRight}>
           <button type="button" className={styles.saveButton} onClick={onSave} disabled={isSaving}>
             {isSaving ? 'Saving…' : 'Save'}
           </button>
