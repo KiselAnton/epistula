@@ -344,6 +344,7 @@ export default function SubjectsPage() {
                 {currentSubjects.map((subject) => (
                   <div
                     key={subject.id}
+                    data-testid="subject-card"
                     className={styles.facultyCard}
                     onClick={() => router.push(`/university/${id}/faculty/${facultyId}/subject/${subject.id}`)}
                   >

@@ -24,10 +24,10 @@ export const SELECTORS = {
   // Navigation
   UNIVERSITIES_NAV: 'a[href="/universities"]',
   
-  // Cards and lists
-  UNIVERSITY_CARD: '[class*="universityCard"]',
+  // Cards and lists - using consistent data-testid attributes
+  UNIVERSITY_CARD: '[data-testid="university-card"]',
   FACULTY_CARD: '[data-testid="faculty-card"]',
-  SUBJECT_CARD: '[class*="subjectCard"], [class*="subject"]',
+  SUBJECT_CARD: '[data-testid="subject-card"]',
   
   // Buttons
   MANAGE_FACULTIES_BTN: 'button:has-text("Manage All"), button:has-text("Manage Faculties")',

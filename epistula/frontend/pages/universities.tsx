@@ -281,7 +281,8 @@ export default function Universities() {
           ) : (
             currentSorted.map((uni) => (
               <div 
-                key={uni.id} 
+                key={uni.id}
+                data-testid="university-card"
                 className={styles.universityCard}
                 onClick={() => router.push(`/university/${uni.id}`)}
               >
