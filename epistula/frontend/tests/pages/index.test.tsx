@@ -6,6 +6,7 @@ import userEvent from '@testing-library/user-event';
 import { useRouter } from 'next/router';
 import Login from '../../pages/index';
 import { getBackendUrl } from '../../lib/config';
+import { navigate } from '../../lib/navigate';
 
 // Mock Next.js router
 jest.mock('next/router', () => ({
@@ -15,6 +16,11 @@ jest.mock('next/router', () => ({
 // Mock config
 jest.mock('../../lib/config', () => ({
   getBackendUrl: jest.fn(),
+}));
+
+// Mock navigate helper
+jest.mock('../../lib/navigate', () => ({
+  navigate: jest.fn(),
 }));
 
 // Mock fetch
@@ -29,38 +35,37 @@ describe('Login Page - Multi-University Support', () => {
     asPath: '/',
   };
 
-  // Properly mock window.location with all required properties
-  let mockHref = '';
-  beforeAll(() => {
-    delete (window as any).location;
-    window.location = {
-      get href() { return mockHref; },
-      set href(value: string) { mockHref = value; },
-      protocol: 'http:',
-      hostname: 'localhost',
-      port: '3000',
-      host: 'localhost:3000',
-      origin: 'http://localhost:3000',
-      pathname: '/',
-      search: '',
-      hash: '',
-      assign: jest.fn(),
-      reload: jest.fn(),
-      replace: jest.fn(),
-      toString: () => mockHref
-    } as any;
-  });
+  // No location override; we'll assert on window.location.pathname directly
 
   beforeEach(() => {
     jest.clearAllMocks();
-    mockHref = '';
+    (navigate as jest.Mock).mockReset();
     (useRouter as jest.Mock).mockReturnValue(mockRouter);
     (getBackendUrl as jest.Mock).mockReturnValue('http://localhost:8000');
+    // Provide a real in-memory localStorage for this file
+    const store: Record<string, string> = {};
+    Object.defineProperty(window, 'localStorage', {
+      value: {
+        getItem: (key: string) => (key in store ? store[key] : null),
+        setItem: (key: string, value: string) => { store[key] = String(value); },
+        removeItem: (key: string) => { delete store[key]; },
+        clear: () => { Object.keys(store).forEach(k => delete store[k]); },
+      },
+      configurable: true,
+    });
     localStorage.clear();
     (global.fetch as jest.Mock).mockReset();
+    // Default mock: health endpoint returns ok, others ok with empty body unless overridden per-test
+    (global.fetch as jest.Mock).mockImplementation(async (url: any) => {
+      const href = typeof url === 'string' ? url : '';
+      if (href.includes('/health')) {
+        return { ok: true, status: 200, json: async () => ({}) } as any;
+      }
+      return { ok: true, status: 200, json: async () => ({}) } as any;
+    });
   });
 
-  describe.skip('Initial redirect logic', () => {
+  describe('Initial redirect logic', () => {
     it('should redirect root user to dashboard', async () => {
       localStorage.setItem('token', 'fake-token');
       localStorage.setItem('user', JSON.stringify({
@@ -72,7 +77,7 @@ describe('Login Page - Multi-University Support', () => {
       render(<Login />);
 
       await waitFor(() => {
-        expect(window.location.href).toBe('/dashboard');
+        expect(navigate).toHaveBeenCalledWith('/dashboard');
       });
     });
 
@@ -92,7 +97,7 @@ describe('Login Page - Multi-University Support', () => {
       render(<Login />);
 
       await waitFor(() => {
-        expect(window.location.href).toBe('/university/5');
+        expect(navigate).toHaveBeenCalledWith('/university/5');
       });
     });
 
@@ -110,7 +115,7 @@ describe('Login Page - Multi-University Support', () => {
       render(<Login />);
 
       await waitFor(() => {
-        expect(window.location.href).toBe('/university/7');
+        expect(navigate).toHaveBeenCalledWith('/university/7');
       });
     });
 
@@ -121,25 +126,27 @@ describe('Login Page - Multi-University Support', () => {
         expect(screen.getByText(/Epistula/i)).toBeInTheDocument();
       });
 
-      expect(window.location.href).toBe('');
+      expect(navigate).not.toHaveBeenCalled();
     });
   });
 
-  describe.skip('Post-login redirect logic', () => {
+  describe('Post-login redirect logic', () => {
     it('should redirect root user to dashboard after login', async () => {
       const user = userEvent.setup();
 
-      (global.fetch as jest.Mock).mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({
-          access_token: 'root-token',
-          user: {
-            id: 1,
-            email: 'root@example.com',
-            role: 'root',
-            university_access: []
-          }
-        }),
+      (global.fetch as jest.Mock).mockImplementation(async (url: any) => {
+        const href = String(url);
+        if (href.includes('/api/v1/auth/login')) {
+          return {
+            ok: true,
+            status: 200,
+            json: async () => ({
+              access_token: 'root-token',
+              user: { id: 1, email: 'root@example.com', role: 'root', university_access: [] },
+            }),
+          } as any;
+        }
+        return { ok: true, status: 200, json: async () => ({}) } as any; // health
       });
 
       render(<Login />);
@@ -153,28 +160,35 @@ describe('Login Page - Multi-University Support', () => {
       await user.click(loginButton);
 
       await waitFor(() => {
-        expect(window.location.href).toBe('/dashboard');
+        expect(navigate).toHaveBeenCalledWith('/dashboard');
       });
     });
 
     it('should redirect to university selector for multiple universities', async () => {
       const user = userEvent.setup();
 
-      (global.fetch as jest.Mock).mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({
-          access_token: 'multi-uni-token',
-          user: {
-            id: 2,
-            email: 'multi@example.com',
-            role: 'professor',
-            primary_university_id: 1,
-            university_access: [
-              { university_id: 1, university_name: 'Uni 1', university_code: 'U1', role: 'professor', is_active: true },
-              { university_id: 2, university_name: 'Uni 2', university_code: 'U2', role: 'student', is_active: true }
-            ]
-          }
-        }),
+      (global.fetch as jest.Mock).mockImplementation(async (url: any) => {
+        const href = String(url);
+        if (href.includes('/api/v1/auth/login')) {
+          return {
+            ok: true,
+            status: 200,
+            json: async () => ({
+              access_token: 'multi-uni-token',
+              user: {
+                id: 2,
+                email: 'multi@example.com',
+                role: 'professor',
+                primary_university_id: 1,
+                university_access: [
+                  { university_id: 1, university_name: 'Uni 1', university_code: 'U1', role: 'professor', is_active: true },
+                  { university_id: 2, university_name: 'Uni 2', university_code: 'U2', role: 'student', is_active: true }
+                ]
+              }
+            }),
+          } as any;
+        }
+        return { ok: true, status: 200, json: async () => ({}) } as any;
       });
 
       render(<Login />);
@@ -188,27 +202,34 @@ describe('Login Page - Multi-University Support', () => {
       await user.click(loginButton);
 
       await waitFor(() => {
-        expect(mockPush).toHaveBeenCalledWith('/select-university');
+        expect(navigate).toHaveBeenCalledWith('/select-university');
       });
     });
 
     it('should redirect directly for single university', async () => {
       const user = userEvent.setup();
 
-      (global.fetch as jest.Mock).mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({
-          access_token: 'single-uni-token',
-          user: {
-            id: 3,
-            email: 'single@example.com',
-            role: 'professor',
-            primary_university_id: 10,
-            university_access: [
-              { university_id: 10, university_name: 'Only Uni', university_code: 'ONLY', role: 'professor', is_active: true }
-            ]
-          }
-        }),
+      (global.fetch as jest.Mock).mockImplementation(async (url: any) => {
+        const href = String(url);
+        if (href.includes('/api/v1/auth/login')) {
+          return {
+            ok: true,
+            status: 200,
+            json: async () => ({
+              access_token: 'single-uni-token',
+              user: {
+                id: 3,
+                email: 'single@example.com',
+                role: 'professor',
+                primary_university_id: 10,
+                university_access: [
+                  { university_id: 10, university_name: 'Only Uni', university_code: 'ONLY', role: 'professor', is_active: true }
+                ]
+              }
+            }),
+          } as any;
+        }
+        return { ok: true, status: 200, json: async () => ({}) } as any;
       });
 
       render(<Login />);
@@ -223,24 +244,26 @@ describe('Login Page - Multi-University Support', () => {
 
       await waitFor(() => {
         expect(localStorage.getItem('selected_university_id')).toBe('10');
-        expect(mockPush).toHaveBeenCalledWith('/university/10');
+        expect(navigate).toHaveBeenCalledWith('/university/10');
       });
     });
 
     it('should redirect to dashboard for user with no universities', async () => {
       const user = userEvent.setup();
 
-      (global.fetch as jest.Mock).mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({
-          access_token: 'no-uni-token',
-          user: {
-            id: 4,
-            email: 'nouni@example.com',
-            role: 'student',
-            university_access: []
-          }
-        }),
+      (global.fetch as jest.Mock).mockImplementation(async (url: any) => {
+        const href = String(url);
+        if (href.includes('/api/v1/auth/login')) {
+          return {
+            ok: true,
+            status: 200,
+            json: async () => ({
+              access_token: 'no-uni-token',
+              user: { id: 4, email: 'nouni@example.com', role: 'student', university_access: [] },
+            }),
+          } as any;
+        }
+        return { ok: true, status: 200, json: async () => ({}) } as any;
       });
 
       render(<Login />);
@@ -254,7 +277,7 @@ describe('Login Page - Multi-University Support', () => {
       await user.click(loginButton);
 
       await waitFor(() => {
-        expect(mockPush).toHaveBeenCalledWith('/dashboard');
+        expect(navigate).toHaveBeenCalledWith('/dashboard');
       });
     });
 
@@ -272,12 +295,16 @@ describe('Login Page - Multi-University Support', () => {
         ]
       };
 
-      (global.fetch as jest.Mock).mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({
-          access_token: 'test-token-123',
-          user: mockUser
-        }),
+      (global.fetch as jest.Mock).mockImplementation(async (url: any) => {
+        const href = String(url);
+        if (href.includes('/api/v1/auth/login')) {
+          return {
+            ok: true,
+            status: 200,
+            json: async () => ({ access_token: 'test-token-123', user: mockUser }),
+          } as any;
+        }
+        return { ok: true, status: 200, json: async () => ({}) } as any;
       });
 
       render(<Login />);
@@ -298,9 +325,7 @@ describe('Login Page - Multi-University Support', () => {
     });
   });
 
-  describe.skip('Backward compatibility', () => {
-    // These tests use window.location.href which JSDOM doesn't support.
-    // The redirect logic is tested in E2E tests instead.
+  describe('Backward compatibility', () => {
     it('should handle users without university_access field (legacy)', async () => {
       localStorage.setItem('token', 'legacy-token');
       localStorage.setItem('user', JSON.stringify({
@@ -313,7 +338,7 @@ describe('Login Page - Multi-University Support', () => {
       render(<Login />);
 
       await waitFor(() => {
-        expect(mockPush).toHaveBeenCalledWith('/university/3');
+        expect(navigate).toHaveBeenCalledWith('/university/3');
       });
     });
 
@@ -332,23 +357,23 @@ describe('Login Page - Multi-University Support', () => {
       render(<Login />);
 
       await waitFor(() => {
-        // Should use university_access (redirect to selector for 1 university)
-        expect(mockPush).toHaveBeenCalledWith('/university/7');
+        // Should use university_access (redirect directly for 1 university)
+        expect(navigate).toHaveBeenCalledWith('/university/7');
       });
     });
   });
 
-  describe.skip('Error handling', () => {
-    // These tests are flaky due to health check background requests and missing backend mocks.
-    // Error handling is validated in E2E tests.
+  describe('Error handling', () => {
+    // Validate displayed error messages on failed login
     it('should show error message for invalid credentials', async () => {
       const user = userEvent.setup();
-      const alertSpy = jest.spyOn(window, 'alert').mockImplementation(() => {});
 
-      (global.fetch as jest.Mock).mockResolvedValueOnce({
-        ok: false,
-        status: 401,
-        json: async () => ({ detail: 'Invalid credentials' }),
+      (global.fetch as jest.Mock).mockImplementation(async (url: any) => {
+        const href = String(url);
+        if (href.includes('/api/v1/auth/login')) {
+          return { ok: false, status: 401, json: async () => ({ detail: 'Invalid credentials' }) } as any;
+        }
+        return { ok: true, status: 200, json: async () => ({}) } as any;
       });
 
       render(<Login />);
@@ -361,20 +386,21 @@ describe('Login Page - Multi-University Support', () => {
       await user.type(passwordInput, 'wrongpassword');
       await user.click(loginButton);
 
-      await waitFor(() => {
-        expect(alertSpy).toHaveBeenCalled();
-      });
-
-      alertSpy.mockRestore();
+      // Error message should be rendered on the page
+      expect(await screen.findByText(/Invalid credentials/i)).toBeInTheDocument();
+      // No redirect should occur
+      expect(navigate).not.toHaveBeenCalled();
     });
 
     it('should not redirect on failed login', async () => {
       const user = userEvent.setup();
-      const alertSpy = jest.spyOn(window, 'alert').mockImplementation(() => {});
 
-      (global.fetch as jest.Mock).mockResolvedValueOnce({
-        ok: false,
-        status: 401,
+      (global.fetch as jest.Mock).mockImplementation(async (url: any) => {
+        const href = String(url);
+        if (href.includes('/api/v1/auth/login')) {
+          return { ok: false, status: 401, json: async () => ({ detail: 'Bad credentials' }) } as any;
+        }
+        return { ok: true, status: 200, json: async () => ({}) } as any;
       });
 
       render(<Login />);
@@ -387,13 +413,10 @@ describe('Login Page - Multi-University Support', () => {
       await user.type(passwordInput, 'password');
       await user.click(loginButton);
 
-      await waitFor(() => {
-        expect(alertSpy).toHaveBeenCalled();
-      });
-
-      expect(mockPush).not.toHaveBeenCalled();
-
-      alertSpy.mockRestore();
+      // Generic error should be shown (detail or default message)
+      expect(await screen.findByText(/(Bad credentials|Login failed)/i)).toBeInTheDocument();
+      // No redirect should occur
+      expect(navigate).not.toHaveBeenCalled();
     });
   });
 });

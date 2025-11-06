@@ -10,6 +10,7 @@
 import { useState, useEffect, FormEvent, useCallback } from 'react';
 import Head from 'next/head';
 import styles from '../styles/Login.module.css';
+import { navigate } from '../lib/navigate';
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -79,37 +80,37 @@ export default function Login() {
             
             // Root users go to dashboard
             if (user.role === 'root') {
-              window.location.href = '/dashboard';
+              navigate('/dashboard');
               return;
             }
             
             // Check if there's a previously selected university
             const selectedUniId = localStorage.getItem('selected_university_id');
             if (selectedUniId && universityAccess.some((ua: any) => ua.university_id === parseInt(selectedUniId))) {
-              window.location.href = `/university/${selectedUniId}`;
+              navigate(`/university/${selectedUniId}`);
               return;
             }
             
             // Single university - redirect directly
             if (universityAccess.length === 1) {
-              window.location.href = `/university/${universityAccess[0].university_id}`;
+              navigate(`/university/${universityAccess[0].university_id}`);
               return;
             }
             
             // Multiple universities - show selector
             if (universityAccess.length > 1) {
-              window.location.href = '/select-university';
+              navigate('/select-university');
               return;
             }
             
             // Fallback to primary or dashboard
             if (user.primary_university_id) {
-              window.location.href = `/university/${user.primary_university_id}`;
+              navigate(`/university/${user.primary_university_id}`);
               return;
             }
           } catch {}
         }
-        window.location.href = '/dashboard';
+        navigate('/dashboard');
         return;
       }
     }
@@ -177,24 +178,24 @@ export default function Login() {
           
           // Root users always go to dashboard
           if (data.user.role === 'root') {
-            window.location.href = '/dashboard';
+            navigate('/dashboard');
           }
           // Single university - redirect directly
           else if (universityAccess.length === 1) {
             localStorage.setItem('selected_university_id', String(universityAccess[0].university_id));
-            window.location.href = `/university/${universityAccess[0].university_id}`;
+            navigate(`/university/${universityAccess[0].university_id}`);
           }
           // Multiple universities - show selector
           else if (universityAccess.length > 1) {
-            window.location.href = '/select-university';
+            navigate('/select-university');
           }
           // No universities - fallback to dashboard
           else {
-            window.location.href = '/dashboard';
+            navigate('/dashboard');
           }
         } else {
           // Fallback to dashboard
-          window.location.href = '/dashboard';
+          navigate('/dashboard');
         }
         // Trigger storage event for other tabs
         window.dispatchEvent(new Event('storage'));
