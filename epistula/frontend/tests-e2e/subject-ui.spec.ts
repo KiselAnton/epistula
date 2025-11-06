@@ -2,8 +2,6 @@ import { test, expect } from '@playwright/test';
 import fs from 'fs';
 import path from 'path';
 
-const ENABLE = process.env.EPISTULA_E2E_ENABLE_UI_TESTS === '1';
-
 // Prefer IDs seeded by global setup; fallback to env, then '1'
 function getIds() {
   try {
@@ -20,9 +18,7 @@ const seeded = getIds();
 // These are opt-in UI smoke checks that don't assume a running backend session.
 // They verify that the app starts and key actions exist on the subject page when navigable.
 
-test.describe('Subject page UI (optional)', () => {
-  test.skip(!ENABLE, 'UI tests are optional and require EPISTULA_E2E_ENABLE_UI_TESTS=1');
-
+test.describe('Subject page UI', () => {
   test('renders export/import buttons placeholders', async ({ page }) => {
     // Assumes an authenticated session and a live backend if ENABLE=1 is set by the runner.
     // Route parameters are resolved from seeded ids where available.

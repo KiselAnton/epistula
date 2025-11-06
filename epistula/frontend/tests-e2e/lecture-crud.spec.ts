@@ -152,8 +152,9 @@ test.describe('Lecture Management', () => {
       await page.fill('input[name="title"]', testTitle);
       await page.click('button[type="submit"]:has-text("Create"), button:has-text("Save")');
       
-      // Wait for lecture to appear
-      await expect(page.locator(`text=${testTitle}`)).toBeVisible({ timeout: 5000 });
+      // Wait for lecture to appear and track it for later deletion
+      const _firstLecture = await page.locator(`text=${testTitle}`).first();
+      await expect(_firstLecture).toBeVisible({ timeout: 5000 });
       
       // Find and click delete button for our test lecture
       const lectureRow = page.locator(`[class*="lecture"]:has-text("${testTitle}")`).first();
@@ -202,7 +203,7 @@ test.describe('Lecture Management', () => {
     if (count >= 2) {
       // Get initial order
       const lectures = page.locator('[class*="lecture"]');
-      const firstLecture = await lectures.nth(0).textContent();
+      const _firstLecture = await lectures.nth(0).textContent();
       const secondLecture = await lectures.nth(1).textContent();
       
       // Click "move down" on first lecture or "move up" on second

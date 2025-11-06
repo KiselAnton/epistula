@@ -6,8 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint .",
-    "lint:fix": "eslint --fix .",
+    "lint": "eslint . --ignore-pattern 'coverage/**' --ignore-pattern '.next/**'",
+    "lint:fix": "eslint --fix . --ignore-pattern 'coverage/**' --ignore-pattern '.next/**'",
     "test": "jest --watch",
     "test:ci": "jest --ci --coverage",
     "test:e2e": "playwright test"

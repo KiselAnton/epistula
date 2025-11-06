@@ -3,10 +3,12 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import SafeImage from '../SafeImage';
 
 // Mock next/image to a passthrough img so we can trigger onError
+/* eslint-disable @next/next/no-img-element, jsx-a11y/alt-text */
 jest.mock('next/image', () => ({
   __esModule: true,
   default: (props: any) => <img {...props} />,
 }));
+/* eslint-enable @next/next/no-img-element, jsx-a11y/alt-text */
 
 describe('SafeImage', () => {
   it('renders underlying image when no error', () => {

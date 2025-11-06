@@ -72,7 +72,7 @@ const ImportSubjectProfessorsWizard: React.FC<ImportSubjectProfessorsWizardProps
     setErr('');
     try {
       const data = rows
-        .map((r, i) => ({ ...r, subject_id: Number(subjectId) }))
+        .map((r) => ({ ...r, subject_id: Number(subjectId) }))
         .filter((_, _i) => selected[_i])
         .map((r) => { const c = { ...r }; delete (c as any).id; return c; });
       await importEntities(universityId, 'subject_professors', data, { strategy: 'merge' });

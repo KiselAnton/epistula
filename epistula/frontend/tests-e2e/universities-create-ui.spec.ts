@@ -1,10 +1,6 @@
 import { test, expect } from '@playwright/test';
 
-const ENABLE = process.env.EPISTULA_E2E_ENABLE_UI_TESTS === '1';
-
-test.describe('Universities create modal UI (optional)', () => {
-  test.skip(!ENABLE, 'UI tests are optional and require EPISTULA_E2E_ENABLE_UI_TESTS=1');
-
+test.describe('Universities create modal UI', () => {
   test('shows Markdown editor and logo input in create modal', async ({ page }) => {
     await page.goto('/universities');
 

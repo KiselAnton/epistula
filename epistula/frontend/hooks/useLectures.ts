@@ -58,7 +58,8 @@ export function useLectures(
     if (universityId && facultyId && subjectId) {
       loadLectures();
     }
-  }, [universityId, facultyId, subjectId]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [universityId, facultyId, subjectId]); // loadLectures is stable but not memoized; explicit dependency would cause infinite loop
 
   const handleDeleteLecture = async (lectureId: number) => {
     if (!confirm('Are you sure you want to delete this lecture? This will also delete all content.')) {

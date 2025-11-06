@@ -93,7 +93,8 @@ export function useFaculties(universityId: string | number | undefined) {
 
   useEffect(() => {
     fetchFaculties();
-  }, [universityId]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [universityId]); // fetchFaculties is stable but not memoized; explicit dependency would cause infinite loop
 
   return { faculties, loading, error, refetch: fetchFaculties };
 }
@@ -154,7 +155,8 @@ export function useSubjects(universityId: string | number | undefined, facultyId
 
   useEffect(() => {
     fetchSubjects();
-  }, [universityId, facultyId]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [universityId, facultyId]); // fetchSubjects is stable but not memoized; explicit dependency would cause infinite loop
 
   return { subjects, loading, error, refetch: fetchSubjects };
 }

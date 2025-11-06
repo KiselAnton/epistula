@@ -55,7 +55,7 @@ export default function MainLayout({ children, breadcrumbs = ['Dashboard'] }: Ma
           } catch {}
         }
       }
-    } catch (_) {
+    } catch {
       if (typeof window !== 'undefined') {
         window.location.href = '/';
       }

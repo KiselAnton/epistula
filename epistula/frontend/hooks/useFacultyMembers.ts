@@ -72,7 +72,8 @@ export function useFacultyMembers(universityId: string, facultyId: string) {
     if (universityId && facultyId) {
       loadFacultyMembers();
     }
-  }, [universityId, facultyId]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [universityId, facultyId]); // loadFacultyMembers is stable but not memoized; explicit dependency would cause infinite loop
 
   // Professor management
   const openAddProfessorModal = async () => {

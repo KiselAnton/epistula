@@ -462,7 +462,8 @@ export default function UniversityUsersPage() {
     };
 
     fetchData();
-  }, [id, router.isReady, selectedRole, debouncedSearch]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id, selectedRole, debouncedSearch]); // router.isReady used in guard; including router would cause infinite loops
 
   // Keep URL query in sync (shareable/back-forward friendly)
   useEffect(() => {
@@ -484,7 +485,8 @@ export default function UniversityUsersPage() {
     if (!changed) return;
 
     router.replace({ pathname: router.pathname, query: desired }, undefined, { shallow: true });
-  }, [selectedRole, debouncedSearch, search, id, router.isReady]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedRole, debouncedSearch, search, id]); // router used in logic; including it would cause infinite loops
 
   useEffect(() => {
     // Debounce search input

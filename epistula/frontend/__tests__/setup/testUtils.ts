@@ -286,7 +286,6 @@ export const commonNextMocks = {
     mock: () => ({
       __esModule: true,
       default: function MockImage(props: any) {
-        /* eslint-disable @next/next/no-img-element, jsx-a11y/alt-text */
         return Object.assign(document.createElement('img'), props);
       },
     }),

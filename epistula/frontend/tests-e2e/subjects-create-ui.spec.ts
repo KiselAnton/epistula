@@ -2,8 +2,6 @@ import { test, expect } from '@playwright/test';
 import fs from 'fs';
 import path from 'path';
 
-const ENABLE = process.env.EPISTULA_E2E_ENABLE_UI_TESTS === '1';
-
 // Prefer IDs seeded by global setup; fallback to env, then '1'
 function getIds() {
   try {
@@ -19,9 +17,7 @@ const seeded = getIds();
 const uniId = String(process.env.EPISTULA_E2E_UNI_ID || seeded.universityId || '1');
 const facId = String(process.env.EPISTULA_E2E_FAC_ID || seeded.facultyId || '1');
 
-test.describe('Subjects create modal UI (optional)', () => {
-  test.skip(!ENABLE, 'UI tests are optional and require EPISTULA_E2E_ENABLE_UI_TESTS=1');
-
+test.describe('Subjects create modal UI', () => {
   test('shows Markdown editor and logo input in create modal', async ({ page }) => {
     await page.goto(`/university/${uniId}/faculty/${facId}/subjects`);
 

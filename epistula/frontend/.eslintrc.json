@@ -1,6 +1,7 @@
 {
   "extends": "next/core-web-vitals",
   "plugins": ["unused-imports"],
+  "ignorePatterns": ["coverage/", ".next/", "out/", "node_modules/", "playwright-report/", "test-results/", ".auth/"],
   "rules": {
     "no-unused-vars": "off",
     "@typescript-eslint/no-unused-vars": "off",

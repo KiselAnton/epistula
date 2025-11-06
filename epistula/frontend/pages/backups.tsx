@@ -416,7 +416,7 @@ export default function Backups() {
         description = data.description ?? '';
       }
       setEditingMeta(prev => ({...prev, [key]: { title, description, saving: false }}));
-    } catch (_e) {
+    } catch {
       // fallback to current displayed
       setEditingMeta(prev => ({...prev, [key]: { title: backup.title ?? '', description: backup.description ?? '', saving: false }}));
     }

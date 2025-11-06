@@ -21,7 +21,7 @@ export default function WysiwygMarkdownEditor({
   onChange, 
   onSave, 
   isSaving, 
-  placeholder,
+  placeholder: _placeholder,
   userRole 
 }: WysiwygMarkdownEditorProps) {
   
@@ -43,7 +43,7 @@ export default function WysiwygMarkdownEditor({
   const isStudent = userRole === 'student';
   const blockSpecs = isStudent 
     ? (() => {
-        const { video, audio, ...allowedBlocks } = defaultBlockSpecs;
+        const { video: _video, audio: _audio, ...allowedBlocks } = defaultBlockSpecs;
         return allowedBlocks;
       })()
     : defaultBlockSpecs;
@@ -67,7 +67,8 @@ export default function WysiwygMarkdownEditor({
       };
       loadContent();
     }
-  }, []); // Only on mount
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Only on mount - intentionally ignore value and editor to prevent re-parsing on every change
 
   // Handle content changes - convert blocks to markdown
   const handleChange = async () => {

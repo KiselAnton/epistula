@@ -54,7 +54,7 @@ export default function UniversityPage() {
   const [_savingDesc, _setSavingDesc] = useState(false);
   
   // Breadcrumb policy: root users can access the Universities list; admins cannot
-  const [isRoot, setIsRoot] = useState(false);
+  const [_isRoot, setIsRoot] = useState(false);
   const [isStudent, setIsStudent] = useState(false);
 
   const _handleLogoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -307,7 +307,7 @@ export default function UniversityPage() {
           setBackups(Array.isArray(data.backups) ? data.backups : []);
         }
       }
-    } catch (_e) {
+    } catch {
       alert('Restore failed');
     } finally {
       setRestoring(null);

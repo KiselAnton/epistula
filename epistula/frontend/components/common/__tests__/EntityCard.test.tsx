@@ -4,10 +4,12 @@ import userEvent from '@testing-library/user-event';
 import EntityCard from '../EntityCard';
 
 // Mock next/image to render a simple img element
+/* eslint-disable @next/next/no-img-element, jsx-a11y/alt-text */
 jest.mock('next/image', () => ({
   __esModule: true,
   default: (props: any) => <img {...props} />,
 }));
+/* eslint-enable @next/next/no-img-element, jsx-a11y/alt-text */
 
 // Mock MarkdownDisplay to render plain content without dynamic import
 jest.mock('../MarkdownDisplay', () => ({

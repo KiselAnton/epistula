@@ -61,7 +61,7 @@ export default function LectureNoteEditor({ universityId, facultyId, subjectId, 
     };
     fetchNote();
     return () => { cancelled = true; };
-  }, [open, universityId, facultyId, subjectId, lectureId]);
+  }, [open, universityId, facultyId, subjectId, lectureId, tokenOverride]);
 
   // Defensive: remove <video>/<audio> tags from markdown prior to saving
   // BlockNote already restricts these for students, but keep sanitization as a safety net.
