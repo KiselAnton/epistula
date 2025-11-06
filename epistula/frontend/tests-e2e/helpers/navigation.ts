@@ -24,8 +24,11 @@ export async function navigateToUniversity(
     await navigateToUniversities(page);
   }
   
+  // Wait for page to finish loading by checking for search box or cards container
+  const searchBox = page.locator('input[aria-label="Search universities"]');
+  await searchBox.waitFor({ state: 'visible', timeout: TIMEOUTS.NAVIGATION });
+  
   // Search for the university to filter the list (handles pagination)
-  const searchBox = page.locator('input[placeholder*="Search"], input[aria-label*="Search"]');
   await searchBox.fill(universityName);
   await page.waitForTimeout(500); // Wait for search debounce
   
@@ -44,8 +47,12 @@ export async function navigateToFaculties(page: Page): Promise<void> {
     await navigateToUniversity(page);
   }
   
-  // Click "Manage All" or "Manage Faculties" button
-  await page.click(SELECTORS.MANAGE_FACULTIES_BTN);
+  // Wait for "Manage All" or "Manage Faculties" button to be visible
+  const manageFacultiesBtn = page.locator(SELECTORS.MANAGE_FACULTIES_BTN).first();
+  await manageFacultiesBtn.waitFor({ state: 'visible', timeout: TIMEOUTS.NAVIGATION });
+  
+  // Click the button
+  await manageFacultiesBtn.click();
   await page.waitForURL(URL_PATTERNS.FACULTIES, { timeout: TIMEOUTS.NAVIGATION });
 }
 
@@ -130,18 +137,33 @@ export async function navigateToSubject(
     // Network idle may never occur; ignore and continue
   });
 
-  // Wait for the Subjects section heading to appear (longer timeout for slow data fetching)
-  const subjectsHeading = page.locator('xpath=//h2[contains(normalize-space(.), "Subjects")]');
-  await subjectsHeading.waitFor({ state: 'visible', timeout: 20000 });
+  // Wait for the Subjects section heading to appear (simpler, more reliable selector)
+  const subjectsHeading = page.locator('h2:has-text("Subjects")');
+  await subjectsHeading.waitFor({ state: 'visible', timeout: TIMEOUTS.LONG });
 
-  // Find the grid of subject cards that follows the heading
-  const subjectsGrid = page.locator(
-    'xpath=//h2[contains(normalize-space(.), "Subjects")]/following::div[contains(@class, "grid")][1]'
-  );
-  await subjectsGrid.waitFor({ state: 'visible', timeout: TIMEOUTS.LONG });
+  // Wait for subject cards to render - use longer timeout and check for "no data" message
+  await page.waitForTimeout(1000); // Give React time to render
 
-  // Prefer clicking the entire card container to ensure the onClick handler fires
-  const subjectCards = subjectsGrid.locator('div:has(h3)');
+  // Find subject cards using data-testid, but also check for "no subjects" message
+  const noSubjects = page.locator('text=/No subjects found/i');
+  const subjectCards = page.locator(SELECTORS.SUBJECT_CARD);
+  
+  // Race between cards appearing or "no subjects" message
+  await Promise.race([
+    subjectCards.first().waitFor({ state: 'visible', timeout: TIMEOUTS.LONG }),
+    noSubjects.waitFor({ state: 'visible', timeout: TIMEOUTS.LONG }).then(() => {
+      throw new Error('No subjects found in Subjects section. Ensure seed created a subject.');
+    })
+  ]).catch(async (err) => {
+    // If timeout, check what we actually have
+    const count = await subjectCards.count();
+    if (count === 0) {
+      throw new Error('No subjects found in Subjects section. Ensure seed created a subject.');
+    }
+    // If we have cards but they're not visible yet, wait a bit more
+    await page.waitForTimeout(500);
+  });
+
   const count = await subjectCards.count();
   if (count === 0) {
     throw new Error('No subjects found in Subjects section. Ensure seed created a subject.');

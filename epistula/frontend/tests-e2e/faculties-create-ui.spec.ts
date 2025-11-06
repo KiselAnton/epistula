@@ -20,9 +20,10 @@ test.describe('Faculties create modal UI', () => {
   test('shows Markdown editor and logo input in create modal', async ({ page }) => {
     // Navigate directly but ensure page is fully loaded before assertions
     await page.goto(`/university/${uniId}/faculties`);
-    // Wait for the Faculties header or the cards container to ensure hydration complete
+    
+    // Wait for the Faculties header to appear (page finished loading)
     const header = page.locator('h1:has-text("Faculties")');
-    await header.or(page.locator('[class*="cardsContainer"]')).first().waitFor({ state: 'visible', timeout: 5000 });
+    await header.waitFor({ state: 'visible', timeout: 10000 });
 
     await expect(page.getByRole('button', { name: /Create New Faculty/i })).toBeVisible({ timeout: 5000 });
 

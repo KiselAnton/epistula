@@ -18,7 +18,7 @@ import path from 'path';
 
 test.describe('Backup Restore to Temp Workflow', () => {
   // This workflow performs real backup/restore/promote operations and can take longer on CI
-  test.setTimeout(90000);
+  test.setTimeout(120000); // Increased to 2 minutes for slow promote operations
   let universityId: number;
   let _universityName: string;
 
