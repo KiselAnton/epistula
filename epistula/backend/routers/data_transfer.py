@@ -18,6 +18,12 @@ from utils.data_transfer import (
     import_faculty_with_relations,
     ENTITY_TYPES
 )
+from utils.data_transfer_versioning import (
+    CURRENT_FORMAT_VERSION,
+    MIN_SUPPORTED_IMPORT_VERSION,
+    compare_versions,
+    migrate_entities,
+)
 from sqlalchemy import text
 
 logger = logging.getLogger(__name__)
@@ -38,6 +44,8 @@ class ExportRequest(BaseModel):
 
 class ExportResponse(BaseModel):
     """Response with exported data"""
+    format_version: Optional[str] = None
+    app_version: Optional[str] = None
     entity_type: str
     source_schema: str
     count: int
@@ -52,6 +60,9 @@ class ImportRequest(BaseModel):
     data: List[dict]
     strategy: Literal['replace', 'merge', 'skip_existing'] = 'merge'
     to_temp: bool = False  # Import to temp schema if True
+    # Optional metadata if provided by export file
+    format_version: Optional[str] = None
+    source_app_version: Optional[str] = None
 
 
 class ImportResponse(BaseModel):
@@ -235,9 +246,24 @@ def import_entities(
     
     try:
         schema_name = _get_schema_name(db, university_id, use_temp=request.to_temp)
+        # Handle format versioning and migrations
+        incoming_version = request.format_version or CURRENT_FORMAT_VERSION
+        # Reject too-new formats explicitly
+        if compare_versions(incoming_version, CURRENT_FORMAT_VERSION) > 0:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=(
+                    f"Export format version {incoming_version} is newer than this server supports "
+                    f"(current {CURRENT_FORMAT_VERSION}). Please upgrade Epistula."
+                )
+            )
+
+        # Migrate older data up to current format if needed
+        migrated_data = migrate_entities(request.entity_type, request.data, incoming_version, CURRENT_FORMAT_VERSION)
+
         result = import_entity(
-            db, schema_name, request.entity_type, 
-            request.data, strategy=request.strategy
+            db, schema_name, request.entity_type,
+            migrated_data, strategy=request.strategy
         )
         logger.info(f"[IMPORT] Import completed: {result['imported']} imported, {result['updated']} updated")
         return result

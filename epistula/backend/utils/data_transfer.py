@@ -10,6 +10,13 @@ from __future__ import annotations
 
 import json
 from typing import List, Dict, Any, Optional, Literal
+from .data_transfer_versioning import (
+    CURRENT_FORMAT_VERSION,
+    MIN_SUPPORTED_IMPORT_VERSION,
+    read_backend_app_version,
+    compare_versions,
+    migrate_entities,
+)
 from datetime import datetime
 import logging
 
@@ -79,6 +86,8 @@ def export_entity(
         data.append(row_dict)
     
     export_result = {
+        "format_version": CURRENT_FORMAT_VERSION,
+        "app_version": read_backend_app_version(),
         "entity_type": entity_type,
         "source_schema": schema_name,
         "count": len(data),
@@ -118,6 +127,8 @@ def export_faculty_with_relations(
     # Export related entities
     result = {
         "export_type": "faculty_with_relations",
+        "format_version": CURRENT_FORMAT_VERSION,
+        "app_version": read_backend_app_version(),
         "faculty_id": faculty_id,
         "source_schema": schema_name,
         "exported_at": datetime.utcnow().isoformat(),

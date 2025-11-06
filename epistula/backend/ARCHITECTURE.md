@@ -154,3 +154,33 @@ Located in `database/init/03_create_schema_functions.sql`:
 5. Add metrics/monitoring
 6. Add API documentation (OpenAPI/Swagger)
 7. Add database migrations (Alembic)
+
+## Data Transfer: Export/Import Versioning
+
+Epistula supports selective data transfer (export/import) between production and temporary schemas. The export payload includes versioning metadata to ensure backward compatibility across app versions.
+
+Export payload structure (since format v1.0):
+
+```
+{
+    "format_version": "1.0",
+    "app_version": "<value from backend/VERSION>",
+    "entity_type": "subjects",
+    "source_schema": "uni_1_temp",
+    "count": 42,
+    "exported_at": "2025-11-06T12:34:56Z",
+    "data": [...],
+    "columns": ["id", "name", ...]
+}
+```
+
+Import requests accept an optional `format_version`. Rules:
+
+- If omitted, the server assumes current format.
+- If provided and older than current, the server runs a migration hook to transform records forward.
+- If provided and newer than current, the server rejects with 400 and instructs upgrade.
+
+Migration entry point: `utils/data_transfer_versioning.py:migrate_entities`. Initially, no transformations are required. When making breaking changes:
+
+1) Update `CURRENT_FORMAT_VERSION` and add conditional transformations in `migrate_entities`.
+2) Extend tests in `backend/tests/test_data_transfer_endpoints.py` to cover new behavior.

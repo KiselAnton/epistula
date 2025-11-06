@@ -1,4 +1,5 @@
 import datetime as _dt
+import copy
 
 
 def test_export_entities_success(client, monkeypatch):
@@ -188,7 +189,8 @@ def test_import_entities_success(client, monkeypatch):
         r = client.post("/api/v1/data-transfer/2/import", json={
             "entity_type": "subjects",
             "data": [{"id": 1, "name": "S"}],
-            "strategy": "merge"
+            "strategy": "merge",
+            "format_version": "1.0"
         })
         assert r.status_code == 200
         body = r.json()
@@ -219,7 +221,8 @@ def test_import_subject_students_success(client, monkeypatch):
         r = client.post("/api/v1/data-transfer/2/import", json={
             "entity_type": "subject_students",
             "data": [{"id": 1, "subject_id": 9, "student_id": 101}],
-            "strategy": "merge"
+            "strategy": "merge",
+            "format_version": "1.0"
         })
         assert r.status_code == 200
         body = r.json()
@@ -268,6 +271,111 @@ def test_import_faculty_full_success(client, monkeypatch):
         r = client.post("/api/v1/data-transfer/3/import/faculty", json={"faculty": {"id": 1}, "relations": {}})
         assert r.status_code == 200
         assert r.json()["target_schema"] == "schema_imp"
+    finally:
+        app_main.app.dependency_overrides.clear()
+
+
+def test_export_entities_includes_version(client, monkeypatch):
+    import routers.data_transfer as dt_router
+    monkeypatch.setattr(dt_router, "_ensure_can_manage", lambda db, user, unid: None)
+    monkeypatch.setattr(dt_router, "_get_schema_name", lambda db, uid, use_temp=False: "schema_v")
+    monkeypatch.setattr(dt_router, "export_entity", lambda db, schema, etype, ids: {
+        "format_version": "1.0",
+        "app_version": "0.1.0",
+        "entity_type": etype,
+        "source_schema": schema,
+        "count": 1,
+        "exported_at": _dt.datetime(2024,1,1).isoformat(),
+        "data": [{"id": 1, "name": "A"}],
+        "columns": ["id", "name"],
+    })
+
+    class _Sess: pass
+    import utils.database as db_mod
+    import main as app_main
+    def _override_db():
+        yield _Sess()
+    app_main.app.dependency_overrides[db_mod.get_db] = _override_db
+    try:
+        r = client.post("/api/v1/data-transfer/9/export", json={"entity_type": "faculties"})
+        assert r.status_code == 200
+        body = r.json()
+        assert body["format_version"] == "1.0"
+        assert "app_version" in body
+    finally:
+        app_main.app.dependency_overrides.clear()
+
+
+def test_import_rejects_too_new_version(client, monkeypatch):
+    import routers.data_transfer as dt_router
+    monkeypatch.setattr(dt_router, "_ensure_can_manage", lambda db, user, unid: None)
+    monkeypatch.setattr(dt_router, "_get_schema_name", lambda db, uid, use_temp=False: "schema_new")
+    monkeypatch.setattr(dt_router, "import_entity", lambda db, schema, etype, data, strategy='merge': {
+        "entity_type": etype, "target_schema": schema, "strategy": strategy,
+        "imported": len(data), "updated": 0, "skipped": 0, "errors": [], "total_processed": len(data)
+    })
+
+    class _Sess: pass
+    import utils.database as db_mod
+    import main as app_main
+    def _override_db():
+        yield _Sess()
+    app_main.app.dependency_overrides[db_mod.get_db] = _override_db
+    try:
+        r = client.post("/api/v1/data-transfer/5/import", json={
+            "entity_type": "faculties",
+            "data": [{"id": 1, "name": "A"}],
+            "strategy": "merge",
+            "format_version": "2.0"  # newer major
+        })
+        assert r.status_code == 400
+        assert "newer" in r.json()["detail"].lower()
+    finally:
+        app_main.app.dependency_overrides.clear()
+
+
+def test_import_migrates_older_version(client, monkeypatch):
+    # Simulate migration by monkeypatching migrate_entities to alter data
+    import routers.data_transfer as dt_router
+    monkeypatch.setattr(dt_router, "_ensure_can_manage", lambda db, user, unid: None)
+    monkeypatch.setattr(dt_router, "_get_schema_name", lambda db, uid, use_temp=False: "schema_mig")
+
+    def _fake_migrate(entity_type, data, from_v, to_v):
+        # Add synthetic field when migrating from 0.9 to 1.0
+        if from_v == "0.9" and to_v == "1.0":
+            new_data = []
+            for row in data:
+                r = copy.deepcopy(row)
+                r["_migrated"] = True
+                new_data.append(r)
+            return new_data
+        return data
+    monkeypatch.setattr(dt_router, "migrate_entities", _fake_migrate)
+
+    monkeypatch.setattr(dt_router, "import_entity", lambda db, schema, etype, data, strategy='merge': {
+        "entity_type": etype, "target_schema": schema, "strategy": strategy,
+        "imported": len([d for d in data if d.get("_migrated")]),
+        "updated": 0, "skipped": 0, "errors": [], "total_processed": len(data)
+    })
+
+    class _Sess: pass
+    import utils.database as db_mod
+    import main as app_main
+    def _override_db():
+        yield _Sess()
+    app_main.app.dependency_overrides[db_mod.get_db] = _override_db
+    try:
+        r = client.post("/api/v1/data-transfer/6/import", json={
+            "entity_type": "subjects",
+            "data": [{"id": 1, "name": "S"}],
+            "strategy": "merge",
+            "format_version": "0.9"
+        })
+        assert r.status_code == 200
+        body = r.json()
+        # Confirm migrated flag caused imported count to reflect migration effect
+        assert body["imported"] == 1
+        assert body["total_processed"] == 1
     finally:
         app_main.app.dependency_overrides.clear()
 
