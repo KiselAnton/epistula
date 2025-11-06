@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
 
 jest.mock('../../lib/config', () => ({ getBackendUrl: () => 'http://localhost:8000' }));
@@ -46,10 +46,9 @@ describe('Faculties search', () => {
     const input = screen.getByLabelText('Search faculties');
     fireEvent.change(input, { target: { value: 'art' } });
 
-  expect(await screen.findByText('Arts')).toBeInTheDocument();
-  // Wait for debounced search to apply and non-matching item to disappear
-  await screen.findByText('Arts');
-  await new Promise(r => setTimeout(r, 300));
-  expect(screen.queryByText('Science')).toBeNull();
+    expect(await screen.findByText('Arts')).toBeInTheDocument();
+    // Wait for debounced search to apply and non-matching item to disappear
+    await screen.findByText('Arts');
+    await waitFor(() => expect(screen.queryByText('Science')).not.toBeInTheDocument());
   });
 });

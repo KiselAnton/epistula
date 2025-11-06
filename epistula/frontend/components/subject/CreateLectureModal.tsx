@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import buttons from '../../styles/Buttons.module.css';
-import modalStyles from '../../styles/Modal.module.css';
 import styles from '../../styles/SharedModal.module.css';
 
 interface CreateLectureModalProps {

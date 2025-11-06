@@ -1,3 +1,4 @@
+import React from 'react';
 import UserLink from './UserLink';
 import Badge from './Badge';
 import styles from './UserListTable.module.css';
@@ -68,7 +69,7 @@ export default function UserListTable<T extends UserListItem>({
                 <Badge variant={statusClass(row.status) as any}>{row.status}</Badge>
               </td>
               <td className={`${styles.cell} ${styles.actions}`}>
-                {renderActions ? renderActions(row) : null}
+                {renderActions ? React.Children.toArray(renderActions(row) as any) : null}
               </td>
             </tr>
           ))}

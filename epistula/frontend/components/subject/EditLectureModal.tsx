@@ -4,8 +4,7 @@ import { getBackendUrl } from '../../lib/config';
 import WysiwygMarkdownEditor from '../common/WysiwygMarkdownEditor';
 import { getCurrentUserRole } from '../../utils/auth';
 import buttons from '../../styles/Buttons.module.css';
-import modalStyles from '../../styles/Modal.module.css';
-import styles from '../modal/SharedModal.module.css';
+import styles from '../../styles/SharedModal.module.css';
 
 interface EditLectureModalProps {
   isOpen: boolean;
@@ -113,7 +112,7 @@ export default function EditLectureModal({ isOpen, lecture, universityId, facult
       <div className={styles.modal} style={{ width: 'min(900px, 92vw)', maxHeight: '90vh', overflow: 'auto' }}>
         <div className={styles.header}>
           <h2 className={styles.title}>Edit Lecture</h2>
-          <button onClick={onClose} className={modalStyles.closeButton}>✖</button>
+          <button onClick={onClose} className={styles.closeButton}>✖</button>
         </div>
 
         <div className={styles.formGrid}>

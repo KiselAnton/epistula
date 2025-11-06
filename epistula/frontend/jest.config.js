@@ -16,8 +16,12 @@ const customJestConfig = {
     '**/__tests__/**/*.[jt]s?(x)',
     '**/?(*.)+(spec|test).[jt]s?(x)',
   ],
-  // Exclude E2E tests (Playwright) from Jest
-  testPathIgnorePatterns: ['/node_modules/', '/tests-e2e/'],
+  // Exclude E2E tests (Playwright), setup files, and utility files from Jest
+  testPathIgnorePatterns: [
+    '/node_modules/', 
+    '/tests-e2e/', 
+    '/__tests__/setup/',
+  ],
   transformIgnorePatterns: [
     '/node_modules/(?!(prosemirror-[^/]+|@blocknote/[^/]+)/)',
   ],

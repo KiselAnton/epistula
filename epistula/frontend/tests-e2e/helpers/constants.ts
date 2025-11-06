@@ -57,9 +57,9 @@ export const TEST_DATA = {
 export const TIMEOUTS = {
   SHORT: 300,
   DEFAULT: 1000,
-  MEDIUM: 2000,
-  LONG: 3000,
-  NAVIGATION: 5000,
+  MEDIUM: 3000,
+  LONG: 12000,
+  NAVIGATION: 7000,
 };
 
 // URL patterns

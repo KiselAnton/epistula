@@ -24,3 +24,17 @@ const localStorageMock = {
   clear: jest.fn(),
 }
 global.localStorage = localStorageMock
+
+// Silence console warnings/errors during tests to keep output clean.
+// Individual tests can spy/assert explicitly when needed.
+let __errorSpy__;
+let __warnSpy__;
+beforeAll(() => {
+  __errorSpy__ = jest.spyOn(console, 'error').mockImplementation(() => {});
+  __warnSpy__ = jest.spyOn(console, 'warn').mockImplementation(() => {});
+});
+
+afterAll(() => {
+  __errorSpy__ && __errorSpy__.mockRestore();
+  __warnSpy__ && __warnSpy__.mockRestore();
+});

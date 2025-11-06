@@ -1,4 +1,4 @@
-import { renderHook, waitFor } from '@testing-library/react';
+import { renderHook, waitFor, act } from '@testing-library/react';
 import { useLectures } from '../hooks/useLectures';
 
 // Mock next/router
@@ -77,7 +77,9 @@ describe('useLectures', () => {
 
     await waitFor(() => expect(result.current.loading).toBe(false));
 
-    await result.current.handleCreateLecture({ title: 'New Lecture', description: 'Test' });
+    await act(async () => {
+      await result.current.handleCreateLecture({ title: 'New Lecture', description: 'Test' });
+    });
 
     // Should POST to create endpoint
     expect(global.fetch).toHaveBeenCalledWith(
@@ -108,7 +110,9 @@ describe('useLectures', () => {
 
     await waitFor(() => expect(result.current.loading).toBe(false));
 
-    await result.current.handleDeleteLecture(1);
+    await act(async () => {
+      await result.current.handleDeleteLecture(1);
+    });
 
     // Should DELETE lecture
     expect(global.fetch).toHaveBeenCalledWith(
@@ -130,7 +134,9 @@ describe('useLectures', () => {
 
     await waitFor(() => expect(result.current.loading).toBe(false));
 
-    await result.current.togglePublishLecture(1, true);
+    await act(async () => {
+      await result.current.togglePublishLecture(1, true);
+    });
 
     // Should PATCH lecture with is_active
     expect(global.fetch).toHaveBeenCalledWith(
@@ -155,7 +161,11 @@ describe('useLectures', () => {
 
     await waitFor(() => expect(result.current.loading).toBe(false));
 
-    await expect(result.current.handleCreateLecture({ title: 'Test' })).rejects.toThrow('Unauthorized');
+    await expect(async () => {
+      await act(async () => {
+        await result.current.handleCreateLecture({ title: 'Test' });
+      });
+    }).rejects.toThrow('Unauthorized');
 
     expect(window.localStorage.removeItem).toHaveBeenCalledWith('token');
     expect(mockPush).toHaveBeenCalledWith('/');

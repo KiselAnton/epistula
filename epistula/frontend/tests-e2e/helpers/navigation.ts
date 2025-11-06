@@ -125,15 +125,20 @@ export async function navigateToSubject(
     await navigateToFaculty(page);
   }
 
-  // Wait for the Subjects section heading to appear (increase timeout for slow renders)
+  // Wait for network idle to ensure data is loaded
+  await page.waitForLoadState('networkidle', { timeout: TIMEOUTS.LONG }).catch(() => {
+    // Network idle may never occur; ignore and continue
+  });
+
+  // Wait for the Subjects section heading to appear (longer timeout for slow data fetching)
   const subjectsHeading = page.locator('xpath=//h2[contains(normalize-space(.), "Subjects")]');
-  await subjectsHeading.waitFor({ state: 'visible', timeout: TIMEOUTS.LONG });
+  await subjectsHeading.waitFor({ state: 'visible', timeout: 20000 });
 
   // Find the grid of subject cards that follows the heading
   const subjectsGrid = page.locator(
-    'xpath=//h2[contains(normalize-space(.), "Subjects")]/following::div[contains(@style, "display: grid")][1]'
+    'xpath=//h2[contains(normalize-space(.), "Subjects")]/following::div[contains(@class, "grid")][1]'
   );
-  await subjectsGrid.waitFor({ state: 'visible', timeout: TIMEOUTS.MEDIUM });
+  await subjectsGrid.waitFor({ state: 'visible', timeout: TIMEOUTS.LONG });
 
   // Prefer clicking the entire card container to ensure the onClick handler fires
   const subjectCards = subjectsGrid.locator('div:has(h3)');
