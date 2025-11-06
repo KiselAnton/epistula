@@ -70,9 +70,16 @@ def main():
         # Check temp status
         temp_status = get_temp_status(token, uni2['id'])
         if temp_status and temp_status.get('has_temp_schema'):
-            print(f"\n✅ Temporary schema exists: {temp_status['temp_schema_name']}")
+            print(f"\n✅ Temporary schema exists: {temp_status['temp_schema']}")
             print(f"   Created from backup restore")
             print(f"   Registered as university ID: {temp_status.get('temp_university_id', 'N/A')}")
+            
+            # Show temp schema stats if available
+            temp_info = temp_status.get('temp_info')
+            if temp_info and isinstance(temp_info, dict) and 'error' not in temp_info:
+                print(f"   Faculties in temp: {temp_info.get('faculty_count', 0)}")
+                print(f"   Users in temp: {temp_info.get('user_count', 0)}")
+            
             print(f"\n   To promote temp to production:")
             print(f"   POST /api/v1/backups/{uni2['id']}/promote-temp")
         else:
