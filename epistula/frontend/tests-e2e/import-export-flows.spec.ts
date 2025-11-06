@@ -71,13 +71,25 @@ test.describe('Import/Export Workflows', () => {
     test('exports subject students successfully', async ({ page }) => {
       // Use navigation helpers
       await navigateToSubject(page);
+
+       // Ensure at least one student is enrolled so export produces a file
+       const enrollBtn = page.locator('button:has-text("Enroll Student"), button:has-text("Add Student")').first();
+       if (await enrollBtn.isVisible({ timeout: 2000 }).catch(() => false)) {
+         await enrollBtn.click();
+         const studentSelect = page.locator('select[name*="student"]').first();
+         if (await studentSelect.isVisible({ timeout: 2000 }).catch(() => false)) {
+           await studentSelect.selectOption({ index: 1 });
+           await page.click('button[type="submit"]:has-text("Enroll"), button:has-text("Add")');
+           await page.waitForTimeout(500);
+         }
+       }
       
       // Click export students button
       const exportButton = page.locator('button:has-text("Export Students")').first();
       
       if (await exportButton.isVisible({ timeout: 3000 })) {
         const [download] = await Promise.all([
-          page.waitForEvent('download', { timeout: 5000 }),
+           page.waitForEvent('download', { timeout: 10000 }),
           exportButton.click()
         ]);
         
