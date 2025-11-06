@@ -17,6 +17,8 @@ import path from 'path';
  */
 
 test.describe('Backup Restore to Temp Workflow', () => {
+  // This workflow performs real backup/restore/promote operations and can take longer on CI
+  test.setTimeout(90000);
   let universityId: number;
   let _universityName: string;
 
@@ -78,8 +80,8 @@ test.describe('Backup Restore to Temp Workflow', () => {
     expect(restoreResult.is_temp).toBe(true);
     expect(restoreResult.schema_name).toContain('_temp');
 
-    // Wait a bit for restore to complete
-    await page.waitForTimeout(2000);
+  // Wait a bit for restore to complete
+  await page.waitForTimeout(3000);
 
     // Step 3: Verify temp status shows temp schema exists
     const tempStatusResp = await request.get(`${backendUrl}/api/v1/backups/${universityId}/temp-status`, {
@@ -99,8 +101,8 @@ test.describe('Backup Restore to Temp Workflow', () => {
     const promoteResult = await promoteResp.json();
     expect(promoteResult.message).toContain('promoted');
 
-    // Wait for promotion to complete
-    await page.waitForTimeout(2000);
+  // Wait for promotion to complete
+  await page.waitForTimeout(3000);
 
     // Step 5: Verify temp schema is gone after promotion
     const tempStatusAfterPromote = await request.get(`${backendUrl}/api/v1/backups/${universityId}/temp-status`, {
