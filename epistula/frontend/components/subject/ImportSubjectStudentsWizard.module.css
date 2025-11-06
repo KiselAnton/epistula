@@ -1,0 +1,50 @@
+/**
+ * Import Subject Students Wizard styles
+ */
+
+.errorWithMargin {
+  margin-bottom: 1rem;
+}
+
+.errorWarning {
+  margin-bottom: 0.5rem;
+}
+
+.uploadList {
+  margin-top: 0;
+}
+
+.buttonRow {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 1rem;
+}
+
+.previewContainer {
+  max-height: 50vh;
+  overflow: auto;
+  border: 1px solid #eee;
+  border-radius: 8px;
+  padding: 0.5rem;
+}
+
+.studentRow {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 0.5rem;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.navigationRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 1rem;
+}
+
+.finalButtonRow {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}

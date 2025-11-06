@@ -1,0 +1,70 @@
+/**
+ * Faculty Header styles
+ */
+
+.header {
+  display: flex;
+  gap: 1.5rem;
+  align-items: flex-start;
+  flex: 1;
+}
+
+.logoContainer {
+  width: 120px;
+  height: 120px;
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  background: #f8f9fa;
+  position: relative;
+}
+
+.logoImage {
+  object-fit: cover;
+}
+
+.logoPlaceholder {
+  font-size: 3rem;
+}
+
+.content {
+  flex: 1;
+}
+
+.titleRow {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+
+.title {
+  margin: 0;
+  font-size: 2rem;
+}
+
+.badge {
+  color: white;
+  padding: 0.25rem 0.75rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.badgeActive {
+  background: #28a745;
+}
+
+.badgeInactive {
+  background: #dc3545;
+}
+
+.metadata {
+  display: flex;
+  gap: 1rem;
+  color: #666;
+  font-size: 0.95rem;
+}

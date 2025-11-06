@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import styles from '../../styles/Faculties.module.css';
 import buttons from '../../styles/Buttons.module.css';
+import wizardStyles from './ImportSubjectProfessorsWizard.module.css';
 import { importEntities } from '../../utils/dataTransfer.api';
 
 interface ImportSubjectProfessorsWizardProps {
@@ -93,16 +94,16 @@ const ImportSubjectProfessorsWizard: React.FC<ImportSubjectProfessorsWizardProps
           <h2>Import Subject Professors</h2>
           <button onClick={onClose} className={styles.closeButton} aria-label="Close">×</button>
         </div>
-        {err && <div className={styles.error} style={{ marginBottom: '1rem' }}>{err}</div>}
+        {err && <div className={`${styles.error} ${wizardStyles.errorWithMargin}`}>{err}</div>}
         {step === 1 && (
           <div>
             <p>Upload a JSON export of subject_professors.</p>
-            <ul style={{ marginTop: 0 }}>
+            <ul className={wizardStyles.uploadList}>
               <li>{`{ entity_type: 'subject_professors', data: [{ professor_id, can_edit?, is_active? }, ...] }`}</li>
               <li>Single object fallback: {`{`}professor_id: 123, can_edit: true{`}`}</li>
             </ul>
             <input type="file" accept="application/json" onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFile(f); }} />
-            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '1rem' }}>
+            <div className={wizardStyles.buttonRow}>
               <button onClick={onClose} className={styles.cancelButton}>Cancel</button>
               <button onClick={() => setStep(2)} disabled={!canProceedToReview} className={styles.submitButton}>Continue →</button>
             </div>
@@ -111,20 +112,20 @@ const ImportSubjectProfessorsWizard: React.FC<ImportSubjectProfessorsWizardProps
         {step === 2 && (
           <div>
             {(duplicatesInFile || conflictsWithExisting) && (
-              <div className={styles.error} style={{ marginBottom: '0.5rem' }}>
+              <div className={`${styles.error} ${wizardStyles.errorWarning}`}>
                 Resolve duplicates in file or remove entries that already exist.
               </div>
             )}
-            <div style={{ maxHeight: '50vh', overflow: 'auto', border: '1px solid #eee', borderRadius: 8, padding: '0.5rem' }}>
+            <div className={wizardStyles.previewContainer}>
               {rows.map((r, idx) => (
-                <div key={idx} style={{ display: 'grid', gridTemplateColumns: 'auto 1fr 1fr auto', gap: '0.5rem', alignItems: 'center', marginBottom: '0.5rem' }}>
+                <div key={idx} className={wizardStyles.professorRow}>
                   <input type="checkbox" checked={selected[idx]} onChange={(e) => {
                     const next = [...selected]; next[idx] = e.target.checked; setSelected(next);
                   }} />
                   <input type="number" placeholder="Professor ID" value={r.professor_id ?? ''} onChange={(e) => {
                     const next = [...rows]; next[idx] = { ...r, professor_id: Number(e.target.value || 0) }; setRows(next);
                   }} />
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <label className={wizardStyles.canEditLabel}>
                     <input type="checkbox" checked={!!r.can_edit} onChange={(e) => {
                       const next = [...rows]; next[idx] = { ...r, can_edit: e.target.checked }; setRows(next);
                     }} /> Can edit
@@ -133,7 +134,7 @@ const ImportSubjectProfessorsWizard: React.FC<ImportSubjectProfessorsWizardProps
                 </div>
               ))}
             </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '1rem' }}>
+            <div className={wizardStyles.navigationRow}>
               <button onClick={() => setStep(1)} className={styles.cancelButton}>← Back</button>
               <button onClick={() => setStep(3)} disabled={!canImport} className={styles.submitButton}>Review & Import →</button>
             </div>
@@ -145,7 +146,7 @@ const ImportSubjectProfessorsWizard: React.FC<ImportSubjectProfessorsWizardProps
               <label>Import strategy</label>
               <div>Using merge strategy to avoid overwriting existing assignments.</div>
             </div>
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
+            <div className={wizardStyles.finalButtonRow}>
               <button onClick={() => setStep(2)} className={styles.cancelButton}>← Back</button>
               <button onClick={doImport} disabled={!canImport} className={`${buttons.btn} ${buttons.btnSuccess}`}>{saving ? 'Importing…' : 'Import Professors'}</button>
             </div>

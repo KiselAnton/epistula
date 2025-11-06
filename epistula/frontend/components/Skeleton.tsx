@@ -3,6 +3,7 @@
  */
 
 import React from 'react';
+import styles from './Skeleton.module.css';
 
 interface SkeletonProps {
   width?: string | number;
@@ -22,13 +23,11 @@ export const Skeleton: React.FC<SkeletonProps> = ({
 }) => {
   return (
     <div
+      className={styles.skeleton}
       style={{
         width,
         height,
         borderRadius,
-        background: 'linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%)',
-        backgroundSize: '200% 100%',
-        animation: 'shimmer 1.5s infinite',
         ...style,
       }}
     />
@@ -42,7 +41,7 @@ export const TableRowSkeleton: React.FC<{ columns: number }> = ({ columns }) => 
   return (
     <tr>
       {Array.from({ length: columns }).map((_, i) => (
-        <td key={i} style={{ padding: '1rem' }}>
+        <td key={i} className={styles.tableCell}>
           <Skeleton height="16px" />
         </td>
       ))}
@@ -55,12 +54,7 @@ export const TableRowSkeleton: React.FC<{ columns: number }> = ({ columns }) => 
  */
 export const CardSkeleton: React.FC = () => {
   return (
-    <div style={{ 
-      padding: '1.5rem', 
-      border: '1px solid #e0e0e0', 
-      borderRadius: '8px',
-      marginBottom: '1rem'
-    }}>
+    <div className={styles.card}>
       <Skeleton width="60%" height="24px" style={{ marginBottom: '1rem' }} />
       <Skeleton width="100%" height="16px" style={{ marginBottom: '0.5rem' }} />
       <Skeleton width="80%" height="16px" />
@@ -75,15 +69,9 @@ export const UserListSkeleton: React.FC = () => {
   return (
     <div>
       {Array.from({ length: 5 }).map((_, i) => (
-        <div key={i} style={{ 
-          padding: '1rem',
-          borderBottom: '1px solid #e0e0e0',
-          display: 'flex',
-          gap: '1rem',
-          alignItems: 'center'
-        }}>
+        <div key={i} className={styles.userListItem}>
           <Skeleton width="40px" height="40px" borderRadius="50%" />
-          <div style={{ flex: 1 }}>
+          <div className={styles.userContent}>
             <Skeleton width="200px" height="18px" style={{ marginBottom: '0.5rem' }} />
             <Skeleton width="150px" height="14px" />
           </div>
@@ -99,12 +87,7 @@ export const UserListSkeleton: React.FC = () => {
  */
 export const SubjectGridSkeleton: React.FC = () => {
   return (
-    <div style={{ 
-      display: 'grid', 
-      gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
-      gap: '1rem',
-      marginTop: '1rem'
-    }}>
+    <div className={styles.subjectGrid}>
       {Array.from({ length: 6 }).map((_, i) => (
         <CardSkeleton key={i} />
       ))}
@@ -117,7 +100,7 @@ export const SubjectGridSkeleton: React.FC = () => {
  */
 export const PageHeaderSkeleton: React.FC = () => {
   return (
-    <div style={{ marginBottom: '2rem' }}>
+    <div className={styles.pageHeader}>
       <Skeleton width="300px" height="32px" style={{ marginBottom: '0.5rem' }} />
       <Skeleton width="200px" height="20px" />
     </div>
@@ -125,17 +108,6 @@ export const PageHeaderSkeleton: React.FC = () => {
 };
 
 /**
- * Global styles for shimmer animation
+ * Global styles for shimmer animation - no longer needed, using CSS modules
  */
-export const SkeletonStyles = () => (
-  <style jsx global>{`
-    @keyframes shimmer {
-      0% {
-        background-position: -200% 0;
-      }
-      100% {
-        background-position: 200% 0;
-      }
-    }
-  `}</style>
-);
+export const SkeletonStyles = () => null;

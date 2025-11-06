@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { getBackendUrl } from '../../lib/config';
 import buttons from '../../styles/Buttons.module.css';
 import modalStyles from '../../styles/Modal.module.css';
+import styles from './AssignToSubjectModal.module.css';
 
 export interface Faculty { id: number; name: string; code: string; }
 export interface Subject { id: number; name: string; code: string; faculty_id: number; }
@@ -93,33 +94,33 @@ export default function AssignToSubjectModal({ isOpen, onClose, universityId, us
   if (!isOpen) return null;
 
   return (
-    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'grid', placeItems: 'center', zIndex: 1000 }}>
-      <div style={{ width: 'min(640px, 92vw)', background: 'white', borderRadius: 12, padding: '1.25rem' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-          <h3 style={{ margin: 0 }}>{mode === 'professor' ? 'Assign Professor to Subject' : 'Enroll Student in Subject'}</h3>
+    <div className={styles.overlay}>
+      <div className={styles.modal}>
+        <div className={styles.header}>
+          <h3 className={styles.title}>{mode === 'professor' ? 'Assign Professor to Subject' : 'Enroll Student in Subject'}</h3>
           <button onClick={onClose} className={modalStyles.closeButton}>✖</button>
         </div>
 
-        {error && <div style={{ color: '#dc3545', marginBottom: '0.5rem' }}>{error}</div>}
+        {error && <div className={styles.error}>{error}</div>}
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '0.75rem' }}>
+        <div className={styles.formGrid}>
           <div>
-            <label style={{ display: 'block', fontSize: '0.9rem', color: '#555' }}>Faculty</label>
-            <select value={selectedFacultyId} onChange={e => setSelectedFacultyId(e.target.value ? Number(e.target.value) : '')} style={{ width: '100%', padding: '0.5rem', border: '1px solid #ccc', borderRadius: 6 }}>
+            <label className={styles.label}>Faculty</label>
+            <select value={selectedFacultyId} onChange={e => setSelectedFacultyId(e.target.value ? Number(e.target.value) : '')} className={styles.select}>
               <option value="">Select faculty…</option>
               {faculties.map(f => <option key={f.id} value={f.id}>{f.name} ({f.code})</option>)}
             </select>
           </div>
           <div>
-            <label style={{ display: 'block', fontSize: '0.9rem', color: '#555' }}>Subject</label>
-            <select disabled={!selectedFacultyId || loading} value={selectedSubjectId} onChange={e => setSelectedSubjectId(e.target.value ? Number(e.target.value) : '')} style={{ width: '100%', padding: '0.5rem', border: '1px solid #ccc', borderRadius: 6 }}>
+            <label className={styles.label}>Subject</label>
+            <select disabled={!selectedFacultyId || loading} value={selectedSubjectId} onChange={e => setSelectedSubjectId(e.target.value ? Number(e.target.value) : '')} className={styles.select}>
               <option value="">{loading ? 'Loading…' : 'Select subject…'}</option>
               {subjects.map(s => <option key={s.id} value={s.id}>{s.name} ({s.code})</option>)}
             </select>
           </div>
         </div>
 
-        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem', marginTop: '1rem' }}>
+        <div className={styles.footer}>
           <button onClick={onClose} className={`${buttons.btn} ${buttons.btnSecondary}`}>Cancel</button>
           <button onClick={handleAssign} disabled={!canAssign || saving} className={`${buttons.btn} ${buttons.btnPrimary}`}>{saving ? 'Assigning…' : (mode === 'professor' ? 'Assign' : 'Enroll')}</button>
         </div>

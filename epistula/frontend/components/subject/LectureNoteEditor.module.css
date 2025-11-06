@@ -1,0 +1,45 @@
+/**
+ * Lecture Note Editor styles
+ */
+
+.container {
+  border-top: 1px solid #eee;
+  padding-top: 0.75rem;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.statusLoading {
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.statusSuccess {
+  color: #28a745;
+  font-size: 0.9rem;
+}
+
+.statusError {
+  color: #dc3545;
+  font-size: 0.9rem;
+}
+
+.editorWrapper {
+  margin-top: 0.75rem;
+}
+
+.actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+  align-items: center;
+}
+
+.charCount {
+  color: #999;
+  font-size: 0.85rem;
+}

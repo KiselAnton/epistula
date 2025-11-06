@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { getBackendUrl } from '../../lib/config';
 import buttons from '../../styles/Buttons.module.css';
+import styles from './LectureNoteEditor.module.css';
 import WysiwygMarkdownEditor from '../common/WysiwygMarkdownEditor';
 
 interface LectureNoteEditorProps {
@@ -107,17 +108,17 @@ export default function LectureNoteEditor({ universityId, facultyId, subjectId, 
   };
 
   return (
-    <div style={{ borderTop: '1px solid #eee', paddingTop: '0.75rem' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+    <div className={styles.container}>
+      <div className={styles.header}>
         <button onClick={() => setOpen(o => !o)} className={`${buttons.btn} ${buttons.btnSecondary}`}>
           {open ? 'Hide My Note' : '📝 My Note'}
         </button>
-        {loading && <span style={{ color: '#666', fontSize: '0.9rem' }}>Loading…</span>}
-        {status && !loading && <span style={{ color: '#28a745', fontSize: '0.9rem' }}>{status}</span>}
-        {error && <span style={{ color: '#dc3545', fontSize: '0.9rem' }}>{error}</span>}
+        {loading && <span className={styles.statusLoading}>Loading…</span>}
+        {status && !loading && <span className={styles.statusSuccess}>{status}</span>}
+        {error && <span className={styles.statusError}>{error}</span>}
       </div>
       {open && (
-        <div style={{ marginTop: '0.75rem' }}>
+        <div className={styles.editorWrapper}>
           <WysiwygMarkdownEditor
             value={content}
             onChange={setContent}
@@ -126,11 +127,11 @@ export default function LectureNoteEditor({ universityId, facultyId, subjectId, 
             placeholder="Write your private note here…"
             userRole="student"
           />
-          <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem', alignItems: 'center' }}>
+          <div className={styles.actions}>
             <button onClick={handleSave} disabled={saving} className={`${buttons.btn} ${buttons.btnPrimary}`}>
               {saving ? 'Saving…' : 'Save Note'}
             </button>
-            <span style={{ color: '#999', fontSize: '0.85rem' }}>{content.length} chars</span>
+            <span className={styles.charCount}>{content.length} chars</span>
           </div>
         </div>
       )}

@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import styles from '../../styles/Faculties.module.css';
 import buttons from '../../styles/Buttons.module.css';
+import wizardStyles from './ImportFacultyWizard.module.css';
 import { importFacultyFull } from '../../utils/dataTransfer.api';
 
 export interface FacultyLite {
@@ -139,14 +140,14 @@ const ImportFacultyWizard: React.FC<ImportFacultyWizardProps> = ({ isOpen, onClo
         </div>
 
         {err && (
-          <div className={styles.error} style={{ marginBottom: '1rem' }}>{err}</div>
+          <div className={`${styles.error} ${wizardStyles.errorWithMargin}`}>{err}</div>
         )}
 
         {step === 1 && (
           <div>
             <p>Upload a JSON export of a faculty (created via Export on a faculty).</p>
             <input type="file" accept="application/json" onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFile(f); }} />
-            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '1rem' }}>
+            <div className={wizardStyles.uploadActions}>
               <button onClick={onClose} className={styles.cancelButton}>Cancel</button>
               <button onClick={() => setStep(2)} disabled={!canProceedToReview} className={styles.submitButton}>
                 Continue →
@@ -160,7 +161,7 @@ const ImportFacultyWizard: React.FC<ImportFacultyWizardProps> = ({ isOpen, onClo
             <div className={styles.formGroup}>
               <label>Name</label>
               <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
-              {duplicateName && (<div style={{ color: '#dc3545', marginTop: 6 }}>A faculty with this name already exists. Please adjust.</div>)}
+              {duplicateName && (<div className={wizardStyles.validationError}>A faculty with this name already exists. Please adjust.</div>)}
             </div>
             <div className={styles.formGroup}>
               <label>Short name</label>
@@ -169,7 +170,7 @@ const ImportFacultyWizard: React.FC<ImportFacultyWizardProps> = ({ isOpen, onClo
             <div className={styles.formGroup}>
               <label>Code</label>
               <input value={form.code} onChange={(e) => setForm({ ...form, code: e.target.value.toUpperCase() })} />
-              {duplicateCode && (<div style={{ color: '#dc3545', marginTop: 6 }}>A faculty with this code already exists. Please adjust.</div>)}
+              {duplicateCode && (<div className={wizardStyles.validationError}>A faculty with this code already exists. Please adjust.</div>)}
             </div>
             <div className={styles.formGroup}>
               <label>Description (optional)</label>
@@ -181,7 +182,7 @@ const ImportFacultyWizard: React.FC<ImportFacultyWizardProps> = ({ isOpen, onClo
               </label>
             </div>
 
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '1rem' }}>
+            <div className={wizardStyles.navigationRow}>
               <button onClick={() => setStep(1)} className={styles.cancelButton}>← Back</button>
               <button onClick={() => setStep(3)} disabled={!canImport} className={styles.submitButton}>Review & Import →</button>
             </div>
@@ -201,12 +202,12 @@ const ImportFacultyWizard: React.FC<ImportFacultyWizardProps> = ({ isOpen, onClo
 
             <div className={styles.formGroup}>
               <label>Summary</label>
-              <div style={{ background: '#f8f9fa', border: '1px solid #e9ecef', borderRadius: 8, padding: '0.75rem 1rem' }}>
+              <div className={wizardStyles.summaryBox}>
                 <div><strong>Name:</strong> {form.name}</div>
                 <div><strong>Short name:</strong> {form.short_name}</div>
                 <div><strong>Code:</strong> {form.code}</div>
                 {rawJson?.relations && (
-                  <div style={{ marginTop: 8, color: '#666' }}>
+                  <div className={wizardStyles.relationsInfo}>
                     <em>Includes relations:</em>
                     <ul>
                       {Object.entries(rawJson.relations).map(([k, v]: any) => (
@@ -218,7 +219,7 @@ const ImportFacultyWizard: React.FC<ImportFacultyWizardProps> = ({ isOpen, onClo
               </div>
             </div>
 
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
+            <div className={wizardStyles.finalActions}>
               <button onClick={() => setStep(2)} className={styles.cancelButton}>← Back</button>
               <button onClick={doImport} disabled={!canImport} className={`${buttons.btn} ${buttons.btnSuccess}`}>{saving ? 'Importing…' : 'Import Faculty'}</button>
             </div>

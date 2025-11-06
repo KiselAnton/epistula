@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import styles from '../../styles/Faculties.module.css';
 import buttons from '../../styles/Buttons.module.css';
+import wizardStyles from './ImportSubjectStudentsWizard.module.css';
 import { enrollStudentsInSubject } from '../../utils/subjectStudents.api';
 
 interface ImportSubjectStudentsWizardProps {
@@ -109,17 +110,17 @@ const ImportSubjectStudentsWizard: React.FC<ImportSubjectStudentsWizardProps> = 
           <h2>Import Subject Students</h2>
           <button onClick={onClose} className={styles.closeButton} aria-label="Close">×</button>
         </div>
-        {err && <div className={styles.error} style={{ marginBottom: '1rem' }}>{err}</div>}
+        {err && <div className={`${styles.error} ${wizardStyles.errorWithMargin}`}>{err}</div>}
         {step === 1 && (
           <div>
             <p>Upload JSON of students to enroll. Accepted formats:</p>
-            <ul style={{ marginTop: 0 }}>
+            <ul className={wizardStyles.uploadList}>
               <li>{`{ entity_type: 'subject_students', data: [{ student_id, status? }, ...] }`}</li>
               <li>[123, 456, 789] (array of student IDs)</li>
               <li>Array of objects with a student_id field, e.g. [{`{`}student_id: 123{`}`}, ...]</li>
             </ul>
             <input type="file" accept="application/json" onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFile(f); }} />
-            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '1rem' }}>
+            <div className={wizardStyles.buttonRow}>
               <button onClick={onClose} className={styles.cancelButton}>Cancel</button>
               <button onClick={() => setStep(2)} disabled={!canProceedToReview} className={styles.submitButton}>Continue →</button>
             </div>
@@ -128,20 +129,20 @@ const ImportSubjectStudentsWizard: React.FC<ImportSubjectStudentsWizardProps> = 
         {step === 2 && (
           <div>
             {(duplicatesInFile || conflictsWithExisting) && (
-              <div className={styles.error} style={{ marginBottom: '0.5rem' }}>
+              <div className={`${styles.error} ${wizardStyles.errorWarning}`}>
                 Resolve duplicates in file or remove entries already enrolled.
               </div>
             )}
-            <div style={{ maxHeight: '50vh', overflow: 'auto', border: '1px solid #eee', borderRadius: 8, padding: '0.5rem' }}>
+            <div className={wizardStyles.previewContainer}>
               {rows.map((r, idx) => (
-                <div key={idx} style={{ display: 'grid', gridTemplateColumns: 'auto 1fr auto', gap: '0.5rem', alignItems: 'center', marginBottom: '0.5rem' }}>
+                <div key={idx} className={wizardStyles.studentRow}>
                   <input type="checkbox" checked={selected[idx]} onChange={(e) => { const next = [...selected]; next[idx] = e.target.checked; setSelected(next); }} />
                   <input type="number" placeholder="Student ID" value={r.student_id ?? ''} onChange={(e) => { const next = [...rows]; next[idx] = { ...r, student_id: Number(e.target.value || 0) }; setRows(next); }} />
                   <button onClick={() => { setRows(rows.filter((_, i) => i !== idx)); setSelected(selected.filter((_, i) => i !== idx)); }} className={`${buttons.btn} ${buttons.btnDanger}`}>Remove</button>
                 </div>
               ))}
             </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '1rem' }}>
+            <div className={wizardStyles.navigationRow}>
               <button onClick={() => setStep(1)} className={styles.cancelButton}>← Back</button>
               <button onClick={() => setStep(3)} disabled={!canImport} className={styles.submitButton}>Review & Import →</button>
             </div>
@@ -153,7 +154,7 @@ const ImportSubjectStudentsWizard: React.FC<ImportSubjectStudentsWizardProps> = 
               <label>Import strategy</label>
               <div>Students will be enrolled one by one using the subject API. Existing enrollments are skipped.</div>
             </div>
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
+            <div className={wizardStyles.finalButtonRow}>
               <button onClick={() => setStep(2)} className={styles.cancelButton}>← Back</button>
               <button onClick={doImport} disabled={!canImport} className={`${buttons.btn} ${buttons.btnSuccess}`}>{saving ? 'Importing…' : 'Import Students'}</button>
             </div>

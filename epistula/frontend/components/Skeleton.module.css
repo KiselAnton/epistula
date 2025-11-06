@@ -1,0 +1,75 @@
+/**
+ * Skeleton loading component styles
+ */
+
+/* Shimmer animation */
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+/* Base skeleton */
+.skeleton {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+/* Table cell padding */
+.tableCell {
+  padding: 1rem;
+}
+
+/* Card skeleton container */
+.card {
+  padding: 1.5rem;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+}
+
+.card .titleSkeleton {
+  margin-bottom: 1rem;
+}
+
+.card .lineSkeleton {
+  margin-bottom: 0.5rem;
+}
+
+/* User list item */
+.userListItem {
+  padding: 1rem;
+  border-bottom: 1px solid #e0e0e0;
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+.userListItem .userContent {
+  flex: 1;
+}
+
+.userListItem .nameSkeleton {
+  margin-bottom: 0.5rem;
+}
+
+/* Subject grid */
+.subjectGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+/* Page header */
+.pageHeader {
+  margin-bottom: 2rem;
+}
+
+.pageHeader .titleSkeleton {
+  margin-bottom: 0.5rem;
+}
