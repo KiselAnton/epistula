@@ -22,9 +22,13 @@ test.describe('Faculties create modal UI (optional)', () => {
   test.skip(!ENABLE, 'UI tests are optional and require EPISTULA_E2E_ENABLE_UI_TESTS=1');
 
   test('shows Markdown editor and logo input in create modal', async ({ page }) => {
+    // Navigate directly but ensure page is fully loaded before assertions
     await page.goto(`/university/${uniId}/faculties`);
+    // Wait for the Faculties header or the cards container to ensure hydration complete
+    const header = page.locator('h1:has-text("Faculties")');
+    await header.or(page.locator('[class*="cardsContainer"]')).first().waitFor({ state: 'visible', timeout: 5000 });
 
-    await expect(page.getByRole('button', { name: /Create New Faculty/i })).toBeVisible();
+    await expect(page.getByRole('button', { name: /Create New Faculty/i })).toBeVisible({ timeout: 5000 });
 
     await page.getByRole('button', { name: /Create New Faculty/i }).click();
 

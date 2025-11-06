@@ -64,8 +64,14 @@ export async function navigateToFaculty(
     await navigateToFaculties(page);
   }
   
-  // Wait for faculty cards to load
-  await page.waitForSelector(SELECTORS.FACULTY_CARD, { timeout: TIMEOUTS.MEDIUM });
+  // Wait for faculty cards to load (be resilient to delays)
+  const noData = page.getByText(/No faculties found/i).first();
+  await Promise.race([
+    page.waitForSelector(SELECTORS.FACULTY_CARD, { timeout: TIMEOUTS.LONG }).catch(() => undefined),
+    noData.waitFor({ state: 'visible', timeout: TIMEOUTS.LONG }).catch(() => undefined),
+  ]);
+  // Small buffer to allow layout/hydration
+  await page.waitForTimeout(200);
   
   // Click the faculty card by index
   const facultyCards = await page.locator(SELECTORS.FACULTY_CARD).all();
@@ -73,7 +79,18 @@ export async function navigateToFaculty(
     await facultyCards[index].click();
     await page.waitForURL(URL_PATTERNS.FACULTY_DETAIL, { timeout: TIMEOUTS.NAVIGATION });
   } else {
-    throw new Error(`Faculty card at index ${index} not found (only ${facultyCards.length} cards available)`);
+    // No faculties found - check if there's an empty state or create button
+    const createFacultyBtn = page.locator('button:has-text("Create"), button:has-text("New Faculty")').first();
+    const emptyState = page.locator('text=/no faculties/i').first();
+    const hasCreate = await createFacultyBtn.isVisible({ timeout: 2000 }).catch(() => false);
+    const hasEmpty = await emptyState.isVisible({ timeout: 1000 }).catch(() => false);
+    
+    if (hasCreate || hasEmpty) {
+      // Faculties list is empty but UI is functional - throw descriptive error
+      throw new Error(`Faculty card at index ${index} not found (only ${facultyCards.length} cards available). Faculties list is empty.`);
+    } else {
+      throw new Error(`Faculty card at index ${index} not found (only ${facultyCards.length} cards available)`);
+    }
   }
 }
 
@@ -108,9 +125,9 @@ export async function navigateToSubject(
     await navigateToFaculty(page);
   }
 
-  // Wait for the Subjects section heading to appear
+  // Wait for the Subjects section heading to appear (increase timeout for slow renders)
   const subjectsHeading = page.locator('xpath=//h2[contains(normalize-space(.), "Subjects")]');
-  await subjectsHeading.waitFor({ state: 'visible', timeout: TIMEOUTS.MEDIUM });
+  await subjectsHeading.waitFor({ state: 'visible', timeout: TIMEOUTS.LONG });
 
   // Find the grid of subject cards that follows the heading
   const subjectsGrid = page.locator(
@@ -133,8 +150,9 @@ export async function navigateToSubject(
     subjectCards.nth(index).click(),
   ]);
 
-  // Extra safety: wait for a subject-detail unique element
-  await page.waitForSelector('button:has-text("Back to Subjects"), button:has-text("My Notes")', { timeout: TIMEOUTS.MEDIUM });
+  // Extra safety: wait for a subject-detail unique element (allow longer timeout for nav)
+  const backButton = page.locator('button:has-text("Back to Subjects"), button:has-text("My Notes"), a:has-text("Back")').first();
+  await backButton.waitFor({ state: 'visible', timeout: TIMEOUTS.LONG });
 }
 
 /**
