@@ -214,10 +214,8 @@ export default function Universities() {
     const hay = `${u.name} ${u.code} ${u.schema_name} ${u.description ?? ''}`.toLowerCase();
     return hay.includes(debouncedSearch);
   });
-  const currentUniversities = filtered.slice(indexOfFirstItem, indexOfLastItem);
-  const totalPages = Math.ceil(filtered.length / itemsPerPage) || 1;
-
-  // Sort favorites to top
+  
+  // Sort favorites to top (must happen BEFORE pagination)
   const sortWithFav = (list: University[]) => {
     return [...list].sort((a, b) => {
       const af = fav[a.id] ? 1 : 0;
@@ -226,7 +224,9 @@ export default function Universities() {
       return a.name.localeCompare(b.name);
     });
   };
-  const currentSorted = sortWithFav(currentUniversities);
+  const sortedFiltered = sortWithFav(filtered);
+  const currentSorted = sortedFiltered.slice(indexOfFirstItem, indexOfLastItem);
+  const totalPages = Math.ceil(filtered.length / itemsPerPage) || 1;
 
   const toggleFav = (id: number) => {
     setFav((prev) => {

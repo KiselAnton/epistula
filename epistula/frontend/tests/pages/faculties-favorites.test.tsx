@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import '@testing-library/jest-dom';
 
@@ -66,5 +66,34 @@ describe('Faculties favorites', () => {
     await screen.findByText('Faculties - Uni A');
     const headingsAgain = await screen.findAllByRole('heading', { level: 3 });
     expect(headingsAgain[0]).toHaveTextContent('Zoology');
+  });
+
+  it('favorites sort before non-favorites globally', async () => {
+    const faculties = [
+      { id: 1, university_id: 1, name: 'A Faculty', short_name: 'A', code: 'A', description: null, logo_url: null, created_at: new Date().toISOString(), is_active: true },
+      { id: 2, university_id: 1, name: 'B Faculty', short_name: 'B', code: 'B', description: null, logo_url: null, created_at: new Date().toISOString(), is_active: true },
+      { id: 3, university_id: 1, name: 'Z Faculty', short_name: 'Z', code: 'Z', description: null, logo_url: null, created_at: new Date().toISOString(), is_active: true },
+    ];
+
+    // Pre-favorite Z Faculty (alphabetically last)
+    localStorage.setItem('fav:faculties:uni_1', JSON.stringify({ 3: true }));
+
+    mockFetch({
+      '/api/v1/universities/': [
+        { id: 1, name: 'Uni A', code: 'UA', schema_name: 'uni_1', description: null, logo_url: null, created_at: new Date().toISOString(), is_active: true },
+      ],
+      '/api/v1/faculties/1': faculties,
+    });
+
+    const Page = require('../../pages/university/[id]/faculties').default;
+    render(<Page />);
+
+    await screen.findByText('Z Faculty');
+
+    // Z Faculty should be first even though alphabetically last
+    const headings = await screen.findAllByRole('heading', { level: 3 });
+    expect(headings[0]).toHaveTextContent('Z Faculty');
+    expect(headings[1]).toHaveTextContent('A Faculty');
+    expect(headings[2]).toHaveTextContent('B Faculty');
   });
 });

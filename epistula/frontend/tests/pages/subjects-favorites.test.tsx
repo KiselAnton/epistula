@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import '@testing-library/jest-dom';
 
@@ -67,5 +67,37 @@ describe('Subjects favorites', () => {
     await screen.findByText('Subjects - Science');
     const headingsAgain = await screen.findAllByRole('heading', { level: 3 });
     expect(headingsAgain[0]).toHaveTextContent('Zoology 101');
+  });
+
+  it('favorites sort before non-favorites globally', async () => {
+    const subjects = [
+      { id: 1, faculty_id: 10, name: 'A Subject', code: 'A', description: null, is_active: true, created_at: new Date().toISOString() },
+      { id: 2, faculty_id: 10, name: 'B Subject', code: 'B', description: null, is_active: true, created_at: new Date().toISOString() },
+      { id: 3, faculty_id: 10, name: 'Z Subject', code: 'Z', description: null, is_active: true, created_at: new Date().toISOString() },
+    ];
+
+    // Pre-favorite Z Subject (alphabetically last)
+    localStorage.setItem('fav:subjects:uni_1:faculty_10', JSON.stringify({ 3: true }));
+
+    mockFetch({
+      '/api/v1/universities/': [
+        { id: 1, name: 'Uni A', code: 'UA', schema_name: 'uni_1', description: null, logo_url: null, created_at: new Date().toISOString(), is_active: true },
+      ],
+      '/api/v1/faculties/1': [
+        { id: 10, university_id: 1, name: 'Science', short_name: 'SCI', code: 'SCI', description: null, logo_url: null, created_at: new Date().toISOString(), is_active: true },
+      ],
+      '/api/v1/subjects/1/10': subjects,
+    });
+
+    const Page = require('../../pages/university/[id]/faculty/[facultyId]/subjects').default;
+    render(<Page />);
+
+    await screen.findByText('Z Subject');
+
+    // Z Subject should be first even though alphabetically last
+    const headings = await screen.findAllByRole('heading', { level: 3 });
+    expect(headings[0]).toHaveTextContent('Z Subject');
+    expect(headings[1]).toHaveTextContent('A Subject');
+    expect(headings[2]).toHaveTextContent('B Subject');
   });
 });

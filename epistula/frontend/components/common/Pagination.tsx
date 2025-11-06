@@ -16,6 +16,7 @@ export default function Pagination({ currentPage, totalPages, onPageChange }: Pa
   return (
     <div className={styles.container}>
       <button
+        aria-label="Previous page"
         onClick={() => onPageChange(Math.max(1, currentPage - 1))}
         disabled={currentPage === 1}
         className={`${styles.button} ${currentPage === 1 ? styles.buttonDisabled : styles.buttonActive}`}
@@ -26,6 +27,7 @@ export default function Pagination({ currentPage, totalPages, onPageChange }: Pa
         Page {currentPage} of {totalPages}
       </span>
       <button
+        aria-label="Next page"
         onClick={() => onPageChange(Math.min(totalPages, currentPage + 1))}
         disabled={currentPage === totalPages}
         className={`${styles.button} ${currentPage === totalPages ? styles.buttonDisabled : styles.buttonActive}`}
