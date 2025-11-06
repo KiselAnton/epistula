@@ -6,6 +6,7 @@ import WysiwygMarkdownEditor from '../common/WysiwygMarkdownEditor';
 import { getCurrentUserRole } from '../../utils/auth';
 import buttons from '../../styles/Buttons.module.css';
 import modalStyles from '../../styles/Modal.module.css';
+import styles from '../../styles/SharedModal.module.css';
 
 interface EditSubjectModalProps {
   isOpen: boolean;
@@ -127,41 +128,41 @@ const EditSubjectModal: React.FC<EditSubjectModalProps> = ({ isOpen, onClose, su
   };
 
   return (
-    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
-      <div style={{ background: 'white', borderRadius: 12, width: 'min(680px, 92vw)', padding: '1.25rem 1.5rem', boxShadow: '0 10px 30px rgba(0,0,0,0.25)' }}>
-        <div style={{ display: 'flex', alignItems: 'center', marginBottom: '1rem' }}>
-          <h2 style={{ margin: 0, fontSize: '1.25rem' }}>Edit Subject</h2>
-          <button onClick={onClose} className={modalStyles.closeButton} aria-label="Close">×</button>
+    <div className={styles.overlay}>
+      <div className={styles.modal}>
+        <div className={styles.header}>
+          <h2 className={styles.title}>Edit Subject</h2>
+          <button onClick={onClose} className={styles.closeButton} aria-label="Close">×</button>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '0.75rem' }}>
-          <label style={{ display: 'grid', gap: 6 }}>
-            <span style={{ fontWeight: 600 }}>Name</span>
-            <input value={name} onChange={e => setName(e.target.value)} placeholder="Subject name" style={{ padding: '0.6rem 0.75rem', border: '1px solid #ddd', borderRadius: 8 }} />
+        <div className={styles.formGridSingle}>
+          <label className={styles.fieldLabel}>
+            <span className={styles.fieldLabelText}>Name</span>
+            <input value={name} onChange={e => setName(e.target.value)} placeholder="Subject name" className={styles.input} />
           </label>
-          <label style={{ display: 'grid', gap: 6 }}>
-            <span style={{ fontWeight: 600 }}>Code</span>
-            <input value={code} onChange={e => setCode(e.target.value.toUpperCase())} placeholder="E.g. MATH101" style={{ padding: '0.6rem 0.75rem', border: '1px solid #ddd', borderRadius: 8, textTransform: 'uppercase' }} />
+          <label className={styles.fieldLabel}>
+            <span className={styles.fieldLabelText}>Code</span>
+            <input value={code} onChange={e => setCode(e.target.value.toUpperCase())} placeholder="E.g. MATH101" className={styles.inputUppercase} />
           </label>
-          <label style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <label className={styles.fieldLabel}>
             <input type="checkbox" checked={isActive} onChange={e => setIsActive(e.target.checked)} />
             <span>Active</span>
           </label>
           <div>
-            <h3 style={{ margin: '0.5rem 0', fontSize: '1.05rem' }}>Description</h3>
-                      <WysiwygMarkdownEditor value={desc} onChange={setDesc} onSave={handleSave} isSaving={saving} placeholder="Add a detailed description (Markdown supported)" userRole={getCurrentUserRole()} />
+            <h3 className={styles.sectionTitle}>Description</h3>
+            <WysiwygMarkdownEditor value={desc} onChange={setDesc} onSave={handleSave} isSaving={saving} placeholder="Add a detailed description (Markdown supported)" userRole={getCurrentUserRole()} />
           </div>
         </div>
 
-        <div style={{ marginTop: '1rem' }}>
-          <h3 style={{ margin: '0 0 0.5rem', fontSize: '1.05rem' }}>Logo</h3>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        <div className={styles.section}>
+          <h3 className={styles.sectionTitle}>Logo</h3>
+          <div className={styles.logoContainer}>
             {subject.logo_url ? (
-              <SafeImage src={`${getBackendUrl()}${subject.logo_url}`} alt="Subject logo" width={64} height={64} style={{ borderRadius: 8, background: '#f8f9fa', border: '1px solid #eee' }} />
+              <SafeImage src={`${getBackendUrl()}${subject.logo_url}`} alt="Subject logo" width={64} height={64} className={styles.logoImage} />
             ) : (
-              <div style={{ width: 64, height: 64, borderRadius: 8, border: '1px dashed #ccc', display: 'grid', placeItems: 'center', color: '#888' }}>No logo</div>
+              <div className={styles.logoPlaceholder}>No logo</div>
             )}
-            <input ref={fileInputRef} type="file" accept="image/*" onChange={e => { const f = e.target.files?.[0]; if (f) handleUploadLogo(f); }} style={{ display: 'none' }} />
+            <input ref={fileInputRef} type="file" accept="image/*" onChange={e => { const f = e.target.files?.[0]; if (f) handleUploadLogo(f); }} className={styles.hiddenInput} />
             <button onClick={() => fileInputRef.current?.click()} disabled={uploading} className={`${buttons.btn} ${buttons.btnPrimary}`}>{uploading ? 'Uploading…' : (subject.logo_url ? 'Change Logo' : 'Upload Logo')}</button>
             {subject.logo_url && (
               <button onClick={handleDeleteLogo} disabled={deletingLogo} className={`${buttons.btn} ${buttons.btnDanger}`}>{deletingLogo ? 'Removing…' : 'Remove'}</button>
@@ -169,7 +170,7 @@ const EditSubjectModal: React.FC<EditSubjectModalProps> = ({ isOpen, onClose, su
           </div>
         </div>
 
-        <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 16 }}>
+        <div className={styles.footer}>
           <button onClick={onClose} className={`${buttons.btn} ${buttons.btnSecondary}`}>Cancel</button>
           <button onClick={handleSave} disabled={saving} className={`${buttons.btn} ${buttons.btnSuccess}`}>{saving ? 'Saving…' : 'Save changes'}</button>
         </div>

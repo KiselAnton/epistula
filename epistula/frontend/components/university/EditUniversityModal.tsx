@@ -4,6 +4,7 @@ import WysiwygMarkdownEditor from '../common/WysiwygMarkdownEditor';
 import { getBackendUrl } from '../../lib/config';
 import { getCurrentUserRole } from '../../utils/auth';
 import buttons from '../../styles/Buttons.module.css';
+import styles from './EditUniversityModal.module.css';
 
 export interface University {
   id: number;
@@ -86,44 +87,44 @@ const EditUniversityModal: React.FC<Props> = ({ isOpen, onClose, university, onU
   };
 
   return (
-    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
-      <div style={{ background: 'white', borderRadius: 12, width: 'min(880px, 96vw)', padding: '1.25rem 1.5rem', boxShadow: '0 10px 30px rgba(0,0,0,0.25)' }}>
-        <div style={{ display: 'flex', alignItems: 'center', marginBottom: '1rem' }}>
-          <h2 style={{ margin: 0, fontSize: '1.25rem' }}>Edit University</h2>
-          <button onClick={onClose} style={{ marginLeft: 'auto', background: 'transparent', border: 'none', fontSize: 20, cursor: 'pointer' }} aria-label="Close">×</button>
+    <div className={styles.overlay}>
+      <div className={styles.modal}>
+        <div className={styles.header}>
+          <h2 className={styles.title}>Edit University</h2>
+          <button onClick={onClose} className={styles.closeButton} aria-label="Close">×</button>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-          <label style={{ display: 'grid', gap: 6 }}>
-            <span style={{ fontWeight: 600 }}>Name</span>
-            <input value={name} onChange={e => setName(e.target.value)} placeholder="University name" style={{ padding: '0.6rem 0.75rem', border: '1px solid #ddd', borderRadius: 8 }} />
+        <div className={styles.formGrid}>
+          <label className={styles.fieldLabel}>
+            <span className={styles.fieldLabelText}>Name</span>
+            <input value={name} onChange={e => setName(e.target.value)} placeholder="University name" className={styles.input} />
           </label>
-          <label style={{ display: 'grid', gap: 6 }}>
-            <span style={{ fontWeight: 600 }}>Code</span>
-            <input value={code} onChange={e => setCode(e.target.value.toUpperCase())} placeholder="E.g. RSRCH" style={{ padding: '0.6rem 0.75rem', border: '1px solid #ddd', borderRadius: 8, textTransform: 'uppercase' }} />
+          <label className={styles.fieldLabel}>
+            <span className={styles.fieldLabelText}>Code</span>
+            <input value={code} onChange={e => setCode(e.target.value.toUpperCase())} placeholder="E.g. RSRCH" className={styles.inputUppercase} />
           </label>
         </div>
 
-        <div style={{ marginTop: 12 }}>
-          <h3 style={{ margin: '0 0 8px', fontSize: '1.05rem' }}>Description</h3>
+        <div className={styles.section}>
+          <h3 className={styles.sectionTitle}>Description</h3>
           <WysiwygMarkdownEditor value={desc} onChange={setDesc} onSave={saveFields} isSaving={saving} placeholder="Describe this university..." userRole={getCurrentUserRole()} />
         </div>
 
-        <div style={{ marginTop: 12 }}>
-          <h3 style={{ margin: '0 0 8px', fontSize: '1.05rem' }}>Logo</h3>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        <div className={styles.section}>
+          <h3 className={styles.sectionTitle}>Logo</h3>
+          <div className={styles.logoContainer}>
             {university.logo_url ? (
               <SafeImage
                 src={`${getBackendUrl()}${university.logo_url}`}
                 alt="University logo"
                 width={72}
                 height={72}
-                style={{ borderRadius: 8, background: '#f8f9fa', border: '1px solid #eee' }}
+                className={styles.logoImage}
               />
             ) : (
-              <div style={{ width: 72, height: 72, borderRadius: 8, border: '1px dashed #ccc', display: 'grid', placeItems: 'center', color: '#888' }}>No logo</div>
+              <div className={styles.logoPlaceholder}>No logo</div>
             )}
-            <input ref={fileInputRef} type="file" accept="image/*" onChange={e => { const f = e.target.files?.[0]; if (f) uploadLogo(f); }} style={{ display: 'none' }} />
+            <input ref={fileInputRef} type="file" accept="image/*" onChange={e => { const f = e.target.files?.[0]; if (f) uploadLogo(f); }} className={styles.hiddenInput} />
             <button onClick={() => fileInputRef.current?.click()} disabled={uploading} className={`${buttons.btn} ${buttons.btnPrimary}`}>{uploading ? 'Uploading…' : (university.logo_url ? 'Change Logo' : 'Upload Logo')}</button>
             {university.logo_url && (
               <button onClick={deleteLogo} disabled={deletingLogo} className={`${buttons.btn} ${buttons.btnDanger}`}>{deletingLogo ? 'Removing…' : 'Remove'}</button>
@@ -131,7 +132,7 @@ const EditUniversityModal: React.FC<Props> = ({ isOpen, onClose, university, onU
           </div>
         </div>
 
-        <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 16 }}>
+        <div className={styles.footer}>
           <button onClick={onClose} className={`${buttons.btn} ${buttons.btnSecondary}`}>Cancel</button>
           <button onClick={saveFields} disabled={saving} className={`${buttons.btn} ${buttons.btnSuccess}`}>{saving ? 'Saving…' : 'Save changes'}</button>
         </div>

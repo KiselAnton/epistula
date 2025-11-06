@@ -2,6 +2,7 @@ import { Lecture } from '../../types';
 import MarkdownDisplay from '../common/MarkdownDisplay';
 import buttons from '../../styles/Buttons.module.css';
 import LectureNoteEditor from './LectureNoteEditor';
+import styles from './LecturesSection.module.css';
 
 interface LecturesSectionProps {
   lectures: Lecture[];
@@ -53,10 +54,10 @@ export default function LecturesSection({
   };
 
   return (
-    <div style={{ marginTop: '2rem' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+    <div className={styles.container}>
+      <div className={styles.header}>
         <h2>Lectures ({lectures.length})</h2>
-        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+        <div className={styles.headerActions}>
           {onExportLectures && (
             <button onClick={onExportLectures} className={`${buttons.btn} ${buttons.btnSecondary}`}>Export Lectures</button>
           )}
@@ -70,62 +71,40 @@ export default function LecturesSection({
       </div>
 
       {lectures.length > 0 ? (
-        <div style={{
-          display: 'grid',
-          gap: '1rem'
-        }}>
+        <div className={styles.lecturesGrid}>
           {lectures.map((lecture) => (
             <div
               key={lecture.id}
-              style={{
-                background: 'white',
-                border: '1px solid #e0e0e0',
-                borderRadius: '8px',
-                padding: '1.5rem',
-                transition: 'box-shadow 0.2s',
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.1)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.boxShadow = 'none';
-              }}
+              className={styles.lectureCard}
             >
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start' }}>
-                <div style={{ flex: 1 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.5rem' }}>
-                    <span style={{ fontSize: '1.5rem' }}>📚</span>
-                    <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 600 }}>{lecture.title}</h3>
-                    <span style={{
-                      background: lecture.is_active ? '#28a745' : '#6c757d',
-                      color: 'white',
-                      padding: '0.25rem 0.5rem',
-                      borderRadius: '4px',
-                      fontSize: '0.7rem',
-                      fontWeight: 600
-                    }}>
+              <div className={styles.lectureContent}>
+                <div className={styles.lectureMain}>
+                  <div className={styles.lectureHeader}>
+                    <span className={styles.lectureIcon}>📚</span>
+                    <h3 className={styles.lectureTitle}>{lecture.title}</h3>
+                    <span className={lecture.is_active ? styles.badgePublished : styles.badgeHidden}>
                       {lecture.is_active ? 'Published' : 'Hidden'}
                     </span>
                   </div>
                   {lecture.description && (
-                    <div style={{ margin: '0.5rem 0', lineHeight: 1.6 }}>
+                    <div className={styles.lectureDescription}>
                       <MarkdownDisplay content={lecture.description} />
                     </div>
                   )}
-                  <div style={{ display: 'flex', gap: '2rem', marginTop: '1rem', fontSize: '0.9rem' }}>
+                  <div className={styles.lectureMetadata}>
                     <div>
-                      <span style={{ color: '#999' }}>Scheduled:</span>{' '}
-                      <span style={{ color: '#333', fontWeight: 500 }}>{formatDateTime(lecture.scheduled_at)}</span>
+                      <span className={styles.metadataLabel}>Scheduled:</span>{' '}
+                      <span className={styles.metadataValue}>{formatDateTime(lecture.scheduled_at)}</span>
                     </div>
                     {lecture.duration_minutes && (
                       <div>
-                        <span style={{ color: '#999' }}>Duration:</span>{' '}
-                        <span style={{ color: '#333', fontWeight: 500 }}>{formatDuration(lecture.duration_minutes)}</span>
+                        <span className={styles.metadataLabel}>Duration:</span>{' '}
+                        <span className={styles.metadataValue}>{formatDuration(lecture.duration_minutes)}</span>
                       </div>
                     )}
                   </div>
                 </div>
-                <div style={{ display: 'flex', gap: '0.5rem', marginLeft: '1rem' }}>
+                <div className={styles.lectureActions}>
                   {onTogglePublish && (
                     <button
                       onClick={() => onTogglePublish(lecture.id, !lecture.is_active)}
@@ -170,7 +149,7 @@ export default function LecturesSection({
               </div>
               {/* Student private note editor */}
               {showNoteEditor && (
-                <div style={{ marginTop: '1rem' }}>
+                <div className={styles.noteEditorContainer}>
                   <LectureNoteEditor
                     universityId={universityId}
                     facultyId={facultyId}
@@ -183,16 +162,10 @@ export default function LecturesSection({
           ))}
         </div>
       ) : (
-        <div style={{
-          padding: '3rem',
-          textAlign: 'center',
-          background: 'white',
-          border: '2px dashed #dee2e6',
-          borderRadius: '8px'
-        }}>
-          <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>📚</div>
-          <p style={{ color: '#666', marginBottom: '0.5rem' }}>No lectures created yet.</p>
-          <p style={{ color: '#999', fontSize: '0.9rem' }}>Create lectures to provide content for students.</p>
+        <div className={styles.emptyState}>
+          <div className={styles.emptyStateIcon}>📚</div>
+          <p className={styles.emptyStateTitle}>No lectures created yet.</p>
+          <p className={styles.emptyStateSubtitle}>Create lectures to provide content for students.</p>
         </div>
       )}
     </div>

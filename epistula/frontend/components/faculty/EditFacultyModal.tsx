@@ -4,6 +4,7 @@ import { Faculty } from '../../types';
 import WysiwygMarkdownEditor from '../common/WysiwygMarkdownEditor';
 import { getBackendUrl } from '../../lib/config';
 import { getCurrentUserRole } from '../../utils/auth';
+import styles from './EditFacultyModal.module.css';
 
 interface Props {
   isOpen: boolean;
@@ -68,52 +69,52 @@ const EditFacultyModal: React.FC<Props> = ({ isOpen, onClose, universityId, facu
   };
 
   return (
-    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
-      <div style={{ background: 'white', borderRadius: 12, width: 'min(880px, 96vw)', padding: '1.25rem 1.5rem', boxShadow: '0 10px 30px rgba(0,0,0,0.25)' }}>
-        <div style={{ display: 'flex', alignItems: 'center', marginBottom: '1rem' }}>
-          <h2 style={{ margin: 0, fontSize: '1.25rem' }}>Edit Faculty</h2>
-          <button onClick={onClose} style={{ marginLeft: 'auto', background: 'transparent', border: 'none', fontSize: 20, cursor: 'pointer' }} aria-label="Close">×</button>
+    <div className={styles.overlay}>
+      <div className={styles.modal}>
+        <div className={styles.header}>
+          <h2 className={styles.title}>Edit Faculty</h2>
+          <button onClick={onClose} className={styles.closeButton} aria-label="Close">×</button>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-          <label style={{ display: 'grid', gap: 6 }}>
-            <span style={{ fontWeight: 600 }}>Name</span>
-            <input value={name} onChange={e => setName(e.target.value)} placeholder="Faculty name" style={{ padding: '0.6rem 0.75rem', border: '1px solid #ddd', borderRadius: 8 }} />
+        <div className={styles.formGrid}>
+          <label className={styles.fieldLabel}>
+            <span className={styles.fieldLabelText}>Name</span>
+            <input value={name} onChange={e => setName(e.target.value)} placeholder="Faculty name" className={styles.input} />
           </label>
-          <label style={{ display: 'grid', gap: 6 }}>
-            <span style={{ fontWeight: 600 }}>Short Name</span>
-            <input value={shortName} onChange={e => setShortName(e.target.value)} placeholder="E.g. IMPL" style={{ padding: '0.6rem 0.75rem', border: '1px solid #ddd', borderRadius: 8 }} />
+          <label className={styles.fieldLabel}>
+            <span className={styles.fieldLabelText}>Short Name</span>
+            <input value={shortName} onChange={e => setShortName(e.target.value)} placeholder="E.g. IMPL" className={styles.input} />
           </label>
-          <label style={{ display: 'grid', gap: 6 }}>
-            <span style={{ fontWeight: 600 }}>Code</span>
-            <input value={code} onChange={e => setCode(e.target.value.toUpperCase())} placeholder="Code" style={{ padding: '0.6rem 0.75rem', border: '1px solid #ddd', borderRadius: 8, textTransform: 'uppercase' }} />
+          <label className={styles.fieldLabel}>
+            <span className={styles.fieldLabelText}>Code</span>
+            <input value={code} onChange={e => setCode(e.target.value.toUpperCase())} placeholder="Code" className={styles.inputUppercase} />
           </label>
         </div>
 
-        <div style={{ marginTop: 12 }}>
-          <h3 style={{ margin: '0 0 8px', fontSize: '1.05rem' }}>Description</h3>
+        <div className={styles.section}>
+          <h3 className={styles.sectionTitle}>Description</h3>
           <WysiwygMarkdownEditor value={desc} onChange={setDesc} onSave={saveFields} isSaving={saving} placeholder="Describe this faculty..." userRole={getCurrentUserRole()} />
         </div>
 
-        <div style={{ marginTop: 12 }}>
-          <h3 style={{ margin: '0 0 8px', fontSize: '1.05rem' }}>Logo</h3>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        <div className={styles.section}>
+          <h3 className={styles.sectionTitle}>Logo</h3>
+          <div className={styles.logoContainer}>
             {faculty.logo_url ? (
-              <SafeImage src={`${getBackendUrl()}${faculty.logo_url}`} alt="Faculty logo" width={72} height={72} style={{ borderRadius: 8, background: '#f8f9fa', border: '1px solid #eee' }} />
+              <SafeImage src={`${getBackendUrl()}${faculty.logo_url}`} alt="Faculty logo" width={72} height={72} className={styles.logoImage} />
             ) : (
-              <div style={{ width: 72, height: 72, borderRadius: 8, border: '1px dashed #ccc', display: 'grid', placeItems: 'center', color: '#888' }}>No logo</div>
+              <div className={styles.logoPlaceholder}>No logo</div>
             )}
-            <input ref={fileInputRef} type="file" accept="image/*" onChange={e => { const f = e.target.files?.[0]; if (f) uploadLogo(f); }} style={{ display: 'none' }} />
-            <button onClick={() => fileInputRef.current?.click()} disabled={uploading} style={{ padding: '0.5rem 0.9rem', background: '#007bff', color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer' }}>{uploading ? 'Uploading…' : (faculty.logo_url ? 'Change Logo' : 'Upload Logo')}</button>
+            <input ref={fileInputRef} type="file" accept="image/*" onChange={e => { const f = e.target.files?.[0]; if (f) uploadLogo(f); }} className={styles.hiddenInput} />
+            <button onClick={() => fileInputRef.current?.click()} disabled={uploading} className={styles.buttonPrimary}>{uploading ? 'Uploading…' : (faculty.logo_url ? 'Change Logo' : 'Upload Logo')}</button>
             {faculty.logo_url && (
-              <button onClick={deleteLogo} disabled={deletingLogo} style={{ padding: '0.5rem 0.9rem', background: '#dc3545', color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer' }}>{deletingLogo ? 'Removing…' : 'Remove'}</button>
+              <button onClick={deleteLogo} disabled={deletingLogo} className={styles.buttonDanger}>{deletingLogo ? 'Removing…' : 'Remove'}</button>
             )}
           </div>
         </div>
 
-        <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 16 }}>
-          <button onClick={onClose} style={{ padding: '0.6rem 1rem', background: '#6c757d', color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer' }}>Cancel</button>
-          <button onClick={saveFields} disabled={saving} style={{ padding: '0.6rem 1rem', background: '#28a745', color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer' }}>{saving ? 'Saving…' : 'Save changes'}</button>
+        <div className={styles.footer}>
+          <button onClick={onClose} className={styles.buttonSecondary}>Cancel</button>
+          <button onClick={saveFields} disabled={saving} className={styles.buttonSuccess}>{saving ? 'Saving…' : 'Save changes'}</button>
         </div>
       </div>
     </div>

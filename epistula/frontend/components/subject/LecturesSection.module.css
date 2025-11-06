@@ -1,0 +1,142 @@
+/* Lectures Section Styles */
+
+.container {
+  margin-top: 2rem;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.headerActions {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.lecturesGrid {
+  display: grid;
+  gap: 1rem;
+}
+
+.lectureCard {
+  background: white;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 1.5rem;
+  transition: box-shadow 0.2s;
+}
+
+.lectureCard:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.lectureContent {
+  display: flex;
+  justify-content: space-between;
+  align-items: start;
+}
+
+.lectureMain {
+  flex: 1;
+}
+
+.lectureHeader {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+
+.lectureIcon {
+  font-size: 1.5rem;
+}
+
+.lectureTitle {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.lectureBadge {
+  color: white;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  font-weight: 600;
+}
+
+.badgePublished {
+  color: white;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  background: #28a745;
+}
+
+.badgeHidden {
+  color: white;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  background: #6c757d;
+}
+
+.lectureDescription {
+  margin: 0.5rem 0;
+  line-height: 1.6;
+}
+
+.lectureMetadata {
+  display: flex;
+  gap: 2rem;
+  margin-top: 1rem;
+  font-size: 0.9rem;
+}
+
+.metadataLabel {
+  color: #999;
+}
+
+.metadataValue {
+  color: #333;
+  font-weight: 500;
+}
+
+.lectureActions {
+  display: flex;
+  gap: 0.5rem;
+  margin-left: 1rem;
+}
+
+.noteEditorContainer {
+  margin-top: 1rem;
+}
+
+.emptyState {
+  padding: 3rem;
+  text-align: center;
+  background: white;
+  border: 2px dashed #dee2e6;
+  border-radius: 8px;
+}
+
+.emptyStateIcon {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+}
+
+.emptyStateTitle {
+  color: #666;
+  margin-bottom: 0.5rem;
+}
+
+.emptyStateSubtitle {
+  color: #999;
+  font-size: 0.9rem;
+}
