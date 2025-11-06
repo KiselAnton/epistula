@@ -1,0 +1,92 @@
+.backupControls {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex: 1;
+}
+
+.backupActions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.errorMessage {
+  padding: 0.75rem 1rem;
+  border: 1px solid #f5c2c7;
+  background: #f8d7da;
+  color: #842029;
+  border-radius: 6px;
+  margin-bottom: 0.75rem;
+}
+
+.errorHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.loadingMessage {
+  padding: 1rem;
+}
+
+.emptyState {
+  padding: 1rem;
+  color: #666;
+}
+
+.emptyStateText {
+  margin: 0;
+}
+
+.emptyStateTip {
+  margin: 0.25rem 0 0 0;
+  font-size: 13px;
+}
+
+.backupList {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.5rem 0;
+}
+
+.backupListHeader {
+  display: flex;
+  gap: 8px;
+}
+
+.backupDetails {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.backupTitle {
+  font-weight: 600;
+}
+
+.backupFileName {
+  font-size: 12px;
+  color: #666;
+}
+
+.backupMetadata {
+  margin-top: 6px;
+  display: grid;
+  gap: 6px;
+}
+
+.backupMetaInput {
+  padding: 6px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+.backupBulkActions {
+  display: flex;
+  gap: 8px;
+}
+
+.backupMetaEditActions {
+  margin-top: 4px;
+}

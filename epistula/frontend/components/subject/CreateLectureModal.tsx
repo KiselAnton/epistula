@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import buttons from '../../styles/Buttons.module.css';
 import modalStyles from '../../styles/Modal.module.css';
+import styles from '../../styles/SharedModal.module.css';
 
 interface CreateLectureModalProps {
   isOpen: boolean;
@@ -69,37 +70,19 @@ export default function CreateLectureModal({ isOpen, onClose, onCreate }: Create
 
   return (
     <div
-      style={{
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        background: 'rgba(0, 0, 0, 0.5)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        zIndex: 1000
-      }}
+      className={styles.overlay}
       onClick={handleClose}
     >
       <div
-        style={{
-          background: 'white',
-          borderRadius: '12px',
-          padding: '2rem',
-          width: '90%',
-          maxWidth: '600px',
-          boxShadow: '0 4px 20px rgba(0, 0, 0, 0.15)'
-        }}
+        className={styles.modal}
         onClick={(e) => e.stopPropagation()}
       >
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-          <h2 style={{ margin: 0, fontSize: '1.5rem', fontWeight: 700 }}>Create New Lecture</h2>
+        <div className={styles.header}>
+          <h2 className={styles.title}>Create New Lecture</h2>
           <button
             onClick={handleClose}
             disabled={creating}
-            className={modalStyles.closeButton}
+            className={styles.closeButton}
             style={{ opacity: creating ? 0.5 : 1 }}
             aria-label="Close"
           >
@@ -108,21 +91,14 @@ export default function CreateLectureModal({ isOpen, onClose, onCreate }: Create
         </div>
 
         {error && (
-          <div style={{
-            padding: '0.75rem',
-            background: '#f8d7da',
-            color: '#721c24',
-            borderRadius: '6px',
-            marginBottom: '1rem',
-            fontSize: '0.9rem'
-          }}>
+          <div className={styles.error}>
             {error}
           </div>
         )}
 
         <form onSubmit={handleSubmit}>
-          <div style={{ marginBottom: '1.5rem' }}>
-            <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600, fontSize: '0.9rem' }}>
+          <div className={styles.fieldLabel}>
+            <label className={styles.fieldLabelText}>
               Title <span style={{ color: '#dc3545' }}>*</span>
             </label>
             <input
@@ -132,20 +108,13 @@ export default function CreateLectureModal({ isOpen, onClose, onCreate }: Create
               onChange={(e) => setFormData({ ...formData, title: e.target.value })}
               disabled={creating}
               placeholder="e.g., Introduction to Programming"
-              style={{
-                width: '100%',
-                padding: '0.75rem',
-                border: '1px solid #dee2e6',
-                borderRadius: '6px',
-                fontSize: '1rem',
-                boxSizing: 'border-box'
-              }}
+              className={styles.input}
               required
             />
           </div>
 
-          <div style={{ marginBottom: '1.5rem' }}>
-            <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600, fontSize: '0.9rem' }}>
+          <div className={styles.fieldLabel}>
+            <label className={styles.fieldLabelText}>
               Description
             </label>
             <textarea
@@ -155,22 +124,13 @@ export default function CreateLectureModal({ isOpen, onClose, onCreate }: Create
               disabled={creating}
               placeholder="Brief description of the lecture content..."
               rows={4}
-              style={{
-                width: '100%',
-                padding: '0.75rem',
-                border: '1px solid #dee2e6',
-                borderRadius: '6px',
-                fontSize: '1rem',
-                fontFamily: 'inherit',
-                resize: 'vertical',
-                boxSizing: 'border-box'
-              }}
+              className={styles.textarea}
             />
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.5rem' }}>
+          <div className={styles.formGrid}>
             <div>
-              <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600, fontSize: '0.9rem' }}>
+              <label className={styles.fieldLabelText}>
                 Scheduled Date & Time
               </label>
               <input
@@ -179,19 +139,12 @@ export default function CreateLectureModal({ isOpen, onClose, onCreate }: Create
                 value={formData.scheduled_at || ''}
                 onChange={(e) => setFormData({ ...formData, scheduled_at: e.target.value || null })}
                 disabled={creating}
-                style={{
-                  width: '100%',
-                  padding: '0.75rem',
-                  border: '1px solid #dee2e6',
-                  borderRadius: '6px',
-                  fontSize: '1rem',
-                  boxSizing: 'border-box'
-                }}
+                className={styles.input}
               />
             </div>
 
             <div>
-              <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600, fontSize: '0.9rem' }}>
+              <label className={styles.fieldLabelText}>
                 Duration (minutes)
               </label>
               <input
@@ -202,19 +155,12 @@ export default function CreateLectureModal({ isOpen, onClose, onCreate }: Create
                 disabled={creating}
                 placeholder="e.g., 90"
                 min="1"
-                style={{
-                  width: '100%',
-                  padding: '0.75rem',
-                  border: '1px solid #dee2e6',
-                  borderRadius: '6px',
-                  fontSize: '1rem',
-                  boxSizing: 'border-box'
-                }}
+                className={styles.input}
               />
             </div>
           </div>
 
-          <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end' }}>
+          <div className={styles.footer}>
             <button
               type="button"
               onClick={handleClose}

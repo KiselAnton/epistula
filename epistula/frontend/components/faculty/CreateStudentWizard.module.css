@@ -1,0 +1,112 @@
+.overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal {
+  background: white;
+  border-radius: 12px;
+  padding: 1.5rem;
+  max-width: 500px;
+  width: 90%;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+}
+
+.title {
+  margin: 0;
+}
+
+.closeButton {
+  border: none;
+  background: transparent;
+  font-size: 1.5rem;
+  color: #666;
+  cursor: pointer;
+}
+
+.closeButton:disabled {
+  cursor: not-allowed;
+}
+
+.description {
+  margin-top: 0;
+  color: #666;
+}
+
+.error {
+  background: #fff5f5;
+  border: 1px solid #dc3545;
+  color: #dc3545;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  margin-bottom: 12px;
+}
+
+.fieldLabel {
+  margin-bottom: 12px;
+}
+
+.fieldLabel:last-of-type {
+  margin-bottom: 16px;
+}
+
+.fieldLabelText {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+.input {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid #dee2e6;
+  border-radius: 8px;
+}
+
+.footer {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.buttonSecondary {
+  padding: 0.75rem 1.25rem;
+  border-radius: 8px;
+  border: 1px solid #dee2e6;
+  background: #f8f9fa;
+  cursor: pointer;
+}
+
+.buttonSecondary:disabled {
+  cursor: not-allowed;
+}
+
+.buttonSuccess {
+  padding: 0.75rem 1.25rem;
+  border-radius: 8px;
+  border: none;
+  background: #28a745;
+  color: white;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.buttonSuccess:disabled {
+  cursor: not-allowed;
+}

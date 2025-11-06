@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import styles from './CreateStudentWizard.module.css';
 
 interface CreateStudentWizardProps {
   isOpen: boolean;
@@ -80,42 +81,36 @@ export default function CreateStudentWizard({ isOpen, onClose, universityId, fac
 
   return (
     <div
-      style={{
-        position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-        background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000
-      }}
+      className={styles.overlay}
       onClick={() => !creating && onClose()}
     >
       <div
-        style={{
-          background: 'white', borderRadius: 12, padding: '1.75rem', width: '95%', maxWidth: 560,
-          boxShadow: '0 10px 30px rgba(0,0,0,0.2)'
-        }}
+        className={styles.modal}
         onClick={(e) => e.stopPropagation()}
       >
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
-          <h2 style={{ margin: 0 }}>Create Student</h2>
+        <div className={styles.header}>
+          <h2 className={styles.title}>Create Student</h2>
           <button
             onClick={() => !creating && onClose()}
             disabled={creating}
-            style={{ border: 'none', background: 'transparent', fontSize: '1.5rem', color: '#666', cursor: creating ? 'not-allowed' : 'pointer' }}
+            className={styles.closeButton}
             aria-label="Close"
           >
             ×
           </button>
         </div>
 
-        <p style={{ marginTop: 0, color: '#666' }}>The student will be automatically assigned to this faculty.</p>
+        <p className={styles.description}>The student will be automatically assigned to this faculty.</p>
 
         {error && (
-          <div style={{ background: '#fff5f5', border: '1px solid #dc3545', color: '#dc3545', padding: '0.75rem 1rem', borderRadius: 8, marginBottom: 12 }}>
+          <div className={styles.error}>
             {error}
           </div>
         )}
 
         <form onSubmit={handleSubmit}>
-          <div style={{ marginBottom: 12 }}>
-            <label style={{ display: 'block', fontWeight: 600, marginBottom: 6 }}>Full Name *</label>
+          <div className={styles.fieldLabel}>
+            <label className={styles.fieldLabelText}>Full Name *</label>
             <input
               type="text"
               value={name}
@@ -123,12 +118,12 @@ export default function CreateStudentWizard({ isOpen, onClose, universityId, fac
               placeholder="Student name"
               required
               disabled={creating}
-              style={{ width: '100%', padding: '0.75rem', border: '1px solid #dee2e6', borderRadius: 8 }}
+              className={styles.input}
             />
           </div>
 
-          <div style={{ marginBottom: 12 }}>
-            <label style={{ display: 'block', fontWeight: 600, marginBottom: 6 }}>Email *</label>
+          <div className={styles.fieldLabel}>
+            <label className={styles.fieldLabelText}>Email *</label>
             <input
               type="email"
               value={email}
@@ -136,12 +131,12 @@ export default function CreateStudentWizard({ isOpen, onClose, universityId, fac
               placeholder="student@example.com"
               required
               disabled={creating}
-              style={{ width: '100%', padding: '0.75rem', border: '1px solid #dee2e6', borderRadius: 8 }}
+              className={styles.input}
             />
           </div>
 
-          <div style={{ marginBottom: 16 }}>
-            <label style={{ display: 'block', fontWeight: 600, marginBottom: 6 }}>Password *</label>
+          <div className={styles.fieldLabel}>
+            <label className={styles.fieldLabelText}>Password *</label>
             <input
               type="password"
               value={password}
@@ -150,23 +145,23 @@ export default function CreateStudentWizard({ isOpen, onClose, universityId, fac
               placeholder="Minimum 6 characters"
               required
               disabled={creating}
-              style={{ width: '100%', padding: '0.75rem', border: '1px solid #dee2e6', borderRadius: 8 }}
+              className={styles.input}
             />
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginTop: 16 }}>
+          <div className={styles.footer}>
             <button
               type="button"
               onClick={onClose}
               disabled={creating}
-              style={{ padding: '0.75rem 1.25rem', borderRadius: 8, border: '1px solid #dee2e6', background: '#f8f9fa', cursor: creating ? 'not-allowed' : 'pointer' }}
+              className={styles.buttonSecondary}
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={creating}
-              style={{ padding: '0.75rem 1.25rem', borderRadius: 8, border: 'none', background: '#28a745', color: 'white', fontWeight: 700, cursor: creating ? 'not-allowed' : 'pointer' }}
+              className={styles.buttonSuccess}
             >
               {creating ? 'Creating…' : 'Create Student'}
             </button>

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import ConfirmModal from '../common/ConfirmModal';
 import DataTransferPanel from './DataTransferPanel';
 import styles from '../../styles/Backups.module.css';
+import backupStyles from './UniversityBackupSection.module.css';
 import btn from '../../styles/Buttons.module.css';
 import { getBackendUrl } from '../../lib/config';
 
@@ -408,7 +409,7 @@ export default function UniversityBackupSection({
         onConfirm={() => { const fn = confirm.onConfirm; closeConfirm(); fn && fn(); }}
       />
       <div className={styles.universityHeader}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flex: 1 }}>
+        <div className={backupStyles.backupControls}>
           <button
             onClick={toggleCollapsed}
             className={styles.toggleButton}
@@ -427,7 +428,7 @@ export default function UniversityBackupSection({
             )}
           </h2>
         </div>
-        <div style={{ display: 'flex', gap: '0.5rem' }}>
+        <div className={backupStyles.backupActions}>
           {hasTemp && (
             <>
               <button onClick={() => openConfirm(`⚠️ Promote TEMP → LIVE for "${universityName}"?\n\nA safety backup will be created automatically.`, () => handlePromoteTemp(), 'Promote to Live')} disabled={promoting} className={`${btn.btn} ${btn.btnSuccess}`} title="Promote temporary schema to production">
@@ -447,8 +448,8 @@ export default function UniversityBackupSection({
       {!collapsed && (
         <>
           {error && (
-            <div style={{ padding: '0.75rem 1rem', border: '1px solid #f5c2c7', background: '#f8d7da', color: '#842029', borderRadius: 6, marginBottom: '0.75rem' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
+            <div className={backupStyles.errorMessage}>
+              <div className={backupStyles.errorHeader}>
                 <span>
                   {error.includes('HTTP 401') || error.toLowerCase().includes('unauthorized')
                     ? 'You are not authenticated. Please sign in again.'
@@ -483,16 +484,16 @@ export default function UniversityBackupSection({
 
           <div className={styles.backupsTable}>
             {loading ? (
-              <p style={{ padding: '1rem' }}>Loading backups…</p>
+              <p className={backupStyles.loadingMessage}>Loading backups…</p>
             ) : backups.length === 0 ? (
-              <div style={{ padding: '1rem', color: '#666' }}>
-                <p style={{ margin: 0 }}>No backups yet.</p>
-                <p style={{ margin: '0.25rem 0 0 0', fontSize: 13 }}>Tip: Use &quot;Backup Now&quot; to create one, or check the Backups page for a global overview.</p>
+              <div className={backupStyles.emptyState}>
+                <p className={backupStyles.emptyStateText}>No backups yet.</p>
+                <p className={backupStyles.emptyStateTip}>Tip: Use &quot;Backup Now&quot; to create one, or check the Backups page for a global overview.</p>
               </div>
             ) : (
               <>
-              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.5rem 0' }}>
-                <div style={{ display: 'flex', gap: 8 }}>
+              <div className={backupStyles.backupList}>
+                <div className={backupStyles.backupListHeader}>
                   <button onClick={fetchBackups} className={`${btn.btn} ${btn.btnSecondary}`}>Refresh</button>
                   <button onClick={() => openConfirm(`Delete ALL backups for "${universityName}"?`, () => handleDeleteAll(), 'Delete All Backups')} disabled={deletingAll || backups.length === 0} className={`${btn.btn} ${btn.btnDanger}`}>{deletingAll ? 'Deleting…' : '🗑️ Remove All'}</button>
                   <button onClick={() => { const count = Object.values(selected).filter(Boolean).length; if (count>0) openConfirm(`Delete ${count} selected backups?`, () => handleBulkDelete(), 'Delete Selected Backups'); }} disabled={deletingBulk || Object.values(selected).every((v) => !v)} className={`${btn.btn} ${btn.btnDanger}`}>{deletingBulk ? 'Deleting…' : '🗑️ Delete Selected'}</button>
@@ -540,13 +541,13 @@ export default function UniversityBackupSection({
                           />
                         </td>
                         <td className={styles.backupName}>
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                            <div style={{ fontWeight: 600 }}>{backup.title?.trim() ? backup.title : '(no title)'}</div>
-                            <div style={{ fontSize: 12, color: '#666' }} title={backup.name}>
+                          <div className={backupStyles.backupDetails}>
+                            <div className={backupStyles.backupTitle}>{backup.title?.trim() ? backup.title : '(no title)'}</div>
+                            <div className={backupStyles.backupFileName} title={backup.name}>
                               {backup.name}
                             </div>
                             {editingMeta[key] ? (
-                              <div style={{ marginTop: 6, display: 'grid', gap: 6 }}>
+                              <div className={backupStyles.backupMetadata}>
                                 <input
                                   type="text"
                                   placeholder="Title"
@@ -554,7 +555,7 @@ export default function UniversityBackupSection({
                                   onChange={(e) =>
                                     setEditingMeta((prev) => ({ ...prev, [key]: { ...prev[key], title: e.target.value } }))
                                   }
-                                  style={{ padding: 6, border: '1px solid #ccc', borderRadius: 4 }}
+                                  className={backupStyles.backupMetaInput}
                                 />
                                 <textarea
                                   placeholder="Description / notes"
@@ -563,9 +564,9 @@ export default function UniversityBackupSection({
                                     setEditingMeta((prev) => ({ ...prev, [key]: { ...prev[key], description: e.target.value } }))
                                   }
                                   rows={2}
-                                  style={{ padding: 6, border: '1px solid #ccc', borderRadius: 4 }}
+                                  className={backupStyles.backupMetaInput}
                                 />
-                                <div style={{ display: 'flex', gap: 8 }}>
+                                <div className={backupStyles.backupBulkActions}>
                                   <button onClick={() => saveMeta(backup.name)} disabled={editingMeta[key].saving} className={`${btn.btn} ${btn.btnSuccess}`}>
                                     {editingMeta[key].saving ? 'Saving...' : '💾 Save'}
                                   </button>
@@ -575,7 +576,7 @@ export default function UniversityBackupSection({
                                 </div>
                               </div>
                             ) : (
-                              <div style={{ marginTop: 4 }}>
+                              <div className={backupStyles.backupMetaEditActions}>
                                 <button onClick={() => startEditMeta(backup)} className={`${btn.btn} ${btn.btnWarning}`}>
                                   ✏️ Edit details
                                 </button>
