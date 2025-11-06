@@ -6,6 +6,7 @@ import SafeImage from '../components/common/SafeImage';
 import MarkdownDisplay from '../components/common/MarkdownDisplay';
 import WysiwygMarkdownEditor from '../components/common/WysiwygMarkdownEditor';
 import styles from '../styles/Universities.module.css';
+import pageStyles from './universities.module.css';
 import { getBackendUrl } from '../lib/config';
 
 interface University {
@@ -253,13 +254,13 @@ export default function Universities() {
         <div className={styles.container}>
         <div className={styles.header}>
           <h1>Universities</h1>
-          <div style={{ display:'flex', gap: '0.5rem', alignItems:'center' }}>
+          <div className={pageStyles.filterBar}>
             <input
               aria-label="Search universities"
               placeholder="Search…"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              style={{ padding:'0.5rem 0.75rem', border:'1px solid #ccc', borderRadius:6, minWidth:220 }}
+              className={pageStyles.searchInput}
             />
             <button 
             className={styles.createButton}
@@ -285,19 +286,8 @@ export default function Universities() {
                 onClick={() => router.push(`/university/${uni.id}`)}
               >
                 <div className={styles.cardHeader}>
-                  <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-                    <div style={{
-                      width: '60px',
-                      height: '60px',
-                      border: '2px solid #e0e0e0',
-                      borderRadius: '8px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      overflow: 'hidden',
-                      background: '#f8f9fa',
-                      flexShrink: 0
-                    }}>
+                  <div className={pageStyles.universityItem}>
+                    <div className={pageStyles.logoContainer}>
                       {uni.logo_url ? (
                         <SafeImage
                           src={`${getBackendUrl()}${uni.logo_url}`}
@@ -306,22 +296,16 @@ export default function Universities() {
                           height={60}
                         />
                       ) : (
-                        <span style={{ fontSize: '1.8rem' }}>🏛️</span>
+                        <span className={pageStyles.logoPlaceholder}>🏛️</span>
                       )}
                     </div>
-                    <div style={{ display:'flex', alignItems:'center', gap:'0.5rem' }}>
-                      <h3 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <div className={pageStyles.universityHeader}>
+                      <h3 className={pageStyles.universityTitle}>
                         {uni.name}
                         {uni.schema_name?.endsWith('_temp') && (
-                          <span style={{
+                          <span className={pageStyles.universityCode} style={{
                             background: '#ffc107',
-                            color: '#212529',
-                            borderRadius: 6,
-                            padding: '0.1rem 0.4rem',
-                            fontSize: '0.7rem',
-                            fontWeight: 700,
-                            textTransform: 'uppercase',
-                            letterSpacing: 0.2
+                            color: '#212529'
                           }}>
                             Temporarily
                           </span>
@@ -331,7 +315,7 @@ export default function Universities() {
                         aria-label={`Favorite ${uni.name}`}
                         title={fav[uni.id] ? 'Unfavorite' : 'Favorite'}
                         onClick={(e) => { e.stopPropagation(); toggleFav(uni.id); }}
-                        style={{ background:'transparent', border:'none', cursor:'pointer', fontSize:'1.1rem' }}
+                        className={pageStyles.expandButton}
                       >
                         {fav[uni.id] ? '⭐' : '☆'}
                       </button>
@@ -455,12 +439,12 @@ export default function Universities() {
 
                 <div className={styles.formGroup}>
                   <label>Logo (optional)</label>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <div className={pageStyles.modalLogoPreview}>
                     {logoPreview ? (
                       // eslint-disable-next-line @next/next/no-img-element
-                      <img src={logoPreview} alt="Selected logo preview" style={{ width: 60, height: 60, objectFit: 'contain', borderRadius: 8, background: '#f8f9fa', border: '1px solid #eee' }} />
+                      <img src={logoPreview} alt="Selected logo preview" className={pageStyles.logoImage} />
                     ) : (
-                      <div style={{ width: 60, height: 60, borderRadius: 8, border: '1px dashed #ccc', display: 'grid', placeItems: 'center', color: '#888' }}>No logo</div>
+                      <div className={pageStyles.logoEmptyPlaceholder}>No logo</div>
                     )}
                     <input
                       ref={logoInputRef}

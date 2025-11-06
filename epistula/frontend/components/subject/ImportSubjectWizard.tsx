@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import styles from '../../styles/Faculties.module.css';
+import wizardStyles from './ImportSubjectWizard.module.css';
 import buttons from '../../styles/Buttons.module.css';
 import { importEntities } from '../../utils/dataTransfer.api';
 import { normalizeLower, normalizeUpper, isDuplicateBy } from '../../utils/duplicates';
@@ -153,13 +154,13 @@ const ImportSubjectWizard: React.FC<ImportSubjectWizardProps> = ({ isOpen, onClo
           <button onClick={onClose} className={styles.closeButton} aria-label="Close">×</button>
         </div>
 
-        {err && <div className={styles.error} style={{ marginBottom: '1rem' }}>{err}</div>}
+        {err && <div className={`${styles.error} ${wizardStyles.errorWithMargin}`}>{err}</div>}
 
         {step === 1 && (
           <div>
             <p>Upload a JSON export of subject(s).</p>
             <input type="file" accept="application/json" onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFile(f); }} />
-            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '1rem' }}>
+            <div className={wizardStyles.actionsRow}>
               <button onClick={onClose} className={styles.cancelButton}>Cancel</button>
               <button onClick={() => setStep(2)} disabled={!canProceedToReview} className={styles.submitButton}>Continue →</button>
             </div>
@@ -171,18 +172,18 @@ const ImportSubjectWizard: React.FC<ImportSubjectWizardProps> = ({ isOpen, onClo
             <div className={styles.formGroup}>
               <label>Name</label>
               <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
-              {duplicateName && (<div style={{ color: '#dc3545', marginTop: 6 }}>A subject with this name already exists. Please adjust.</div>)}
+              {duplicateName && (<div className={wizardStyles.validationError}>A subject with this name already exists. Please adjust.</div>)}
             </div>
             <div className={styles.formGroup}>
               <label>Code</label>
               <input value={form.code} onChange={(e) => setForm({ ...form, code: e.target.value.toUpperCase() })} />
-              {duplicateCode && (<div style={{ color: '#dc3545', marginTop: 6 }}>A subject with this code already exists. Please adjust.</div>)}
+              {duplicateCode && (<div className={wizardStyles.validationError}>A subject with this code already exists. Please adjust.</div>)}
             </div>
             <div className={styles.formGroup}>
               <label>Description (optional)</label>
               <textarea rows={3} value={form.description || ''} onChange={(e) => setForm({ ...form, description: e.target.value })} />
             </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '1rem' }}>
+            <div className={wizardStyles.stepNavigation}>
               <button onClick={() => setStep(1)} className={styles.cancelButton}>← Back</button>
               <button onClick={() => setStep(3)} disabled={!canImport} className={styles.submitButton}>Review & Import →</button>
             </div>
@@ -192,13 +193,13 @@ const ImportSubjectWizard: React.FC<ImportSubjectWizardProps> = ({ isOpen, onClo
         {step === 2 && items.length > 1 && (
           <div>
             {(internalDupName || internalDupCode) && (
-              <div className={styles.error} style={{ marginBottom: '0.5rem' }}>
+              <div className={`${styles.error} ${wizardStyles.errorMarginBottom}`}>
                 Remove or edit duplicates within the imported list before continuing.
               </div>
             )}
-            <div style={{ maxHeight: '50vh', overflow: 'auto', border: '1px solid #eee', borderRadius: 8, padding: '0.5rem' }}>
+            <div className={wizardStyles.subjectsContainer}>
               {items.map((s, idx) => (
-                <div key={idx} style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 2fr auto', gap: '0.5rem', alignItems: 'center', marginBottom: '0.5rem' }}>
+                <div key={idx} className={wizardStyles.subjectRow}>
                   <input placeholder="Name" value={s.name} onChange={(e) => {
                     const next = [...items]; next[idx] = { ...s, name: e.target.value }; setItems(next);
                   }} />
@@ -212,10 +213,10 @@ const ImportSubjectWizard: React.FC<ImportSubjectWizardProps> = ({ isOpen, onClo
                 </div>
               ))}
             </div>
-            <div style={{ marginTop: '0.75rem', color: '#666', fontSize: '0.9rem' }}>
+            <div className={wizardStyles.summaryHint}>
               Total: {items.length}
             </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '1rem' }}>
+            <div className={wizardStyles.stepNavigation}>
               <button onClick={() => setStep(1)} className={styles.cancelButton}>← Back</button>
               <button onClick={() => setStep(3)} disabled={!canImport} className={styles.submitButton}>Review & Import →</button>
             </div>
@@ -232,7 +233,7 @@ const ImportSubjectWizard: React.FC<ImportSubjectWizardProps> = ({ isOpen, onClo
                 <option value="skip_existing">Skip existing (insert only new)</option>
               </select>
             </div>
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
+            <div className={wizardStyles.finalActions}>
               <button onClick={() => setStep(2)} className={styles.cancelButton}>← Back</button>
               <button onClick={doImport} disabled={!canImport} className={`${buttons.btn} ${buttons.btnSuccess}`}>{saving ? 'Importing…' : `Import Subject${items.length > 1 ? 's' : ''}`}</button>
             </div>

@@ -1,0 +1,53 @@
+.errorWithMargin {
+  margin-bottom: 1rem;
+}
+
+.actionsRow {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 1rem;
+}
+
+.validationError {
+  color: #dc3545;
+  margin-top: 6px;
+}
+
+.stepNavigation {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 1rem;
+}
+
+.errorMarginBottom {
+  margin-bottom: 0.5rem;
+}
+
+.subjectsContainer {
+  max-height: 50vh;
+  overflow: auto;
+  border: 1px solid #eee;
+  border-radius: 8px;
+  padding: 0.5rem;
+}
+
+.subjectRow {
+  display: grid;
+  grid-template-columns: 2fr 1fr 2fr auto;
+  gap: 0.5rem;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.summaryHint {
+  margin-top: 0.75rem;
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.finalActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
